@@ -2,7 +2,7 @@
 <html lang="zh">
 <head>
     <meta charset="utf-8" />
-    <title>API 接口文档 - xfEditor v1.17.20</title>
+    <title>API 接口文档 - xfEditor v1.17.27</title>
     <link rel="stylesheet" href="css/style.css" />
     <link rel="stylesheet" href="../css/xf_editor.min.css" />
     <link rel="shortcut icon" href="../images/favicon.ico" type="image/x-icon" />
@@ -85,7 +85,7 @@
         .api-nav {
             position: fixed; left: 20px;
             top: 100px; width: 230px; background: var(--card); border:1px solid var(--border);
-            border-radius: var(--radius); padding: 10px 0; box-shadow: var(--shadow-md);
+            border-radius: var(--radius); padding: 0; box-shadow: var(--shadow-md);
             max-height: 78vh; overflow-y: auto; z-index: 100;
         }
         @media (min-width: 1300px) {
@@ -208,6 +208,7 @@
         <nav class="api-nav" id="apiNav">
             <div class="nav-title">📖 目录导航</div>
             <a href="#quick-start">快速开始</a>
+            <a href="#two-modes">两种使用方式对比</a>
             <a href="#config">配置项总览</a>
             <a href="#config-base" class="nav-sub">基础配置</a>
             <a href="#config-theme" class="nav-sub">主题配置</a>
@@ -236,7 +237,7 @@
         <h1>xfEditor API 接口文档</h1>
         <p>完整配置项、实例方法、事件回调、静态方法、上传接口与扩展语法说明 — 一站式 Markdown 编辑器参考</p>
         <div class="api-header-meta">
-            <div class="api-header-meta-item"><span class="meta-dot green"></span> v1.17.20</div>
+            <div class="api-header-meta-item"><span class="meta-dot green"></span> v1.17.27</div>
             <div class="api-header-meta-item"><span class="meta-dot blue"></span> 30+ 实例方法</div>
             <div class="api-header-meta-item"><span class="meta-dot orange"></span> 20+ 事件回调</div>
             <div class="api-header-meta-item"><span class="meta-dot green"></span> 离线可用</div>
@@ -267,11 +268,148 @@
 &lt;<span class="key">script</span> src=<span class="str">"xf_editor.min.js"</span>&gt;&lt;/<span class="key">script</span>&gt;</pre>
 </div>
 
+<!-- SECTION: two-modes -->
+<div class="api-section" id="two-modes">
+    <h2>两种使用方式对比 <span class="tag tag-ver">v1.17.27</span></h2>
+    <p>xfEditor 提供两种初始化方式：<strong>编辑器模式</strong>和<strong>纯预览模式</strong>。两种模式生成的渲染结果<strong>完全一致</strong>（共享同一套渲染管线），但适用场景、依赖和交互能力不同。</p>
+
+    <h3>对比总览</h3>
+    <div class="table-wrap"><table class="api-table">
+        <tr><th style="width:18%">特性</th><th style="width:41%">编辑器模式<br><small>xfEditor(id, options)</small></th><th style="width:41%">纯预览模式<br><small>xfEditor.markdownToHTML(id, options)</small></th></tr>
+        <tr>
+            <td><b>核心渲染</b></td>
+            <td>✅ 使用统一渲染管道 <code>_renderMarkdownPipeline</code></td>
+            <td>✅ <strong>相同渲染管道</strong>，结果完全一致</td>
+        </tr>
+        <tr>
+            <td><b>代码高亮</b></td>
+            <td>✅ prettyPrint + 复制按钮（共享静态方法）</td>
+            <td>✅ 相同实现（共享静态方法）</td>
+        </tr>
+        <tr>
+            <td><b>KaTeX 公式</b></td>
+            <td>✅ 渲染 + <strong>双向编辑定位</strong>（双击跳转源码）</td>
+            <td>✅ 渲染（纯预览，不含双击编辑）</td>
+        </tr>
+        <tr>
+            <td><b>流程图/时序图</b></td>
+            <td>✅ 渲染 + 异步加载</td>
+            <td>✅ 相同实现</td>
+        </tr>
+        <tr>
+            <td><b>ECharts 图表</b></td>
+            <td>✅ 初始化 + 窗口自适应 + 主题联动</td>
+            <td>✅ 相同实现</td>
+        </tr>
+        <tr>
+            <td><b>Tabs 标签页</b></td>
+            <td>✅ 交互 + <strong>面板切换时内容重初始化</strong>（ECharts/KaTeX/FlowChart）</td>
+            <td>✅ 交互 + <strong>面板切换时内容重初始化</strong>（共享静态方法）</td>
+        </tr>
+        <tr>
+            <td><b>Columns 多栏</b></td>
+            <td>✅ 分隔线渲染</td>
+            <td>✅ 相同实现</td>
+        </tr>
+        <tr>
+            <td><b>Pages 分页</b></td>
+            <td>✅ 页面拆分（{page}/{total} 动态替换）</td>
+            <td>✅ <strong>相同实现</strong>（v1.17.27 新增支持）</td>
+        </tr>
+        <tr>
+            <td><b>Tooltip 提示</b></td>
+            <td>✅ iframe:pre / text / html 全部类型</td>
+            <td>✅ 相同实现（共享静态方法）</td>
+        </tr>
+        <tr>
+            <td><b>脚注</b></td>
+            <td>✅ 事件委托 + 滚动定位 + 高亮</td>
+            <td>✅ 独立事件绑定 + 滚动定位 + 高亮</td>
+        </tr>
+        <tr>
+            <td><b>TOC 目录</b></td>
+            <td>✅ 目录生成 + 点击跳转 + 同步滚动</td>
+            <td>✅ 目录生成 + 点击跳转</td>
+        </tr>
+        <tr>
+            <td><b>同步滚动</b></td>
+            <td>✅ 编辑区↔预览区双向同步</td>
+            <td>❌ 不适用（无编辑器）</td>
+        </tr>
+        <tr>
+            <td><b>表格编辑</b></td>
+            <td>✅ 行列插入/删除交互</td>
+            <td>❌ 不适用（纯预览）</td>
+        </tr>
+        <tr>
+            <td><b>图片缩放</b></td>
+            <td>✅ 拖拽缩放交互</td>
+            <td>❌ 不适用（纯预览）</td>
+        </tr>
+        <tr>
+            <td><b>依赖项</b></td>
+            <td>jQuery + CodeMirror + marked.js + 各功能库</td>
+            <td>仅 jQuery + marked.js + 各功能库（<strong>无需 CodeMirror</strong>）</td>
+        </tr>
+    </table></div>
+
+    <h3>markdownToHTML 专用配置项</h3>
+    <p>纯预览模式 <code>markdownToHTML</code> 支持以下配置项，这些参数与编辑器 <code>xfEditor()</code> 的配置项完全兼容但<b>仅影响渲染结果</b>：</p>
+    <div class="table-wrap"><table class="api-table">
+        <tr><th style="width:18%">参数名</th><th style="width:10%">类型</th><th style="width:12%">默认值</th><th>说明</th></tr>
+        <tr><td>markdown</td><td class="type">String</td><td class="default">""</td><td>Markdown 源文本。为空时自动读取容器内 <code>&lt;textarea&gt;</code> 的值</td></tr>
+        <tr><td>gfm</td><td class="type">Boolean</td><td class="default">true</td><td>GitHub Flavored Markdown 模式</td></tr>
+        <tr><td>toc</td><td class="type">Boolean</td><td class="default">true</td><td>生成目录</td></tr>
+        <tr><td>tocm</td><td class="type">Boolean</td><td class="default">false</td><td>使用 [TOCM] 语法生成下拉目录</td></tr>
+        <tr><td>tocStartLevel</td><td class="type">Number</td><td class="default">1</td><td>目录收录起始标题层级（1~6）</td></tr>
+        <tr><td>tocTitle</td><td class="type">String</td><td class="default">"目录"</td><td>自定义目录标题文本</td></tr>
+        <tr><td>tocDropdown</td><td class="type">Boolean</td><td class="default">false</td><td>目录以下拉菜单形式显示</td></tr>
+        <tr><td>tocContainer</td><td class="type">String</td><td class="default">""</td><td>目录容器 CSS 选择器。为空则放在渲染容器内</td></tr>
+        <tr><td>htmlDecode</td><td class="type">Boolean/String</td><td class="default">false</td><td>HTML 解码模式。true=全部过滤，false=不过滤，"tag1,tag2"=白名单</td></tr>
+        <tr><td>tex</td><td class="type">Boolean</td><td class="default">false</td><td>启用 KaTeX 数学公式渲染</td></tr>
+        <tr><td>autoLoadKaTeX</td><td class="type">Boolean</td><td class="default">true</td><td>自动加载 KaTeX 依赖库</td></tr>
+        <tr><td>flowChart</td><td class="type">Boolean</td><td class="default">false</td><td>启用流程图渲染</td></tr>
+        <tr><td>sequenceDiagram</td><td class="type">Boolean</td><td class="default">false</td><td>启用时序图渲染</td></tr>
+        <tr><td>previewCodeHighlight</td><td class="type">Boolean</td><td class="default">true</td><td>启用代码语法高亮</td></tr>
+        <tr><td>echarts</td><td class="type">Boolean</td><td class="default">false</td><td>启用 ECharts 图表</td></tr>
+        <tr><td>tabs</td><td class="type">Boolean</td><td class="default">true</td><td>启用标签页组件</td></tr>
+        <tr><td>columns</td><td class="type">Boolean</td><td class="default">true</td><td>启用多栏布局组件</td></tr>
+        <tr><td>pageBlock</td><td class="type">Boolean</td><td class="default">true</td><td>启用纸张页面分页组件</td></tr>
+        <tr><td>pageBreak</td><td class="type">Boolean</td><td class="default">true</td><td>启用分页符解析 [========]</td></tr>
+        <tr><td>grid</td><td class="type">Boolean</td><td class="default">true</td><td>启用栅格布局（由 _buildRendererOptionsStatic 内部处理）</td></tr>
+        <tr><td>taskList</td><td class="type">Boolean</td><td class="default">true</td><td>启用任务列表/复选框</td></tr>
+        <tr><td>atLink</td><td class="type">Boolean</td><td class="default">true</td><td>启用 @用户名 链接</td></tr>
+        <tr><td>emailLink</td><td class="type">Boolean</td><td class="default">true</td><td>启用邮件地址自动链接</td></tr>
+        <tr><td>pinyin</td><td class="type">Boolean</td><td class="default">false</td><td>启用拼音标注语法</td></tr>
+        <tr><td>textAlign</td><td class="type">Boolean</td><td class="default">true</td><td>启用文本对齐语法</td></tr>
+        <tr><td>imageResize</td><td class="type">Boolean</td><td class="default">true</td><td>启用图片尺寸预处理（不影响纯预览交互）</td></tr>
+        <tr><td>video</td><td class="type">Boolean</td><td class="default">true</td><td>启用视频列表语法</td></tr>
+        <tr><td>file</td><td class="type">Boolean</td><td class="default">true</td><td>启用文件列表语法</td></tr>
+        <tr><td>tooltip</td><td class="type">Boolean</td><td class="default">true</td><td>启用悬浮提示组件</td></tr>
+        <tr><td>copybook</td><td class="type">Boolean</td><td class="default">true</td><td>启用字帖组件</td></tr>
+        <tr><td>markdownSourceCode</td><td class="type">Boolean</td><td class="default">false</td><td>是否保留容器内的 textarea 作为 Markdown 源码</td></tr>
+        <tr><td>path</td><td class="type">String</td><td class="default">（继承全局）</td><td>依赖模块文件目录（用于加载 KaTeX/ECharts 等）</td></tr>
+        <tr><td>theme</td><td class="type">String</td><td class="default">""</td><td>主题名（用于 ECharts 主题联动）</td></tr>
+    </table></div>
+
+    <div class="notice">
+        <strong>💡 重要：</strong>从 <b>v1.17.27</b> 起，<code>xfEditor.markdownToHTML()</code> 和 <code>xfEditor(id, options)</code> 的渲染结果<strong>完全一致</strong>。
+        所有后处理逻辑（代码高亮、KaTeX、ECharts、Tabs、Columns、Pages、Tooltip 等）均通过共享静态方法实现，避免了代码重复和结果不一致问题。
+    </div>
+
+    <h3>注意事项</h3>
+    <ul style="margin:12px 0; padding-left:24px; line-height:1.8;">
+        <li><strong>纯预览模式不包含编辑能力</strong>：无 CodeMirror 编辑器、无工具栏、无表格编辑交互、无图片缩放交互、无双击公式编辑定位</li>
+        <li><strong>无需 CodeMirror</strong>：纯预览模式不依赖 CodeMirror 库，可减少页面加载体积</li>
+        <li><strong>配置项兼容</strong>：两种模式使用相同渲染管线和相同配置项，仅编辑器模式多出 <code>watch</code>、<code>syncScroll</code>、<code>tableEdit</code> 等编辑/交互相关配置</li>
+        <li><strong>异步加载</strong>：KaTeX、ECharts、FlowChart 等大型库在两种模式下均支持按需异步加载</li>
+    </ul>
+</div>
 
 <!-- SECTION: config -->
 <div class="api-section" id="config">
     <h2>配置项总览</h2>
-    <p>以下为 xfEditor v1.17.13 支持的全部配置参数，按功能分组展示。每个参数均注明<strong>默认值</strong>、<strong>类型</strong>和<strong>所有可选值及区别</strong>。</p>
+    <p>以下为 xfEditor v1.17.27 支持的全部配置参数，按功能分组展示。每个参数均注明<strong>默认值</strong>、<strong>类型</strong>和<strong>所有可选值及区别</strong>。</p>
 </div>
 
 <!-- SECTION: config-base -->
@@ -1543,7 +1681,7 @@ xfEditor.registerLang(<span class="str">"ja"</span>, {
         <tr><td><code>[[columns:N]]...[[/columns]]</code></td><td>N 栏排版，N 取值 1-12</td></tr>
     </table></div>
 
-    <h3>栅格化布局 <span class="tag tag-new">NEW v1.17.13</span></h3>
+    <h3>栅格化布局 <span class="tag tag-new">NEW v1.17.27</span></h3>
     <div class="table-wrap"><table class="api-table">
         <tr><th>语法</th><th>说明</th></tr>
         <tr><td><code>[[row]]...[[/row]]</code></td><td>栅格行容器（10 栏系统）</td></tr>
@@ -1572,7 +1710,7 @@ xfEditor.registerLang(<span class="str">"ja"</span>, {
         <tr><td><code>[文本](tooltip:image:URL)</code></td><td>图片悬浮提示。支持 &lt;宽,高&gt;</td></tr>
         <tr><td><code>[文本](tooltip:iframe:URL)</code></td><td>iframe 悬浮预览。支持 &lt;宽,高&gt;</td></tr>
         <tr><td><code>[文本](tooltip:html:选择器)</code></td><td>HTML DOM 元素。支持 .class、#id、[attr]</td></tr>
-        <tr><td><code>[文本](tooltip:iframe:pre#id)</code></td><td><span class="tag tag-new">NEW v1.17.13</span> 代码块悬浮预览。支持 #id / .class</td></tr>
+        <tr><td><code>[文本](tooltip:iframe:pre#id)</code></td><td><span class="tag tag-new">NEW v1.17.27</span> 代码块悬浮预览。支持 #id / .class</td></tr>
     </table></div>
 
     <h3>ECharts 图表</h3>
@@ -1581,7 +1719,7 @@ xfEditor.registerLang(<span class="str">"ja"</span>, {
         <tr><td><code>```echarts {JSON}```</code></td><td>ECharts 图表。type 支持 bar/line/pie/radar/funnel/tree</td></tr>
     </table></div>
 
-    <h3>代码块扩展 <span class="tag tag-new">NEW v1.17.13</span></h3>
+    <h3>代码块扩展 <span class="tag tag-new">NEW v1.17.27</span></h3>
     <div class="table-wrap"><table class="api-table">
         <tr><th>语法</th><th>说明</th></tr>
         <tr><td><code>```(.class)```</code></td><td>为 pre 设置 class 属性</td></tr>
@@ -1600,7 +1738,7 @@ xfEditor.registerLang(<span class="str">"ja"</span>, {
         <tr><td><code>!字号 文本!</code></td><td>自定义字号（8-200px）</td></tr>
         <tr><td><code>[^脚注名]</code> + <code>[^脚注名]: 内容</code></td><td>脚注引用与定义</td></tr>
         <tr><td><code>![alt](url)&lt;W,H&gt;</code></td><td>固定图片尺寸</td></tr>
-        <tr><td><code>[链接](url){target=_blank}</code></td><td><span class="tag tag-new">NEW v1.17.13</span> 链接 target</td></tr>
+        <tr><td><code>[链接](url){target=_blank}</code></td><td><span class="tag tag-new">NEW v1.17.27</span> 链接 target</td></tr>
         <tr><td><code>[========]</code></td><td>分页符</td></tr>
         <tr><td><code>@username</code></td><td>@用户链接</td></tr>
         <tr><td><code>[[video]]URL[[/video]]</code></td><td>视频嵌入</td></tr>
@@ -1616,7 +1754,7 @@ xfEditor.registerLang(<span class="str">"ja"</span>, {
 <!-- SECTION: full-example -->
 <div class="api-section" id="full-example">
     <h2>完整配置示例（含所有参数 + 中文注释）</h2>
-    <p>以下为 xfEditor v1.17.13 <strong>全部</strong>配置参数的完整示例，每个参数后均有详细中文注释（含默认值、可选值与区别）。</p>
+    <p>以下为 xfEditor v1.17.27 <strong>全部</strong>配置参数的完整示例，每个参数后均有详细中文注释（含默认值、可选值与区别）。</p>
 
     <h3>最简配置（3 参数即用）</h3>
     <pre><span class="cmt">// ★ 最小可行配置</span>
@@ -1628,7 +1766,7 @@ xfEditor.registerLang(<span class="str">"ja"</span>, {
 
     <h3>生产环境完整配置</h3>
     <pre><span class="cmt">/**
- * xfEditor v1.17.13 完整配置
+ * xfEditor v1.17.27 完整配置
  * 涵盖所有参数、默认值、可选值及中文说明
  */</span>
 <span class="key">var</span> editor = xfEditor(<span class="str">"editor-container"</span>, {

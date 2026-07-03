@@ -3,7 +3,7 @@
 <head>
     <link rel="shortcut icon" href="../images/favicon.ico" type="image/x-icon">
     <meta charset="utf-8" />
-    <title>xfEditor v1.17.22 — 全部功能完整演示</title>
+    <title>xfEditor v1.17.27 — 全部功能完整演示</title>
     <link rel="stylesheet" href="css/style.css" />
     <link rel="stylesheet" href="../css/xf_editor.min.css" />
     <style>
@@ -40,12 +40,12 @@
 <body>
     <div id="layout">
         <header>
-            <h1>xfEditor v1.17.22 全部功能完整演示</h1>
+            <h1>xfEditor v1.17.27 全部功能完整演示</h1>
             <p>Complete All-Features Demo — 涵盖所有 Markdown 语法、扩展特性与 API 交互</p>
         </header>
 
         <div class="feature-intro">
-            <h2>v1.17.13 新增功能速览 <span class="badge badge-new">NEW</span></h2>
+            <h2>v1.17.27 新增功能速览 <span class="badge badge-new">NEW</span></h2>
             <ul>
                 
                 <li><strong>🙈 Hidden 隐藏代码块</strong>：<code>```(hidden)</code> <code>```(hidden.class#id)</code> 语法，渲染为 display:none!important 的隐藏 pre 标签，配合 iframe:pre 可「阅后即焚」式预览</li>
@@ -96,7 +96,7 @@
         <div id="test-xfEditor">
             <textarea style="display:none;">[TOC]
 
-# xfEditor v1.17.13 全部功能演示
+# xfEditor v1.17.27 全部功能演示
 
 ---
 
@@ -296,7 +296,7 @@ func main() {
 
 ---
 
-## 四、代码块属性扩展 <span class="badge badge-new">NEW v1.17.13</span>
+## 四、代码块属性扩展 <span class="badge badge-new">NEW v1.17.27</span>
 
 ### 4.1 自定义 class/id 属性
 
@@ -326,7 +326,7 @@ class ApiClient {
 
 上述代码块可配合 iframe:pre 使用（见下方 Tooltip 9.4 节）。
 
-### 4.2 Hidden 隐藏代码块 <span class="badge badge-new">NEW v1.17.13</span>
+### 4.2 Hidden 隐藏代码块 <span class="badge badge-new">NEW v1.17.27</span>
 
 使用 `(hidden)` 标记可将代码块渲染为 **不可见** 的 `<pre style="display:none!important">` 标签。  
 隐藏的代码块在页面中不占用任何空间，但仍然存在于 DOM 中，可通过 JS 读取或配合 `tooltip:iframe:pre` 实现「阅后即焚」式悬浮预览。
@@ -485,7 +485,7 @@ print(fibonacci(15))
 }
 ```
 
-### 5.6 树图/脑图 <span class="badge badge-new">NEW v1.17.13</span>
+### 5.6 树图/脑图 <span class="badge badge-new">NEW v1.17.27</span>
 
 使用 `"type": "tree"` 配合 `layout: "orthogonal"` 和 `orient: "LR"` 可创建从左到右的组织架构树图。  
 主题自动跟随编辑器，无需手动设置 `"theme"`；点击节点圆圈可折叠/展开子分支。
@@ -578,7 +578,7 @@ xfEditor 是一款开源的、可嵌入的 Markdown 在线编辑器（组件）�
 [[/tab]]
 
 [[tab:更新日志]]
-### v1.17.13（最新）
+### v1.17.27（最新）
 - 🔒 **XSS 安全修复**：image renderer 属性转义、filterHTMLTags 实体解码检测、5 项安全加固
 - 🌐 **ES5 兼容性修复**：移除 `(?<!!)` ES2018 负向后瞻，确保 IE11 和老版 Safari 正常运行
 - 🐛 **多反引号行内代码保护**：preprocessLinkTarget 正确保护 `` `…` `` 格式
@@ -587,13 +587,13 @@ xfEditor 是一款开源的、可嵌入的 Markdown 在线编辑器（组件）�
 - 🧹 **死代码 + 正则有向无环图标记**：6 个未使用正则标记为 DEPRECATED
 - 📦 **全面重构构建**：所有 `.js` / `.css` / `.min.js` / `.min.css` / `preview.min.js` 同步构建
 
-### v1.17.12
+### v1.17.27
 - 🔄 **同步滚动引擎全面重写**：统一 `_syncState` 状态管理 + 门控优先级体系 + 程序化滚动识别 + 预览交互防护
 - 🎯 **预览→编辑方向完全修复**：祖先链滚动监听确保不遗漏事件，`disablePreviewListener` 精确控制
 - 🛡 **预览交互防护**：图片拖拽缩放/表格编辑时自动暂停同步，防止内容更新导致滚动跳转
 - 🔗 **标题锚点智能配对**：文本+层级二维验证匹配 + 代码块过滤
 
-### v1.17.11
+### v1.17.27
 - 🌳 **Tree图/脑图**：`"type": "tree"` 支持，工具栏新增「树图/脑图」按钮，支持 theme 主题切换、折叠/展开
 - 🙈 **Hidden 隐藏代码块**：` ```(hidden) ` ` ```(hidden.class#id) ` 语法，渲染为 display:none!important
 - 🎯 Hidden 配合 iframe:pre 实现「阅后即焚」式悬浮预览，initCodeCopy 自动跳过隐藏 pre
@@ -605,22 +605,22 @@ xfEditor 是一款开源的、可嵌入的 Markdown 在线编辑器（组件）�
 - 📏 ECharts 自定义高度：config.height 设置图表容器高度
 - 🔧 Gulp 3.x → 直接 UglifyJS/CleanCSS 构建，兼容 Node 22+
 
-### v1.17.10
+### v1.17.27
 - 🔧 Tooltip 尺寸限制修复：图片/iframe 显式宽高 + object-fit:contain，max-width 放宽至 90vw
 - 📄 getHTML/getPreviewedHTML 增强：完整内联样式，不依赖外部 CSS/JS
 
-### v1.17.9
+### v1.17.27
 - TOC 目录点击跳转修复（精确 ID + 文本回退匹配）
 - 公式弹窗自动加载 KaTeX（无需 tex: true 也能使用公式面板）
 - 表格/图片编辑后编辑区滚动位置保持修复
 - UI 细节优化与多语言完善
 
-### v1.17.8
+### v1.17.27
 - 新增组合上下标语法 <<下标>^<上标>> 同时显示上下角标
 - 修复渲染管线不一致（getPreviewedHTML/markdownToHTML 缺失步骤）
 - 全面代码审计、正则优化、事件泄漏修复
 
-### v1.17.7
+### v1.17.27
 - 工具栏图片/视频/文件按钮失效修复、弹窗全面美化
 - XSS 安全加固（6 项注入漏洞修复）、ECharts 内存泄漏修复
 - 上标 ^^、下标 ^^^^、字体大小 !字!、脚注 [^name] 新语法
@@ -945,7 +945,7 @@ console.log(grid);
 - [小窗口 100x60](tooltip:iframe:./simple.html)<100,60>
 - [中窗口 200x120](tooltip:iframe:./simple.html)<200,120>
 
-### 9.4 iframe:pre 代码块悬浮预览 <span class="badge badge-new">NEW v1.17.13</span>
+### 9.4 iframe:pre 代码块悬浮预览 <span class="badge badge-new">NEW v1.17.27</span>
 
 **配合代码块属性扩展使用**，先给代码块设置 id 或 class，再用悬浮提示引用。  
 **原理**：提取 `<pre id="xxx">` 内部原始内容，通过 Blob URL 创建 iframe 页面进行悬浮预览。  
@@ -1092,7 +1092,7 @@ def merge(left, right):
 
 ⁑⁖开源、简洁、强大，支持实时预览与扩展语法⁖⁑
 
-⠪版本号：v1.17.13 | 许可证：MIT⠪
+⠪版本号：v1.17.27 | 许可证：MIT⠪
 
 ### 标题中的对齐
 
@@ -1289,7 +1289,7 @@ report.xlsx | 2024年度数据报表
 (夜来风雨声|yè lái fēng yǔ shēng)(花落知多少|huā luò zhī duō shǎo)
 [[/copybookPinyin]]
 
-### 22.5 字帖内嵌入脚注 <span class="badge badge-new">NEW v1.17.13</span>
+### 22.5 字帖内嵌入脚注 <span class="badge badge-new">NEW v1.17.27</span>
 
 字帖和拼音格内可使用 `[^name]` 脚注标记，点击可跳转到对应脚注内容。
 拼音格中脚注标记上方不会显示拼音，保证拼音与汉字一对一展示：
@@ -1423,7 +1423,7 @@ xfEditor[^editor-footnote] 是一款强大的开源 Markdown 在线编辑器。
 
 #### 关于本编辑器[^about]
 
-[^about]: 本文档演示了 xfEditor v1.17.13 的全部功能，包括 Markdown 基础语法、扩展语法和 API 交互。更多功能请查阅 `USAGE_GUIDE.md` 和 `README.md`。
+[^about]: 本文档演示了 xfEditor v1.17.27 的全部功能，包括 Markdown 基础语法、扩展语法和 API 交互。更多功能请查阅 `USAGE_GUIDE.md` 和 `README.md`。
 
 ### 25.4 多个脚注
 
@@ -1546,7 +1546,7 @@ xfEditor 持续迭代，致力于为开发者和内容创作者提供最优秀�
                 video               : true,             // 启用 [[video]] 视频列表语法，默认 true
                 file                : true,             // 启用 [[file]] 文件列表语法，默认 true
                 previewCodeHighlight: true,             // 启用预览区代码高亮，默认 true
-                syncScroll          : true,             // 启用编辑区与预览区同步滚动，默认 true（v1.17.13 全面重写）
+                syncScroll          : true,             // 启用编辑区与预览区同步滚动，默认 true（v1.17.27 全面重写）
                 previewOnly         : false,            // 纯预览模式（禁用表格编辑、图片缩放等交互），默认 false
 
                 // ═══ 工具栏配置 ═══
@@ -1591,7 +1591,7 @@ xfEditor 持续迭代，致力于为开发者和内容创作者提供最优秀�
 
                 // ═══ 事件回调 ═══
                 onload              : function() {      // 编辑器加载完成回调，默认 function(){}
-                    console.log("✅ xfEditor v1.17.13 全部功能完整演示已加载");
+                    console.log("✅ xfEditor v1.17.27 全部功能完整演示已加载");
                 },
                 onchange            : function() {      // 编辑器内容变化回调，默认 function(){}
                     // 内容变化时触发

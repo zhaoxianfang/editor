@@ -285,14 +285,28 @@
     .sequence-diagram, .flowchart {
         margin: 0 auto;
         text-align: center;
+        max-width: 100%;
+        overflow-x: auto;
         
+        // ★ v1.17.27: SVG 不能设 max-width:100%，否则无法溢出容器产生滚动条
         svg {
             margin: 0 auto;
+            max-width: none !important;
+            height: auto !important;
         }
 
         text {
             font-size  : 15px !important;
             font-family: "YaHei Consolas Hybrid", Consolas, "Microsoft YaHei", "Malgun Gothic", "Segoe UI", Helvetica, Arial !important;
+        }
+    }
+
+    // ★ v1.17.27: 确保 flowchart 所有节点（start/operation/condition/end…）拥有可见边框
+    //   使用 !important 防御 Raphael.js 库设置的 stroke="none" 内联属性
+    .flowchart {
+        rect, path {
+            stroke-width: 1.5px !important;
+            stroke: #555 !important;
         }
     }
 }
@@ -1209,6 +1223,61 @@ hr.xf_editor-page-break {
         }
     }
 }
+// ★ v1.17.26: 字帖组级宽度样式（花括号/圆括号语法 + (!width:NNN)）
+.xf_editor-copybook-group {
+    display: inline-flex !important;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    vertical-align: top;
+    overflow: hidden !important;
+}
+// ★ v1.17.27: group-pinyin 使用 center + gap 代替 space-evenly，避免组内过宽时字间距过大；
+//   单元格恢复固定 52px 宽度以保证田字格为正方形
+.xf_editor-copybook-group-pinyin {
+    display: inline-flex !important;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    justify-content: center;
+    gap: 2px;
+    overflow: hidden !important;
+    > .xf_editor-copybook-pinyin-cell {
+        flex: 0 0 auto !important;
+        min-width: 0 !important;
+        width: 52px !important;
+        max-width: 52px !important;
+        overflow: hidden !important;
+    }
+}
+.xf_editor-copybook-group-grid {
+    display: inline-flex !important;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    overflow: hidden !important;
+    > .xf_editor-copybook-grid-cell {
+        flex: 1 1 0 !important;
+        min-width: 0 !important;
+        width: auto !important;
+        max-width: none !important;
+        overflow: hidden !important;
+    }
+}
+// ★ 行级宽容器 — 组可收缩以适应屏幕宽度
+.xf_editor-copybook-row-wide {
+    display: flex !important;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 4px 8px !important;
+    > .xf_editor-copybook-cell {
+        flex: 1 1 0;
+        min-width: 0;
+        max-width: 68px;
+    }
+    > .xf_editor-copybook-group {
+        flex: 0 1 auto !important;
+        min-width: 0;
+        max-width: 100%;
+    }
+}
 @media (max-width: 600px) {
     .xf_editor-copybook-grid-cell {
         width: 42px;
@@ -1228,6 +1297,13 @@ hr.xf_editor-page-break {
     }
     .xf_editor-copybook-pinyin-top {
         height: 24px;
+    }
+    // ★ v1.17.26: 移动端拼音组限制每格宽度
+    .xf_editor-copybook-group-pinyin > .xf_editor-copybook-pinyin-cell {
+        max-width: 52px !important;
+    }
+    .xf_editor-copybook-group-grid > .xf_editor-copybook-grid-cell {
+        max-width: 52px;
     }
 }
 

@@ -83,14 +83,14 @@
         $(function() {
             var version = $.fn.jquery;
             var resultDiv = $('#jquery-version');
-            resultDiv.html('<div class="test-result success">✅ jQuery 版本: ' + version + ' (支持 jQuery 3.x)</div>');
+            resultDiv.html('<div class="test-result success"> jQuery 版本: ' + version + ' (支持 jQuery 3.x)</div>');
             
             // 测试 2: 选择器语法
             try {
                 // 测试修复后的选择器
                 var links = $("a[href*='#']");
                 var count = links.length;
-                $('#selector-test').html('<div class="test-result success">✅ 选择器 $("a[href*=\'#\']") 正常工作，找到 ' + count + ' 个链接</div>');
+                $('#selector-test').html('<div class="test-result success"> 选择器 $("a[href*=\'#\']") 正常工作，找到 ' + count + ' 个链接</div>');
                 
                 // 测试平滑滚动
                 $("a[href*='#']").on("click", function(e) {
@@ -100,7 +100,7 @@
                         $('html, body').animate({
                             scrollTop: target.offset().top - 100
                         }, 500);
-                        $('#selector-test').append('<div class="test-result info">✅ 平滑滚动成功</div>');
+                        $('#selector-test').append('<div class="test-result info"> 平滑滚动成功</div>');
                     }
                 });
             } catch(e) {
@@ -112,26 +112,26 @@
                 var clickCount = 0;
                 $('#test-btn').on('click', function() {
                     clickCount++;
-                    $('#event-test').html('<div class="test-result success">✅ .on() 方法工作正常，点击次数: ' + clickCount + '</div>');
+                    $('#event-test').html('<div class="test-result success"> .on() 方法工作正常，点击次数: ' + clickCount + '</div>');
                 });
-                $('#event-test').html('<div class="test-result info">✅ .on() 事件绑定成功</div>');
+                $('#event-test').html('<div class="test-result info"> .on() 事件绑定成功</div>');
             } catch(e) {
                 $('#event-test').html('<div class="test-result error">❌ .on() 方法错误: ' + e.message + '</div>');
             }
             
             // 测试 4: .off() 方法
             var handler = function() {
-                $('#unbind-test').html('<div class="test-result success">✅ 事件触发成功</div>');
+                $('#unbind-test').html('<div class="test-result success"> 事件触发成功</div>');
             };
             
             $('#bind-btn').on('click', function() {
                 $('#trigger-btn').on('click', handler);
-                $('#unbind-test').html('<div class="test-result info">✅ 事件已绑定</div>');
+                $('#unbind-test').html('<div class="test-result info"> 事件已绑定</div>');
             });
             
             $('#unbind-btn').on('click', function() {
                 $('#trigger-btn').off('click', handler);
-                $('#unbind-test').html('<div class="test-result info">✅ 事件已解绑</div>');
+                $('#unbind-test').html('<div class="test-result info"> 事件已解绑</div>');
             });
             
             // 测试 5: xfEditor 初始化
@@ -140,14 +140,14 @@
                     width: "100%",
                     height: 300,
                     path: "../lib/",
-                    markdown: "# jQuery 3.7 兼容性测试\n\n这个编辑器使用 jQuery 3.7.1，所有功能正常工作！\n\n## 测试内容\n\n- ✅ 选择器语法\n- ✅ .on() 方法\n- ✅ .off() 方法\n- ✅ xfEditor 初始化\n\n## 代码示例\n\n```javascript\n$('a[href*='#']').on('click', handler);\n```",
+                    markdown: "# jQuery 3.7 兼容性测试\n\n这个编辑器使用 jQuery 3.7.1，所有功能正常工作！\n\n## 测试内容\n\n-  选择器语法\n-  .on() 方法\n-  .off() 方法\n-  xfEditor 初始化\n\n## 代码示例\n\n```javascript\n$('a[href*='#']').on('click', handler);\n```",
                     onload: function() {
                         console.log("xfEditor loaded successfully with jQuery 3.7.1");
                     }
                 });
                 
                 if (editor) {
-                    $('.editor-container').prepend('<div class="test-result success">✅ xfEditor 初始化成功</div>');
+                    $('.editor-container').prepend('<div class="test-result success"> xfEditor 初始化成功</div>');
                 }
             } catch(e) {
                 $('.editor-container').prepend('<div class="test-result error">❌ xfEditor 初始化错误: ' + e.message + '</div>');

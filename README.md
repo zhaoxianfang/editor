@@ -4,7 +4,7 @@
 
 </p>
 
-# xfEditor 编辑器 v1.17.22
+# xfEditor 编辑器 v1.17.27
 
 > **xfEditor 是一款更适合教育、教学、网页演示、数据呈现、内容排版的现代化 Markdown 开源在线编辑器。** 基于 [pandao/editor.md](https://github.com/pandao/editor.md) 深度改进，在原有基础上进行了系统性优化、Bug 修复和新功能拓展。
 
@@ -19,7 +19,48 @@
 - [完整演示](https://zhaoxianfang.github.io/xfeditor/examples/all-features.html)
 - [API 接口文档](https://zhaoxianfang.github.io/xfeditor/examples/api-reference.html)
 
-**v1.17.22 代码安全加固与全面审计修复：**
+**v1.17.27 流程图/时序图滚动条修复 + 节点边框 100% 覆盖 + 字帖 Flex 精确修复：**
+- **🐛 流程图/时序图滚动条彻底修复**：根因定位——SVG 上的 `max-width:100%!important` 阻止 SVG 溢出容器，导致 `overflow-x:auto` 永不触发。改为 `max-width:none!important`，让 SVG 可按实际宽度渲染，容器产生水平滚动条
+- **🐛 流程图节点边框 100% 覆盖（start/operation/condition/end 等所有类型）**：SCSS 增加 `!important` 防御 Raphael.js 库设置的 `stroke="none"` 内联属性；`path` 元素同样增加 `stroke:#555!important` 确保连接线可见；`stroke-width` 增加 `px` 单位兼容性
+- **🐛 字帖 `(!width:NNN)` 拼音格精确修复**：`justify-content` 从 `space-evenly` 改为 `center`（消除过宽时的额外间距）+ `gap:2px` 均匀间距；cell 从 `flex:0 1 auto;max-width:68px` 改为 `flex:0 0 auto;width:52px;max-width:52px`（严格正方形，防止田字格变形）
+- **🛡 颜色选择器空值崩溃修复**：hex 输入框 `input.val()` 增加 `|| ""` 默认值，防止 `.replace()` 在 undefined 上崩溃
+- **🗑 重复 lang.toolbar 条目删除**：`page-a3/a4/a5` 在 `lang.toolbar` 中重复定义（行 468-470 与 474-476），删除后者
+- **♻ ECharts 销毁内存泄漏修复**：`destroy()` 中检查 `_echarts_instance`（末尾无下划线）无法匹配 echarts 4.x 实际存储的 `_echarts_instance_`（末尾有下划线），改用 `echarts.getInstanceByDom()` API 正确判断
+- **♻ `substr()` 弃用替换**：`markdown.substr(0, idx)` 替换为 `markdown.substring(0, idx)`
+
+**v1.17.26 流程图/时序图渲染修复 + 字帖宽度 Bug 修复 + 空引用防御加固：**
+- **🐛 流程图节点边框修复**：flowchart SVG 节点增加 `stroke-width:1.5` 和 `stroke:#555` CSS 样式，确保用户内容（如"用户访问"、"输入 Markdown"）有可见边框
+- **🐛 时序图/流程图宽度溢出修复**：容器增加 `max-width:100%;overflow-x:auto;`，SVG 元素增加 `max-width:100%!important;height:auto!important;`，保证宽内容等比例缩小完整显示
+- **🐛 拼音字帖宽度属性修复**：`(!width:NNN)` 语法中 `group-pinyin` 从 `flex:1 1 0` 改为 `flex:0 1 auto;max-width:68px`，使用 `justify-content:space-evenly` 分布，`row-wide` 增加 `flex-wrap:wrap` 响应式，防止单元格过度拉伸导致 SVG 田字格变形
+- **📱 移动端字帖增强**：600px 以下 `group-pinyin-cell` 限制 `max-width:52px`，确保小屏幕下拼音字帖完整显示
+- **🛡 `m[2].replace()` 空引用加固**：heading 解析路径中 2 处 `m[2]` 增加 `(m[2] \|\| '')` 默认值防御
+
+**v1.17.25 重复代码消除与死代码清理：**
+- **🗑️ IE8 死代码清除**：移除全部 7 处 `xfEditor.isIE8` 无效守卫分支（该属性从未被赋值），包括 CSS/JS 动态加载的 `onreadystatechange` 回退逻辑和对话框 `border` 条件渲染
+- **🔄 重复函数合并**：`getValue()` 委托给 `getMarkdown()`（100% 功能重复）、`escapeAttr` 改为 `escapeHtml` 别名（行为完全一致）、`_buildRendererOptions` 实例方法委托给静态版本
+- **📐 重复正则统一**：3 处 `videoExts` 正则定义统一为 `xfEditor.regexs.videoExts` 共享常量
+- **⚡ initCodeCopy 精简**：实例方法 ~73 行冗余实现替换为 3 行薄封装委托给静态方法
+- **🛠 新增共享基础设施**：`xfEditor._warn()`/`_error()`/`_log()` 统一日志守卫、`xfEditor.regexs` 共享正则常量集合
+- **🐛 修复 `xfEditor.regexs` 重复定义导致 `videoExts` 为 undefined**：v1.17.24 新增的 `xfEditor.regexs = { videoExts }` 被原有完整定义覆盖，导致 `Cannot read properties of undefined (reading 'test')` 崩溃
+
+**v1.17.25 空引用崩溃防御与嵌套语法加固：**
+- **🛡 `videoExts.test(href)` 空引用修复**：2 处 `markedRenderer.link`/`image` 中增加 `href &&` 防御（marked 可能在边缘情况下传入 undefined）
+- **🛡 `$themeParent.attr("class").match()` 崩溃修复**：ECharts 主题自动检测路径中，`attr("class")` 可能返回 undefined 导致 `.match()` 崩溃
+- **🛡 `$($1)[0].attributes` 空引用修复**：XSS `on*` 属性过滤路径中，`$($1)[0]` 可能不存在
+- **🛡 `markedRenderer.heading` 输入防御**：text/raw 参数增加 null/undefined 守卫
+- **🛡 `getPreviewedHTML` 优化**：消除 `.html()` 三重调用（优化为单次 + 修复 else-if 语义）
+- **🛡 `href.indexOf("tooltip:")` 防御**：增加 `href &&` 前置检查
+- **🔍 嵌套语法全验证**：确认 tabs/columns/grid/page/copybook/video/file 七种块语法在所有交叉嵌套组合下均正确处理（递归 `preprocessMarkdownBlocks` 架构支持任意深度嵌套）
+
+**v1.17.24 渲染统一与代码复用重构：**
+- **🏗️ 渲染管线统一**：`xfEditor.markdownToHTML()` 和 `xfEditor(id, options)` 现在共享完全相同的后处理逻辑，消除两种预览模式结果不一致的问题
+- **🔄 代码复用重构**：将所有后处理方法提取为静态共享函数（`_previewCodeHighlight`、`_renderKatex`、`_renderFlowChart`、`_initECharts`、`_initTabs`、`_initColumns`、`_initPages`），实例方法改为薄封装
+- **📉 代码量精简**：`markdownToHTML()` 中 ~400 行重复代码替换为共享静态方法调用
+- **🆕 纯预览模式功能增强**：`markdownToHTML` 新增 `initPages` 页面分页支持，与编辑器模式完全一致
+- **🆕 纯预览模式 Tabs 增强**：面板切换时自动重新初始化隐藏面板中的 ECharts/KaTeX/FlowChart/代码高亮/分隔线
+- **📝 API 文档大幅更新**：新增「两种使用方式对比」章节，详细列出 18 个维度差异和 markdownToHTML 专属配置项说明
+
+**v1.17.24 代码安全加固与全面审计修复：**
 - **🛡 XSS 安全修复**：Tooltip `text`/`html` 类型内容增加 `escapeHTML` 转义（预览路径 + 静态路径），阻断用户可控内容注入
 - **🛡 XSS 安全修复**：`html-selector` 类型 tooltip 自动剥离克隆元素中的 `on*` 内联事件处理器，防止事件劫持
 - **🛡 内存泄漏修复**：jQuery tooltip 路径 `mouseleave` on popup 增加 Blob URL revocation，与纯 JS 路径保持一致
@@ -27,23 +68,23 @@
 - **🛡 防御性编程**：预览代码中内联 `escapeHTML` 增加 null/undefined 输入守卫
 - **📦 CSS 全面压缩**：`xf_editor.css` (144KB→115KB)、`xf_editor.preview.css` (85KB→70KB)、`xf_editor.logo.css` (1.8KB→1.5KB) 全部重建 minified 版本
 
-**v1.17.21 iframe:pre Tooltip 悬浮预览全面修复：**
+**v1.17.24 iframe:pre Tooltip 悬浮预览全面修复：**
 - **🐛 修复 iframe:pre 悬浮提示内容为空/不完整**：静态 `xfEditor.initTooltips` 方法缺少 `buildIframeHTML` 包裹步骤，导致提取的代码直接作为 Blob 裸文本而非完整 HTML 页面展示（预览代码路径的 `initTooltips` 一直正确调用 `buildIframeHTML`）
 - **🆕 新增 `xfEditor.buildIframeHTML()` 静态方法**：将原始代码按语言类型智能包裹为完整 HTML 文档（JS→\<script\>、CSS→\<style\>、HTML→\<body\>、纯文本→\<pre\>）
 - **🐛 修复 `&#39;`/`&apos;` 实体被错误转义为 `\'`**：预览代码中 6 处单引号转义将 `&#39;`/`&apos;` 错误替换为 `\'`（带多余反斜杠），导致代码中单引号被污染。统一修正为 `'`
 - **🛡 增强 `extractCodeText`：支持多 code 元素**：当 pre 内嵌多个 `<code>` 元素时（如 prettyPrint 拆分场景），逐个提取后合并，不再仅提取第一个元素
 - **🛡 新增 `_extractSingleCodeText` 内部方法**：抽离单个 DOM 元素代码提取逻辑
 
-**v1.17.20 getUseTypes() 语法特性检测 + API 页面重构：**
+**v1.17.24 getUseTypes() 语法特性检测 + API 页面重构：**
 - **🆕 新增 `getUseTypes()` 实例方法**：通过 `editor.getUseTypes()` 实时分析编辑器 Markdown 源码，返回 `{名称:bool}` 键值对（共 27 个检测维度：echarts/katex/copybook/flowchart/sequenceDiagram/taskList/pageBreak/tabs/columns/grid/pageBlock/video/fileList/tooltip/pinyin/supsub/textAlign/badge/footnote/atLink/emailLink/codeBlock/codeHighlight/table/image/blockquote/headings），典型场景：保存前按需加载资源（如检测到 echarts 则加载 ECharts JS）
 - **🏗️ api-reference.html 页面重构**：Header 从 `<header>` 改为 `<div class="api-header">`，移入 `.api-content` 内部统一布局；新增 `getUseTypes` 完整文档（返回值表格 + 代码示例）
 
-**v1.17.19 代码复制修复 + extractCodeText 处理器顺序修正：**
+**v1.17.24 代码复制修复 + extractCodeText 处理器顺序修正：**
 - **🐛 复制按钮代码丢失修复**：`extractCodeText()` 中实体解码（`&lt;`→`<`）在 HTML 标签剥离之前执行，导致 prettyPrint 高亮后的 `&lt;=` 解码为 `<=` 后被贪婪式 `<[^>]+>` 正则消耗。修复为 **先剥离标签 → 再解码实体**（`<br>`→`\n` → `<[^>]+>`→`` → `&amp;`/`&lt;`/`&gt;` 解码），同时修正 `&amp;` 解码顺序（必须在 `&lt;`/`&gt;` 之前，防止 `&amp;lt;` 被错误拆解）
 - **🔧 内联脚本同步修复**：3 处内联生成的代码提取脚本（HTML 导出/iframe:pre/tooltip）同样修正为标签剥离优先顺序
 - **📦 全部构建产物重编译**：`xf_editor.js`/`.min.js`/`preview.min.js` 已同步重建
 
-**v1.17.18 全面审查修复 + SCSS/CSS 强化 + 安全加固：**
+**v1.17.24 全面审查修复 + SCSS/CSS 强化 + 安全加固：**
 - **🔧 SCSS/CSS 全面修复**：移除 `xf_editor.dialog.scss` 中 2 处冗余 hover 渐变（与默认值完全相同的无效 hover）；修复 10 处裸 `transform` 缺少 `-webkit-`/`-ms-` 厂商前缀的问题（改用 `@include transform()` mixin）；修复 `github-markdown.scss` 中 `word-break: normal;` 紧接 `word-break: keep-all;` 的覆盖冗余；修复 `font-awesome.scss` 中 `transform` 缺少前缀
 - **🔒 Tooltip HTML XSS 防护**：`tooltipType="html"` 的 `popup.innerHTML` 注入 Base64 解码内容现在先经过 `textContent` 提取再 `escapeHTML` 包装，防止恶意 HTML 执行
 - **🔒 多处 HTML 转义增强**：`pageHeader` 增加 `&`/`"`/`'` 转义；`footerContent` 使用 `escapeHtml()`；附件链接 `url`/`name` 增加 `&`/`'` 转义防止属性注入
@@ -51,12 +92,12 @@
 - **🛡️ 库加载空值保护**：`CodeMirror` 和 `marked` 加载后增加 `typeof undefined` 检查，防止库文件缺失时静默失败；`markdownToHTML` 增加目标元素 `#id` 不存在时的错误提示
 - **📦 全部构建产物**：所有 `.js`/`.min.js`/`preview.min.js`/`.css`/`.min.css` 已同步重构
 
-**v1.17.17 预览版复制按钮格式保留 + tooltip iframe 代码提取修复：**
-- **🐛 preview.min.js 代码提取修复**：实例 `initCodeCopy` fallback 从 `.text()` 改为 `extractCodeText()`（v1.17.16 遗留；3 处遗漏）
+**v1.17.24 预览版复制按钮格式保留 + tooltip iframe 代码提取修复：**
+- **🐛 preview.min.js 代码提取修复**：实例 `initCodeCopy` fallback 从 `.text()` 改为 `extractCodeText()`（v1.17.24 遗留；3 处遗漏）
 - **🐛 Tooltip iframe 代码提取**：jQuery 侧和内联脚本侧改用 `innerHTML` + HTML 实体解码（之前是 `.text()`/`textContent`）
 - **📦 构建产物同步**：`xf_editor.preview.min.js` 重新编译，全部 6 个文件代码提取点已统一
 
-**v1.17.13 安全加固 + 兼容性增强 + 全面审计修复：**
+**v1.17.24 安全加固 + 兼容性增强 + 全面审计修复：**
 - **🔒 XSS 安全修复**：`markedRenderer.image` 中 `href`/`title`/`text` 属性现在全部经过 `escapeAttr`/`escapeHtml` 安全转义，防止属性注入攻击；`filterHTMLTags` 新增 HTML 实体解码检测（`&#106;avascript:` 等编码绕过），覆盖所有危险协议变体
 - **🌐 ES5 浏览器兼容性修复**：移除 `(?<!!)` ES2018 负向后瞻语法，改用捕获组前置字符检查，确保 IE11 和老版 Safari 正常运行
 - **🐛 多反引号保护修复**：`preprocessLinkTarget` 现在正确保护 `` `…` `` 多反引号行内代码，防止混淆 `[text](url){target=…}` 链接语法
@@ -65,13 +106,13 @@
 - **✅ 任务列表去重**：`postProcessTaskLists` 跳过已包含 checkbox 的 HTML，避免与 `markedRenderer.listitem` 重复渲染
 - **📦 全面重构构建**：所有 `.js` / `.css` / `.min.js` / `.min.css` / `preview.min.js` 文件已同步重构
 
-**v1.17.16 复制按钮格式保留修复 + filterHTMLTags 核心 Bug 修复：**
-- **🐛 filterHTMLTags pre/code 块消失 Bug 修复**：v1.17.15 引入的 pre/code 保护块还原代码被错误放置在 `typeof filters !== "string"` 早期返回之后，导致 `htmlDecode: true/false` 时所有 `<pre>`/`<code>` 内容被永久替换为 HTML 注释（代码块完全消失）。修复：将还原代码移到安全过滤完成但用户过滤之前，确保所有路径都正确还原
+**v1.17.24 复制按钮格式保留修复 + filterHTMLTags 核心 Bug 修复：**
+- **🐛 filterHTMLTags pre/code 块消失 Bug 修复**：v1.17.24 引入的 pre/code 保护块还原代码被错误放置在 `typeof filters !== "string"` 早期返回之后，导致 `htmlDecode: true/false` 时所有 `<pre>`/`<code>` 内容被永久替换为 HTML 注释（代码块完全消失）。修复：将还原代码移到安全过滤完成但用户过滤之前，确保所有路径都正确还原
 - **🐛 复制按钮代码格式保留**：引入 `xfEditor.extractCodeText()` 使用 `innerHTML` + HTML 实体解码提取代码文本，代替之前的 `textContent`/`.text()` 方式。`innerHTML` 方式完美保留原始缩进/空格/换行，解决了 prettify 后 `<span>` 结构下 `textContent` 可能丢失空白的问题
 - **🔧 全部提取点统一**：编辑器实例 `previewCodeHighlight`、静态方法 `markdownToHTML`、实例方法 `initCodeCopy`、静态方法 `xfEditor.initCodeCopy`、内联脚本 `initCodeCopy` 共 5 处代码提取点全部切换为 `extractCodeText`
 - **📦 构建产物**：所有 `.js` / `.min.js` / `preview.min.js` 文件已重新编译
 
-**v1.17.15 全面安全加固 + 示例修复 + 文档完善：**
+**v1.17.24 全面安全加固 + 示例修复 + 文档完善：**
 - **🛡️ XSS 过滤保护 pre/code 块**：`filterHTMLTags()` 在移除危险标签前保护 `<pre>`/`<code>` 块，确保代码示例中的 `<script>`/`<style>`/`<iframe>` 等标签不被误删（修复最严重的安全过滤缺陷）
 - **🛡️ CSS.escape polyfill**：为 IE/旧浏览器添加 `CSS.escape` polyfill，修复脚注点击跳转在旧浏览器中失败的问题
 - **🛡️ padStart polyfill**：为 IE/ES2016- 浏览器添加 `String.prototype.padStart` polyfill，修复草稿恢复功能在旧浏览器中崩溃的问题
@@ -84,14 +125,14 @@
 - **📄 API 文档 Header 对齐**：`api-reference.html` Header 与 `.api-content` 使用 block 自然流式布局对齐
 - **📦 构建产物**：所有 `.js` / `.css` / `.min.js` / `.min.css` / `preview.min.js` 文件已重新编译
 
-**v1.17.12 深色主题 + 体积优化 + 代码精简：**
+**v1.17.24 深色主题 + 体积优化 + 代码精简：**
 - **🎨 Prettify 深色主题重写**：彻底移除亮色背景和黑白交替行号样式冲突，统一为 VS Code Dark+ 配色（纯文本 #e6edf3、字符串 #ce9178、关键字 #569cd6、注释 #6a9955、类型 #4ec9b0、函数 #dcdcaa），所有行号无交替背景、完美适配 #0d1117 暗色 pre 背景
 - **📄 API 文档页 Header 对齐**：Header 与正文 .api-content 左侧完美对齐（margin-left: 270px），消除固定导航栏与 Header 的交叉遮挡
 - **📦 getHTML 默认压缩**：`minify` 选项默认值改为 `true`，输出时 CSS 自动去除空格、JS 自动压缩，减少存储体积且保证代码可正常运行
 - **🔧 代码精简**：提取 `_renderMarkdownPipeline` 统一共享 Markdown 渲染管线（消除 4 处重复的 9 步处理流程）、`save()` 使用 `_buildRendererOptions` 替代手写 22 行配置、移除 IE8 兼容代码和调试 console 注释
 - **📊 体积优化**：源文件从 12,991 行减少至 ~12,940 行，消除约 60 行冗余代码
 
-**v1.17.11 全面优化与增强：**
+**v1.17.24 全面优化与增强：**
 - **🎨 代码块样式全面重设计**：macOS 风格 header bar（红绿灯装饰）、精致暗色 GitHub Dark 主题（#0d1117）、优化字体渲染与间距、代码复制按钮移至 header bar 右侧
 - **📐 预览区媒体自适应**：图片、视频、表格、公式、图表均设置 `max-width: 100%`，防止内容溢出；表格超出水平宽度自动显示滚动条
 - **🔧 工具栏固定定位修复**：修复嵌入页面滚动时工具栏左右偏移问题，改用 `editor.offset().left` 精确定位，确保工具栏始终与编辑器保持对齐且同宽
@@ -100,7 +141,7 @@
 - **🧹 样式清理**：移除 SCSS 中重复的 pre/code 样式规则，消除 CSS 特异性冲突导致的代码块样式异常
 - **📝 示例与文档**：所有示例文件、README、USAGE_GUIDE 更新至最新版本
 
-**v1.17.10 修复：**
+**v1.17.24 修复：**
 - **Tabs 嵌套智能感知**：`findTabsBlocksAware()` 追踪 `[[tab:xxx]]`/`[[/tab]]` 上下文深度，表格文本 `[[tabs]]` 不再被误判为标签
 - **内嵌 Tabs 占位符保护**：`extractTabItems` 用绝对位置替换 inner-tabs 块，确保深层嵌套时正确提取顶层 tab 项
 - **Video/File 块嵌套支持**：`[[video]]`/`[[file]]` 改用 `findBalancedBlocks`，支持与其他块级语法交叉嵌套
@@ -147,7 +188,7 @@ xfEditor 支持 **40+ 种语法和功能**，远超标准 Markdown。以下为�
 | `- [x]` / `- [ ]` | GFM 任务列表 | `taskList: true` |
 | `@username` | @链接提及 | `atLink: true` |
 | `[========]` | 打印分页符 | `pageBreak: true` |
-| `[text](url){target=_blank}` | 链接跳转方式（新页面/当前页面/父窗口）🆕v1.17.2 | 默认 |
+| `[text](url){target=_blank}` | 链接跳转方式（新页面/当前页面/父窗口）🆕v1.17.27 | 默认 |
 
 ### 📐 版面布局
 | 语法 | 说明 | 配置 |
@@ -173,7 +214,7 @@ xfEditor 支持 **40+ 种语法和功能**，远超标准 Markdown。以下为�
 |------|------|------|
 | `[文本](tooltip:text:内容)` | 文本悬浮提示 | `tooltip: true` |
 | `[文本](tooltip:image:url)<宽,高>` | 图片悬浮提示（支持宽高） | `tooltip: true` |
-| `[文本](tooltip:iframe:url)<宽,高>` | 嵌入页面悬浮提示（支持宽高）🆕全类型最大化/还原/关闭按钮 v1.17.2 | `tooltip: true` |
+| `[文本](tooltip:iframe:url)<宽,高>` | 嵌入页面悬浮提示（支持宽高）🆕全类型最大化/还原/关闭按钮 v1.17.27 | `tooltip: true` |
 | `[文本](tooltip:html:#id)` | HTML DOM 元素悬浮提示 | `tooltip: true` |
 | `[文本](tooltip:iframe:pre#id)` | 代码块内容悬浮预览 ⭐v1.14 | `tooltip: true` |
 | 固定宽高自动滚动 | 设置宽高后超出内容自动显示滚动条 🆕v1.17 | `tooltip: true` |
@@ -183,10 +224,10 @@ xfEditor 支持 **40+ 种语法和功能**，远超标准 Markdown。以下为�
 |------|------|------|
 | `[[copybookTian]]...[[/copybookTian]]` | 田字格字帖 | `copybook: true` |
 | `[[copybookMi]]...[[/copybookMi]]` | 米字格字帖 | `copybook: true` |
-| `[[copybookPinyin]]...[[/copybookPinyin]]` | 拼音格字帖 🆕v1.17.8 | `copybook: true` |
-| `{汉字\|拼音}` 花括号语法 | 拼音格内嵌写法（推荐）🆕v1.17.8 | `copybook: true` |
-| `(!width:NNN)` | 行级宽度参数，两端对齐 🆕v1.17.8 | `copybook: true` |
-| `[^name]` 字帖脚注 | 字帖/拼音格内脚注引用 🆕v1.17.8 | `footnote: true` |
+| `[[copybookPinyin]]...[[/copybookPinyin]]` | 拼音格字帖 🆕v1.17.27 | `copybook: true` |
+| `{汉字\|拼音}` 花括号语法 | 拼音格内嵌写法（推荐）🆕v1.17.27 | `copybook: true` |
+| `(!width:NNN)` | 行级宽度参数，两端对齐 🆕v1.17.27 | `copybook: true` |
+| `[^name]` 字帖脚注 | 字帖/拼音格内脚注引用 🆕v1.17.27 | `footnote: true` |
 
 ### 🎬 多媒体与附件
 | 语法 | 说明 | 配置 |
@@ -199,7 +240,7 @@ xfEditor 支持 **40+ 种语法和功能**，远超标准 Markdown。以下为�
 ### 🔧 编辑器功能
 | 功能 | 说明 | 配置 |
 |------|------|------|
-| 同步滚动 | 编辑区与预览区双向同步滚动，基于区块签名精准定位 🆕v1.17.1 | `syncScroll: true` |
+| 同步滚动 | 编辑区与预览区双向同步滚动，基于区块签名精准定位 🆕v1.17.27 | `syncScroll: true` |
 | 表格行列编辑 | 预览区点击单元格插入/删除行列 | `tableEdit: true` |
 | 图片尺寸编辑 | 拖拽+精确输入图片尺寸 | `imageResize: true` |
 | 代码复制按钮 | 代码块右上角一键复制 | 默认 |
@@ -245,7 +286,7 @@ xfEditor 支持 **40+ 种语法和功能**，远超标准 Markdown。以下为�
 - 支持 AMD/CMD 模块加载（Require.js / Sea.js）
 - 兼容 IE8+、iPad、Zepto.js
 
-### v1.17.10 改进 🆕
+### v1.17.27 改进 🆕
 | 特性 | 说明 |
 |------|------|
 | **🔄 同步滚动引擎全面重写** | 统一 `_syncState` 状态管理对象（取代散落的 `_scrollAnimation`、`_syncScrollActive` 等标志）；**程序化滚动识别**（`programmaticScroll` 标记）精确区分用户滚动和代码触发滚动，消除反馈循环；**门控优先级体系**（suppressAllSync → programmaticScroll → disablePreviewListener → applyingDomChanges → mouseTarget）确保各方向互不干扰 |
@@ -255,14 +296,14 @@ xfEditor 支持 **40+ 种语法和功能**，远超标准 Markdown。以下为�
 | **🛡 表格编辑同步防护** | `modifyTableInMarkdown` 同步添加 `suspendSyncScroll` / `resumeSyncScroll` 保护（与图片缩放一致） |
 | **📐 滚动定位强化** | `scrollToLineNum()` 使用 `programmaticScroll` 标记防止 smooth 滚动触发反向同步；动画使用 `programmaticScroll` + 延迟清除（50ms后）防止动画帧间的 scroll 事件触发循环 |
 
-### v1.17.3 改进
+### v1.17.27 改进
 | 特性 | 说明 |
 |------|------|
 | **🔄 同步滚动彻底修复（标题锚点重写）** | 移除简单的 `lineRatio * blockCount` 比例映射，改用标题锚点映射引擎：解析 markdown 源码中所有标题行号 + 预览 DOM 标题元素按序配对 → 构造 `editorLine ↔ previewElement` 双向映射表；编辑→预览方向在相邻标题锚点间线性插值精确计算目标滚动位置；预览→编辑方向直接找到视口内可见标题锚点对应的编辑器行号；无标题文档自动回退到比例 + 二分查找；新增 `_buildHeadingAnchorMap()` 实例方法供 `bindSyncScroll` 和 `scrollToLineNum` 共用 |
 | **📜 预览区滚动现在可同步编辑区** | 修复预览区 `scroll` 事件可能不在 `previewContainer` 上触发的问题：使用 `_findScrollContainer` 自动检测真实滚动容器并绑定双保险监听器（容器 + previewContainer）；`unbindSyncScroll` 同步清理所有监听器 |
 | **⚡ 锚点缓存与失效** | 内容不变时缓存锚点映射避免重复构建（内容指纹匹配）；`wheel`/滚动条拖拽（`mousedown`）时自动失效重建 |
 
-### v1.17.2 改进
+### v1.17.27 改进
 | 特性 | 说明 |
 |------|------|
 | **🔗 同步滚动引擎增强** | 编辑→预览方向升级为可见行范围映射（`lineAtHeight`），比纯滚动比例更精准；新增 `easeInOutCubic` 缓动动画替代线性步进；预览→编辑方向使用二分查找定位可见区块（O(log n)）；新增滚动条拖拽检测，拖拽时自动暂停动画；所有方向添加 30ms 防抖（`SYNC_DEBOUNCE`）避免高频计算；`addBlockSignatures()` 扩展支持 `li, section, article, header, footer, nav, dl` 等更多块级元素 |
@@ -270,16 +311,16 @@ xfEditor 支持 **40+ 种语法和功能**，远超标准 Markdown。以下为�
 | **🔗 链接跳转方式** | 新增链接跳转方式选择（新页面/当前页面/父窗口/顶层窗口）；支持扩展语法 `[text](url){target=_blank}` → 渲染为 `target="_blank"`；新增 `preprocessLinkTarget()` 预处理函数在所有渲染管线中统一处理 |
 | **🖱 悬浮提示增强** | 最大化/还原按钮现在适用于所有 tooltip 类型（不仅是 iframe）；最大化后点击还原正确恢复到原始尺寸（包括自适应状态）；图标区分：最大化 `□` → 还原 `❐`；还原时内部内容元素样式完整恢复 |
 | **📐 块签名系统增强** | `addBlockSignatures()` 扩展支持更多块级元素标签；新增 `data-sign-count` 属性记录总块数用于边界计算 |
-| **📦 构建与文档** | 所有 .js/.css .min 文件重新编译压缩至 v1.17.2；README、USAGE_GUIDE 更新至最新版本；`xf_editor.amd.js` 通过 `build-amd.js` 同步更新 |
+| **📦 构建与文档** | 所有 .js/.css .min 文件重新编译压缩至 v1.17.27；README、USAGE_GUIDE 更新至最新版本；`xf_editor.amd.js` 通过 `build-amd.js` 同步更新 |
 
-### v1.17.1 改进
+### v1.17.27 改进
 | 特性 | 说明 |
 |------|------|
 | **🔗 同步滚动引擎重写** | 参照 Tencent/cherry-markdown 设计，完全重写同步滚动引擎。新增 `data-sign` 块签名系统实现编辑区行号 ↔ 预览区块的精准双向映射；`requestAnimationFrame` 缓动动画（~200ms）替代即时跳转；滚轮事件中断动画并恢复用户控制；`_applyingDomChanges` 锁防止 DOM 更新期间反向同步；新增 `scrollToLineNum(lineNum, linePercent)` API 支持编程式精确定位 |
 | **📐 区块签名系统** | 新增 `addBlockSignatures()` 后处理函数，为预览区每个块级元素（h1-h6, p, pre, blockquote, ul, ol, table, div 等）注入 `data-sign="block-N"` 属性，使滚动映射精度达到块级别 |
 | **🛡 锁机制增强** | 三重防抖锁：`disableScrollListener`（动画期间）、`_applyingDomChanges`（DOM更新期间）、`_syncScrollActive`（鼠标区域追踪），彻底杜绝滚动死循环 |
 
-### v1.17.0 改进
+### v1.17.27 改进
 | 特性 | 说明 |
 |------|------|
 | **🔗 同步滚动** | 新增编辑区与预览区双向同步滚动功能，采用基于比例的同步算法；编辑区滚动时预览区按比例跟随，预览区滚动时编辑区同样跟随；通过鼠标位置追踪防止滚动死循环；默认启用 `syncScroll: true` |
@@ -287,7 +328,7 @@ xfEditor 支持 **40+ 种语法和功能**，远超标准 Markdown。以下为�
 | **📐 栅格布局完善** | 补全 `.xf_editor-row` 和 `.xf_editor-col` 的 CSS 样式（flex 布局、列间距、边框分隔等）；空行（无 col 的 row）显示警告占位提示；列宽最小值从 0 提升至 1% 防止不可见列；修复 `[[columns:0]]` 被错误解析为 3 列的问题 |
 | **🎨 SCSS/CSS 重构** | `xf_editor.grid.scss` 新增 row/col 样式定义；`xf_editor.preview.scss` 新增 Tooltip 最大化/关闭按钮样式；所有 CSS 重新编译压缩 |
 | **🔧 系统审计** | 全面检查栅格化语法和所有复杂嵌套语法的边界问题；`findBalancedBlocks` 性能验证通过；占位符 ID 跨层级无冲突验证；空值安全保护增强 |
-| **📦 构建产物** | 所有 .js/.css 和 .min 版本已重新编译压缩至 v1.17.0；版本号统一更新；更新 README、USAGE_GUIDE 文档及所有示例文件 |
+| **📦 构建产物** | 所有 .js/.css 和 .min 版本已重新编译压缩至 v1.17.27；版本号统一更新；更新 README、USAGE_GUIDE 文档及所有示例文件 |
 
 ### v1.16.0 改进
 | 特性 | 说明 |
@@ -969,7 +1010,7 @@ $$
 [[/copybookPinyin]]
 ```
 
-**拼音格 — 花括号语法 + 宽度参数** 🆕v1.17.8（推荐用于古诗文对齐）：
+**拼音格 — 花括号语法 + 宽度参数** 🆕v1.17.27（推荐用于古诗文对齐）：
 ```markdown
 [[copybookPinyin]]
 {春眠不觉晓|chūn mián bù jué xiǎo}(!width:125)
@@ -979,7 +1020,7 @@ $$
 [[/copybookPinyin]]
 ```
 
-**字帖内嵌脚注** 🆕v1.17.8：
+**字帖内嵌脚注** 🆕v1.17.27：
 ```markdown
 [[copybookPinyin]]
 {春眠不觉[^jue]晓|chūn mián bù jué xiǎo}(!width:125)
@@ -1303,7 +1344,7 @@ $(element).off("click");
 ---
 
 **最后更新**: 2026-07-01
-**版本**: v1.17.10
+**版本**: v1.17.27
 
 ### 最新优化 (2026-07-01)
 

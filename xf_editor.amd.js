@@ -1,4 +1,4 @@
-/* xfEditor v1.17.22 | xf_editor.js | MIT License | 2026-07-02 */
+/* xfEditor v1.17.27 | MIT License | 2026-07-03 */
 ;(function(factory) {
     "use strict";
 
@@ -84,7 +84,7 @@
     };
     
     xfEditor.title        = xfEditor.$name = "xfEditor";
-    xfEditor.version      = "1.17.22";
+    xfEditor.version      = "1.17.27";
     xfEditor.homePage     = "https://github.com/zhaoxianfang/xfeditor";
     xfEditor.classPrefix  = "xf_editor-";
     
@@ -105,16 +105,11 @@
     xfEditor.escapeHTML = xfEditor.escapeHtml;
     
     /**
-     * HTML 属性值转义（仅转义引号相关，保留 &<> 供 link href 等场景使用）
+     * HTML 属性值转义（与 escapeHtml 行为一致，转义所有特殊字符）
+     * 提供独立函数名以便语义区分（'escapeAttr' 用于属性值上下文）
+     * ★ v1.17.24: 修正注释，实际转义行为与 escapeHtml 一致
      */
-    xfEditor.escapeAttr = function(str) {
-        if (str == null || typeof str !== "string") return "";
-        return str.replace(/&/g, "&amp;")
-                  .replace(/"/g, "&quot;")
-                  .replace(/'/g, "&#39;")
-                  .replace(/</g, "&lt;")
-                  .replace(/>/g, "&gt;");
-    };
+    xfEditor.escapeAttr = xfEditor.escapeHtml;
     
     /**
      * Base64 编码（UTF-8 安全），用于在 HTML 属性中存储含特殊字符的内容
@@ -476,10 +471,7 @@
                 "page-a5"        : "插入A5页面",
                 "insert-flowchart" : "插入流程图",
                 "insert-sequence"  : "插入时序图",
-                "page"             : "页面尺寸",
-                "page-a3"          : "插入A3页面",
-                "page-a4"          : "插入A4页面",
-                "page-a5"          : "插入A5页面"
+                "page"             : "页面尺寸"
             },
             buttons : {
                 enter  : "确定",
@@ -571,6 +563,26 @@
     };
 
     xfEditor.dialogZindex = 99999;
+    
+    /**
+     * ★ v1.17.24: 统一日志辅助方法，避免 console.warn/error 守卫重复
+     * @private
+     */
+    xfEditor._warn = function() {
+        if (typeof console !== "undefined" && console.warn) {
+            console.warn.apply(console, arguments);
+        }
+    };
+    xfEditor._error = function() {
+        if (typeof console !== "undefined" && console.error) {
+            console.error.apply(console, arguments);
+        }
+    };
+    xfEditor._log = function() {
+        if (typeof console !== "undefined" && console.log) {
+            console.log.apply(console, arguments);
+        }
+    };
     
     xfEditor.$katex       = null;
     xfEditor.$marked      = null;
@@ -807,11 +819,7 @@
             var loadPath     = settings.path;
                                 
             var onEditorReady = function() {
-                if (xfEditor.isIE8) 
-                {
-                    _this.loadedDisplay();
-                    return ;
-                }
+                // ★ v1.17.24: 移除已失效的 IE8 分支
                 _this.loadedDisplay();
             };
 
@@ -1063,7 +1071,8 @@
          */
         
         setCodeMirrorOption : function(key, value) {
-            
+            // ★ v1.17.25: 添加 null 守卫，防止编辑器未初始化时崩溃
+            if (!this.cm) return this;
             this.cm.setOption(key, value);
             
             return this;
@@ -1090,6 +1099,8 @@
          */
         
         removeKeyMap : function(map) {
+            // ★ v1.17.25: 添加 null 守卫
+            if (!this.cm) return this;
             this.cm.removeKeyMap(map);
             
             return this;
@@ -1113,6 +1124,8 @@
             }
             
             var cm       = this.cm;
+            // ★ v1.17.25: 添加 null 守卫，防止编辑器未初始化时崩溃
+            if (!cm) return this;
             var editor   = this.editor;
             var count    = cm.lineCount();
             var preview  = this.preview;
@@ -1769,7 +1782,7 @@
                 _this.hideInfoDialog();
             });
             
-            infoDialog.css("border", (xfEditor.isIE8) ? "1px solid #ddd" : "").css("z-index", xfEditor.dialogZindex).show();
+            infoDialog.css("z-index", xfEditor.dialogZindex).show();
             
             this.infoDialogPosition();
 
@@ -1907,32 +1920,9 @@
          * @returns {xfEditor}             返回xfEditor的实例对象
          */
         
-        previewCodeHighlight : function() {    
-            var settings         = this.settings;
-            var previewContainer = this.previewContainer;
-            
-            if (settings.previewCodeHighlight) 
-            {
-                // ★ v1.17.16: 使用 extractCodeText 提取原始代码（保留缩进/换行/空格）
-                previewContainer.find("pre").each(function() {
-                    var $pre = $(this);
-                    var $code = $pre.find("code");
-                    if ($code.length > 0 && $pre.data("_originalCode") === undefined) {
-                        $pre.data("_originalCode", xfEditor.extractCodeText($code));
-                    }
-                });
-                
-                previewContainer.find("pre").addClass("prettyprint linenums");
-                
-                if (typeof prettyPrint !== "undefined")
-                {                    
-                    prettyPrint();
-                }
-            }
-
-            // 向所有 pre 代码块注入复制按钮
-            this.initCodeCopy(previewContainer);
-
+        previewCodeHighlight : function() {
+            // ★ v1.17.23: 委托给统一静态方法
+            xfEditor._previewCodeHighlight(this.previewContainer, this.settings);
             return this;
         },
         
@@ -1944,77 +1934,8 @@
          * @returns {xfEditor}
          */
         initCodeCopy : function($container) {
-            var classPrefix = this.classPrefix;
-            var copyText    = "复制";
-            var copiedText  = "已复制";
-            var failedText  = "复制失败";
-
-            $container.find("pre").each(function() {
-                var $pre = $(this);
-
-                // 避免重复创建
-                if ($pre.data("_copyBtnReady")) return;
-                $pre.data("_copyBtnReady", true);
-
-                // 确保 pre 元素为 relative 定位
-                if ($pre.css("position") === "static") {
-                    $pre.css("position", "relative");
-                }
-
-                var $btn = $("<span>")
-                    .addClass(classPrefix + "code-copy-btn")
-                    .text(copyText)
-                    .attr("title", copyText);
-
-                $btn.on("click", function(e) {
-                    e.stopPropagation();
-                    e.preventDefault();
-
-                    if ($btn.hasClass("copied") || $btn.hasClass("failed")) return;
-
-                    // ★ v1.17.17: 优先读取存储的原始代码，fallback 用 extractCodeText 保留完整格式
-                    var code = $pre.data("_originalCode");
-                    if (!code) {
-                        var $code = $pre.find("code");
-                        code = $code.length > 0
-                            ? xfEditor.extractCodeText($code)
-                            : xfEditor.extractCodeText($pre.clone().find("." + classPrefix + "code-copy-btn").remove().end());
-                    }
-
-                    var done = function(success) {
-                        $btn.removeClass("copied failed")
-                            .addClass(success ? "copied" : "failed")
-                            .text(success ? copiedText : failedText);
-                        clearTimeout($btn.data("_timer"));
-                        $btn.data("_timer", setTimeout(function() {
-                            $btn.removeClass("copied failed").text(copyText);
-                        }, 2500));
-                    };
-
-                    if (navigator.clipboard && navigator.clipboard.writeText) {
-                        navigator.clipboard.writeText(code).then(function() {
-                            done(true);
-                        }).catch(function() { done(false); });
-                    } else {
-                        var textarea = document.createElement("textarea");
-                        textarea.value = code;
-                        textarea.style.position = "fixed";
-                        textarea.style.left = "-9999px";
-                        textarea.style.top = "-9999px";
-                        document.body.appendChild(textarea);
-                        textarea.focus();
-                        textarea.select();
-                        try {
-                            var ok = document.execCommand("copy");
-                            done(ok);
-                        } catch (ex) { done(false); }
-                        document.body.removeChild(textarea);
-                    }
-                });
-
-                $pre.append($btn);
-            });
-
+            // ★ v1.17.24: 委托给统一静态方法，消除 ~73 行重复代码
+            xfEditor.initCodeCopy($container);
             return this;
         },
         
@@ -2026,40 +1947,9 @@
          */
         
         katexRender : function() {
-            
-            // 仅在编辑器实例尚未初始化完成且非异步回调时跳过
-            // 异步加载回调中 timer 可能尚未赋值，这种情况下应继续渲染
-            if (this.timer === null && typeof xfEditor.$katex === "undefined")
-            {
-                return this;
-            }
-            
-            var _this = this;
-            this.previewContainer.find("." + xfEditor.classNames.tex).each(function(){
-                var tex  = $(this);
-                var texCode = tex.text().trim();
-                // 自动检测 displayMode：公式含 \begin{...}（矩阵、行列式等）使用块级模式
-                var isBlock = /^\\begin\{/.test(texCode);
-                xfEditor.$katex.render(texCode, tex[0], { throwOnError: false, displayMode: isBlock });
-                
-                // 双击公式可定位到源码中进行编辑
-                tex.attr("title", "双击编辑公式").css("cursor", "pointer");
-                tex.off("dblclick.xf_editor-tex").on("dblclick.xf_editor-tex", function() {
-                    var cm = _this.cm;
-                    var markdown = cm.getValue();
-                    var searchPattern = texCode.indexOf("\n") >= 0 ? 
-                        "$$" + texCode + "$$" : 
-                        "$$" + texCode + "$$";
-                    var idx = markdown.indexOf(searchPattern);
-                    if (idx >= 0) {
-                        var line = markdown.substr(0, idx).split("\n").length - 1;
-                        var ch = idx - markdown.lastIndexOf("\n", idx) - 1;
-                        cm.setCursor({line: line, ch: ch});
-                        cm.focus();
-                    }
-                });
-            });   
-
+            // ★ v1.17.23: 委托给统一静态方法（编辑器模式，启用双击编辑定位）
+            if (this.timer === null && typeof xfEditor.$katex === "undefined") return this;
+            xfEditor._renderKatex(this.previewContainer, this.settings, true, this);
             return this;
         },
         
@@ -2071,31 +1961,13 @@
          */
         
         flowChartAndSequenceDiagramRender : function() {
-            var $this            = this;
-            var settings         = this.settings;
-            var previewContainer = this.previewContainer;
-            
-            if (xfEditor.isIE8) {
-                return this;
-            }
-
-            if (settings.flowChart) {
-                if (this.flowchartTimer === null) {
-                    // 异步加载尚未完成，跳过流程图渲染
-                } else {
-                    previewContainer.find(".flowchart").flowChart();
-                }
-            }
-
-            if (settings.sequenceDiagram) {
-                // 时序图只依赖 raphael + sequence-diagram，不依赖 flowchartTimer
-                // 如果 flowchartTimer 为 null 但 flowchart 未开启，不会进入上面分支
-                // 时序图库可能已通过其他方式加载，尝试渲染
-                if (typeof Diagram !== "undefined" || (this.flowchartTimer !== null)) {
-                    previewContainer.find(".sequence-diagram").sequenceDiagram({theme: "simple"});
-                }
-            }
-                    
+            // ★ v1.17.23: 委托给统一静态方法
+            var settings = this.settings;
+            var prev = this.previewContainer;
+            var instanceOk = this.flowchartTimer !== null;
+            if (settings.flowChart && !instanceOk) return this;
+            if (settings.sequenceDiagram && (typeof Diagram === "undefined" && !instanceOk)) return this;
+            xfEditor._renderFlowChart(prev, settings);
             return this;
         },
         
@@ -3243,323 +3115,24 @@
          * Initialize ECharts in preview area
          */
         initECharts : function() {
-            var previewContainer = this.previewContainer;
-            var editorTheme    = this.settings.theme;
-
-            previewContainer.find(".xf_editor-echarts").each(function() {
-                var $chart = $(this);
-                if ($chart.attr("data-initialized") === "true") {
-                    return;
-                }
-
-                if ($chart.is(":hidden") || $chart.width() === 0 || $chart.height() === 0) {
-                    return;
-                }
-
-                var config = {};
-                try {
-                    config = JSON.parse($chart.attr("data-config"));
-                } catch(e) {
-                    return;
-                }
-
-                if (typeof echarts !== "undefined") {
-                    try {
-                        // 主题优先级：用户显式设置 > 编辑器主题 > 无主题(默认)
-                        var chartTheme = config.theme || editorTheme || undefined;
-                        var chartInstance = echarts.init(this, chartTheme);
-                        var option = {
-                            title: config.title || {},
-                            tooltip: config.tooltip || {},
-                            series: config.series || []
-                        };
-                        // 只在显式定义时添加 legend/radar，避免空对象干扰无坐标轴图表
-                        if (config.legend !== undefined) option.legend = config.legend;
-                        if (config.radar !== undefined) option.radar = config.radar;
-
-                        var chartType = config.type || (config.series && config.series[0] && config.series[0].type) || "";
-                        var noAxisTypes = ["pie", "funnel", "gauge", "graph", "treemap", "sunburst", "tree"];
-                        if (noAxisTypes.indexOf(chartType) === -1) {
-                            option.xAxis = config.xAxis || {};
-                            option.yAxis = config.yAxis || {};
-                        }
-
-                        // 智能 tooltip 默认值：无坐标轴类型使用 item，有坐标轴使用 axis
-                        if (config.tooltip === undefined) {
-                            var hasAxis = (noAxisTypes.indexOf(chartType) === -1);
-                            option.tooltip = { trigger: hasAxis ? "axis" : "item" };
-                        }
-                        // 传入其他常用顶级配置
-                        if (config.backgroundColor !== undefined) option.backgroundColor = config.backgroundColor;
-                        if (config.grid !== undefined) option.grid = config.grid;
-                        if (config.dataZoom !== undefined) option.dataZoom = config.dataZoom;
-                        if (config.visualMap !== undefined) option.visualMap = config.visualMap;
-                        if (config.toolbox !== undefined) option.toolbox = config.toolbox;
-                        chartInstance.setOption(option);
-                        // 确保图表在容器内正确渲染
-                        chartInstance.resize();
-                        $chart.attr("data-initialized", "true");
-                    } catch(e) {
-                        // 图表初始化失败（如主题未注册等），静默跳过
-                        if (typeof console !== "undefined" && console.warn) {
-                            console.warn("[xfEditor] ECharts init failed:", e.message);
-                        }
-                    }
-
-                    // 使用命名空间+debounce避免累积大量 resize handler
-                    // 每个 chart instance 只绑定一次 resize
-                    if (!$chart.attr("data-resize-bound")) {
-                        $chart.attr("data-resize-bound", "true");
-                        var resizeTimer = null;
-                        // 使用 chart id 作为命名空间后缀，便于清理（destroy 时统一解绑）
-                        var ecNsId = $chart.attr("id") || ("ec-" + Date.now());
-                        $(window).on("resize.xf_editor-echarts." + ecNsId, function() {
-                            if (resizeTimer) clearTimeout(resizeTimer);
-                            resizeTimer = setTimeout(function() {
-                                chartInstance.resize();
-                            }, 150);
-                        });
-                    }
-                }
-            });
+            // ★ v1.17.23: 委托给统一静态方法
+            xfEditor._initECharts(this.previewContainer, this.settings, this.settings.theme);
         },
         
         /**
          * Initialize Tabs in preview area
          */
         initTabs : function() {
-            var _this       = this;
-            var previewContainer = this.previewContainer;
-            
-            // 边界检查：确保预览容器存在
-            if (!previewContainer || !previewContainer.length) {
-                if (typeof console !== "undefined" && console.warn) {
-                    console.warn("[xfEditor] initTabs: Preview container not found");
-                }
-                return;
-            }
-            
-            /**
-             * 当标签页面板变为可见时，重新初始化之前因 display:none
-             * 而被跳过的 ECharts 图表。
-             */
-            function reInitHiddenContent($panel) {
-                // 边界检查：确保面板有效
-                if (!$panel || !$panel.length) return;
-                
-                // 重新初始化 ECharts
-                $panel.find(".xf_editor-echarts").each(function() {
-                    var $chart = $(this);
-                    // 已经初始化过的跳过
-                    if ($chart.attr("data-initialized") === "true") return;
-                    // 仍然隐藏或零尺寸的跳过
-                    if ($chart.is(":hidden") || $chart.width() === 0 || $chart.height() === 0) return;
-
-                    var config = {};
-                    try {
-                        config = JSON.parse($chart.attr("data-config"));
-                    } catch(e) { return; }
-
-                    if (typeof echarts !== "undefined") {
-                        try {
-                            var chartTheme2 = config.theme || _this.settings.theme || undefined;
-                            var chartInstance2 = echarts.init(this, chartTheme2);
-                            var option2 = {
-                                title: config.title || {},
-                                tooltip: config.tooltip || {},
-                                series: config.series || []
-                            };
-                            if (config.legend !== undefined) option2.legend = config.legend;
-                            if (config.radar !== undefined) option2.radar = config.radar;
-                            var chartType2 = config.type || (config.series && config.series[0] && config.series[0].type) || "";
-                            var noAxisTypes2 = ["pie", "funnel", "gauge", "graph", "treemap", "sunburst", "tree"];
-                            if (noAxisTypes2.indexOf(chartType2) === -1) {
-                                option2.xAxis = config.xAxis || {};
-                                option2.yAxis = config.yAxis || {};
-                            }
-                            if (config.tooltip === undefined) {
-                                var hasAxis2 = (noAxisTypes2.indexOf(chartType2) === -1);
-                                option2.tooltip = { trigger: hasAxis2 ? "axis" : "item" };
-                            }
-                            if (config.backgroundColor !== undefined) option2.backgroundColor = config.backgroundColor;
-                            if (config.grid !== undefined) option2.grid = config.grid;
-                            if (config.dataZoom !== undefined) option2.dataZoom = config.dataZoom;
-                            if (config.visualMap !== undefined) option2.visualMap = config.visualMap;
-                            if (config.toolbox !== undefined) option2.toolbox = config.toolbox;
-                            chartInstance2.setOption(option2);
-                            chartInstance2.resize();
-                            $chart.attr("data-initialized", "true");
-                        } catch(e) {
-                            if (typeof console !== "undefined" && console.warn) {
-                                console.warn("[xfEditor] ECharts tab-reinit failed:", e.message);
-                            }
-                        }
-                        if (!$chart.attr("data-resize-bound")) {
-                            $chart.attr("data-resize-bound", "true");
-                            var resizeTimer2 = null;
-                            var ecNsId2 = $chart.attr("id") || ("ec2-" + Date.now());
-                            $(window).on("resize.xf_editor-echarts." + ecNsId2, function() {
-                                if (resizeTimer2) clearTimeout(resizeTimer2);
-                                resizeTimer2 = setTimeout(function() {
-                                    chartInstance2.resize();
-                                }, 150);
-                            });
-                        }
-                    }
-                });
-
-                // 重新渲染 KaTeX 公式（虽然 KaTeX 在隐藏元素中也能正常渲染，
-                // 但有些浏览器可能在元素变为可见时需要重新布局）
-                if (_this.settings.tex && typeof xfEditor.$katex !== "undefined") {
-                    $panel.find(".xf_editor-tex").each(function() {
-                        var $tex = $(this);
-                        if ($tex.attr("data-initialized") === "true") return;
-                        $tex.attr("data-initialized", "true");
-                    });
-                }
-
-                // 重新渲染流程图和时序图（在隐藏面板中 SVG 尺寸为零）
-                if (_this.settings.flowChart) {
-                    $panel.find(".flowchart").each(function() {
-                        var $fc = $(this);
-                        if ($fc.attr("data-fc-initialized") === "true") return;
-                        // 确保元素可见且容器有尺寸
-                        if ($fc.is(":hidden") || $fc.width() === 0) return;
-                        try {
-                            $fc.flowChart();
-                            $fc.attr("data-fc-initialized", "true");
-                        } catch(e) {
-                            if (typeof console !== "undefined" && console.warn) console.warn("[xfEditor] FlowChart re-render failed:", e);
-                        }
-                    });
-                }
-                if (_this.settings.sequenceDiagram) {
-                    $panel.find(".sequence-diagram").each(function() {
-                        var $sd = $(this);
-                        if ($sd.attr("data-sd-initialized") === "true") return;
-                        if ($sd.is(":hidden") || $sd.width() === 0) return;
-                        try {
-                            $sd.sequenceDiagram({theme: "simple"});
-                            $sd.attr("data-sd-initialized", "true");
-                        } catch(e) {
-                            if (typeof console !== "undefined" && console.warn) console.warn("[xfEditor] SequenceDiagram re-render failed:", e);
-                        }
-                    });
-                }
-
-                // 重新高亮代码（prettify 在隐藏元素中可能不完整）
-                if (_this.settings.previewCodeHighlight && typeof prettyPrint !== "undefined") {
-                    $panel.find("pre.prettyprint").each(function() {
-                        var $pre = $(this);
-                        // 跳过已经包含 linenums 处理过的
-                        if ($pre.find("li").length > 0) return;
-                        prettyPrint();
-                    });
-                }
-
-                // 重新计算多栏布局分隔线（隐藏元素中尺寸可能为零）
-                if (_this.settings.columns) {
-                    $panel.find(".xf_editor-columns").each(function() {
-                        var $cols = $(this);
-                        if ($cols.attr("data-initialized") === "true") return;
-                        var count = parseInt($cols.attr("data-count"), 10) || 2;
-                        $cols.find(".xf_editor-column-divider").remove();
-                        for (var ci = 1; ci < count; ci++) {
-                            $cols.append('<div class="xf_editor-column-divider" style="position:absolute;top:8px;bottom:8px;width:0;transform:translateX(-50%);border-left:1px dashed #bbb;pointer-events:none;z-index:1"></div>');
-                        }
-                        $cols.attr("data-initialized", "true");
-                    });
-                }
-            }
-            
-            previewContainer.find(".xf_editor-tabs").each(function() {
-                var $tabs = $(this);
-                if ($tabs.attr("data-initialized") === "true") {
-                    return;
-                }
-                
-                var $nav = $tabs.find(".xf_editor-tab-nav");
-                var $body = $tabs.find(".xf_editor-tab-body");
-                
-                // 初次初始化时，对第一个（默认激活的）面板中的内容进行渲染
-                var $firstPanel = $body.find(".xf_editor-tab-panel.active");
-                if ($firstPanel.length > 0) {
-                    setTimeout(function() {
-                        reInitHiddenContent($firstPanel);
-                    }, 50);
-                }
-                
-                $nav.off("click", "li").on("click", "li", function() {
-                    var $li = $(this);
-                    var index = $li.attr("data-index");
-                    
-                    $nav.find("li").removeClass("active");
-                    $li.addClass("active");
-                    
-                    $body.find(".xf_editor-tab-panel").removeClass("active");
-                    var $panel = $body.find('.xf_editor-tab-panel[data-index="' + index + '"]');
-                    $panel.addClass("active");
-
-                    // 面板变为可见后，初始化其中被跳过的图表等内容
-                    setTimeout(function() {
-                        reInitHiddenContent($panel);
-                    }, 50);
-                });
-                
-                $tabs.attr("data-initialized", "true");
-            });
+            // ★ v1.17.23: 委托给统一静态方法（编辑器模式，面板切换时可重新可见内容初始化）
+            xfEditor._initTabs(this.previewContainer, this.settings, this);
         },
         
         /**
          * Initialize multi-column layout dividers in preview area
          */
         initColumns : function() {
-            var previewContainer = this.previewContainer;
-            
-            // 边界检查：确保预览容器存在
-            if (!previewContainer || !previewContainer.length) {
-                if (typeof console !== "undefined" && console.warn) {
-                    console.warn("[xfEditor] initColumns: Preview container not found");
-                }
-                return;
-            }
-
-            previewContainer.find(".xf_editor-columns").each(function() {
-                var $cols = $(this);
-                if ($cols.attr("data-initialized") === "true") {
-                    return;
-                }
-                
-                // 边界检查：确保列数有效
-                var count = parseInt($cols.attr("data-count"), 10) || 2;
-                if (count < 1 || count > 12) {
-                    if (typeof console !== "undefined" && console.warn) {
-                        console.warn("[xfEditor] Invalid column count: " + count + ", using default 2");
-                    }
-                    count = 2;
-                }
-
-                $cols.find(".xf_editor-column-divider").remove();
-                $cols.css("position", "relative");
-
-                for (var i = 1; i < count; i++) {
-                    var $divider = $('<div class="xf_editor-column-divider"></div>');
-                    $divider.css({
-                        position: "absolute",
-                        left: (i / count * 100) + "%",
-                        top: "8px",
-                        bottom: "8px",
-                        width: "0",
-                        transform: "translateX(-50%)",
-                        borderLeft: "1px dashed #bbb",
-                        pointerEvents: "none",
-                        zIndex: 1
-                    });
-                    $cols.append($divider);
-                }
-
-                $cols.attr("data-initialized", "true");
-            });
+            // ★ v1.17.23: 委托给统一静态方法
+            xfEditor._initColumns(this.previewContainer);
         },
 
         /**
@@ -3568,195 +3141,8 @@
          * Also sets up resize handler for responsive page splitting.
          */
         initPages : function() {
-            var previewContainer = this.previewContainer;
-            
-            // 边界检查：确保预览容器存在
-            if (!previewContainer || !previewContainer.length) {
-                if (typeof console !== "undefined" && console.warn) {
-                    console.warn("[xfEditor] initPages: Preview container not found");
-                }
-                return;
-            }
-
-            var pagePaperSizes = {
-                "A0": { w: 3179, h: 4494 },
-                "A1": { w: 2245, h: 3179 },
-                "A2": { w: 1587, h: 2245 },
-                "A3": { w: 1123, h: 1587 },
-                "A4": { w: 794,  h: 1123 },
-                "A5": { w: 559,  h: 794  },
-                "A6": { w: 397,  h: 559  },
-                "A7": { w: 280,  h: 397  },
-                "A8": { w: 198,  h: 280  },
-                "AN": { w: 794, h: 1123 },      // AN 纸张（等同于 A4）
-                "LETTER": { w: 816, h: 1056 },
-                "LEGAL":  { w: 816, h: 1344 }
-            };
-
-            /**
-             * Split overflowing page content into multiple pages
-             * @param {jQuery} $pageBlock - The .xf_editor-page-block element
-             */
-            /**
-             * Process page footer template - replace {page}, {total} placeholders
-             * @param {string} template - Footer template string
-             * @param {number} pageNum - Current page number
-             * @param {number} totalPages - Total page count
-             * @returns {string} Processed footer text
-             */
-            function processFooterTemplate(template, pageNum, totalPages) {
-                if (!template) return "";
-                return template
-                    .replace(/\{page\}/gi, pageNum)
-                    .replace(/\{total\}/gi, totalPages);
-            }
-
-            /**
-             * Split overflowing page content into multiple pages
-             * @param {jQuery} $pageBlock - The .xf_editor-page-block element
-             */
-            function splitPageContent($pageBlock) {
-                // 边界检查：确保元素有效
-                if (!$pageBlock || !$pageBlock.length) return;
-                
-                // Skip already split pages
-                if ($pageBlock.attr("data-split") === "true") return;
-
-                var paperKey = $pageBlock.attr("data-paper") || "A4";
-                
-                // 验证纸张类型
-                if (!pagePaperSizes[paperKey.toUpperCase()]) {
-                    if (typeof console !== "undefined" && console.warn) {
-                        console.warn("[xfEditor] Unknown paper size: " + paperKey + ", using A4");
-                    }
-                    paperKey = "A4";
-                }
-                
-                var paperSize = pagePaperSizes[paperKey.toUpperCase()] || pagePaperSizes["A4"];
-                var pageContent = $pageBlock.find(".xf_editor-page-content");
-                
-                // 边界检查：确保内容区域存在
-                if (!pageContent.length) return;
-                
-                var watermark = $pageBlock.find(".xf_editor-page-watermark").detach();
-                var headerEl = $pageBlock.find(".xf_editor-page-header");
-                var footerEl = $pageBlock.find(".xf_editor-page-footer");
-                var headerText = headerEl.length ? headerEl.text() : "";
-                var footerTemplate = footerEl.length ? footerEl.attr("data-footer-template") || "" : "";
-
-                if (pageContent.length === 0) return;
-
-                // Calculate header/footer heights for content area adjustment
-                var headerHeight = headerEl.length ? headerEl.outerHeight(true) : 0;
-                var footerHeight = footerEl.length ? 32 : 0; // Estimated footer height
-
-                var contentHeight = pageContent[0].scrollHeight;
-                var pageHeight = paperSize.h;
-
-                // Adjust available height for header/footer
-                var pageInnerPadding = 96 + headerHeight + footerHeight; // top(48) + bottom(48) + header + footer
-
-                // If content fits in one page, just ensure proper sizing and set page number
-                if (contentHeight <= pageHeight - pageInnerPadding + 5) {
-                    $pageBlock.attr("data-split", "true");
-                    $pageBlock.attr("data-page", "1");
-                    $pageBlock.attr("data-total", "1");
-                    // Set footer text for single page
-                    if (footerEl.length && footerTemplate) {
-                        footerEl.text(processFooterTemplate(footerTemplate, 1, 1));
-                    }
-                    return;
-                }
-
-                // Content overflows - need to split
-                var pageMargin = 4; // margin between pages
-                var containerWidth = paperSize.w;
-                var availableHeight = pageHeight - pageInnerPadding;
-
-                // Create a temporary measure container
-                var $measure = $('<div class="xf_editor-page-content" style="position:absolute;visibility:hidden;width:' + containerWidth + 'px;left:-9999px;"></div>');
-                $("body").append($measure);
-
-                // Clone child nodes into measure container one by one
-                var $clone = pageContent.clone();
-                $measure.append($clone);
-
-                var pages = [];
-                var currentPage = [];
-                var currentHeight = 0;
-
-                // Split child elements into pages
-                $clone.children().each(function() {
-                    var $child = $(this);
-                    var childHeight = $child.outerHeight(true) || 0;
-
-                    if (currentHeight + childHeight > availableHeight && currentPage.length > 0) {
-                        // Start a new page
-                        pages.push(currentPage);
-                        currentPage = [];
-                        currentHeight = 0;
-                    }
-
-                    currentPage.push(this.outerHTML);
-                    currentHeight += childHeight;
-                });
-
-                if (currentPage.length > 0) {
-                    pages.push(currentPage);
-                }
-
-                // Clean up measure container
-                $measure.remove();
-
-                var totalPages = pages.length;
-
-                // Build page wrappers
-                if (totalPages <= 1) {
-                    $pageBlock.attr("data-split", "true");
-                    $pageBlock.attr("data-page", "1");
-                    $pageBlock.attr("data-total", "1");
-                    if (footerEl.length && footerTemplate) {
-                        footerEl.text(processFooterTemplate(footerTemplate, 1, 1));
-                    }
-                    return;
-                }
-
-                var resultHtml = "";
-                for (var i = 0; i < totalPages; i++) {
-                    var pageNum = i + 1;
-                    resultHtml += '<div class="xf_editor-page-block xf_editor-page-split" data-paper="' + paperKey + '" data-page="' + pageNum + '" data-total="' + totalPages + '" style="width:' + containerWidth + 'px;min-height:' + pageHeight + 'px;margin-bottom:' + pageMargin + 'px;">';
-                    
-                    // Add header to each page
-                    if (headerText) {
-                        resultHtml += '<div class="xf_editor-page-header">' + headerText + '</div>';
-                    }
-                    
-                    resultHtml += '<div class="xf_editor-page-content">' + pages[i].join("") + '</div>';
-                    
-                    // Add footer to each page with page number
-                    if (footerTemplate) {
-                        resultHtml += '<div class="xf_editor-page-footer">' + processFooterTemplate(footerTemplate, pageNum, totalPages) + '</div>';
-                    }
-                    
-                    // Add watermark to last page only
-                    if (i === totalPages - 1 && watermark.length) {
-                        resultHtml += '<div class="xf_editor-page-watermark">' + paperKey + '</div>';
-                    }
-                    resultHtml += '</div>';
-                }
-
-                // Replace original with split pages
-                var $newBlocks = $(resultHtml);
-                $pageBlock.replaceWith($newBlocks);
-
-                // Mark all new blocks as split
-                $newBlocks.attr("data-split", "true");
-            }
-
-            // Process all page blocks
-            previewContainer.find(".xf_editor-page-block").each(function() {
-                splitPageContent($(this));
-            });
+            // ★ v1.17.23: 委托给统一静态方法
+            xfEditor._initPages(this.previewContainer);
         },
 
         /**
@@ -4030,8 +3416,8 @@
          */
         
         getValue : function() {
-            if (!this.cm) return "";
-            return this.cm.getValue();
+            // ★ v1.17.24: 委托给 getMarkdown（两个方法功能完全一致）
+            return this.getMarkdown();
         },
 
         /**
@@ -4434,7 +3820,8 @@
                 
                 // 延迟恢复，让用户看到选中效果
                 setTimeout(function() {
-                    if (drafts[idx] && drafts[idx].content) {
+                    // ★ v1.17.25: 添加 _this.cm null 守卫，防止异步中编辑器被销毁
+                    if (drafts[idx] && drafts[idx].content && _this.cm) {
                         var editorScroll = _this.cm.getScrollInfo();
                         var previewScroll = _this.preview.scrollTop();
                         _this.cm.setValue(drafts[idx].content);
@@ -4636,31 +4023,8 @@
          * @returns {Object}
          */
         _buildRendererOptions : function(settings, overrides) {
-            return $.extend({
-                toc           : false,
-                tocm          : false,
-                tocStartLevel : 1,
-                taskList      : settings.taskList,
-                tex           : settings.tex,
-                pageBreak     : settings.pageBreak,
-                atLink        : settings.atLink,
-                emailLink     : settings.emailLink,
-                flowChart     : settings.flowChart,
-                sequenceDiagram : settings.sequenceDiagram,
-                previewCodeHighlight : settings.previewCodeHighlight,
-                pinyin             : settings.pinyin,
-                textAlign          : settings.textAlign,
-                imageResize        : settings.imageResize,
-                echarts            : settings.echarts,
-                tabs               : settings.tabs,
-                columns            : settings.columns,
-                grid               : settings.grid,
-                pageBlock          : settings.pageBlock,
-                tooltip            : settings.tooltip,
-                copybook           : settings.copybook,
-                video              : settings.video,
-                fileList           : settings.fileList
-            }, overrides || {});
+            // ★ v1.17.24: 委托给静态版本，消除重复代码
+            return xfEditor._buildRendererOptionsStatic(settings, overrides);
         },
 
         /**
@@ -4889,7 +4253,7 @@
                 c.push('.xf_editor-code-copy-btn:hover{color:#fff;border-color:rgba(255,255,255,0.4);background:rgba(255,255,255,0.22);}.xf_editor-code-copy-btn.copied{color:#4caf50;border-color:#4caf50;background:rgba(76,175,80,0.15);cursor:default;pointer-events:none;}.xf_editor-code-copy-btn.failed{color:#f44336;border-color:#f44336;background:rgba(244,67,54,0.15);cursor:default;pointer-events:none;}');
             }
             c.push('.xf_editor-html-preview li.task-list-item{list-style:none;}.xf_editor-html-preview li.task-list-item+li.task-list-item{margin-top:3px;}.xf_editor-html-preview .task-list-item-checkbox{float:left;margin:0.35em 0 0.25em -1.6em;vertical-align:middle;}');
-            c.push('.xf_editor-html-preview .flowchart,.xf_editor-html-preview .sequence-diagram{margin:0 auto;text-align:center;}.xf_editor-html-preview .flowchart svg,.xf_editor-html-preview .sequence-diagram svg{margin:0 auto;}.xf_editor-html-preview .flowchart text,.xf_editor-html-preview .sequence-diagram text{font-size:15px!important;}');
+            c.push('.xf_editor-html-preview .flowchart,.xf_editor-html-preview .sequence-diagram{margin:0 auto;text-align:center;max-width:100%;overflow-x:auto;}.xf_editor-html-preview .flowchart svg,.xf_editor-html-preview .sequence-diagram svg{max-width:none!important;height:auto!important;margin:0 auto;}.xf_editor-html-preview .flowchart text,.xf_editor-html-preview .sequence-diagram text{font-size:15px!important;}.xf_editor-html-preview .flowchart rect,.xf_editor-html-preview .flowchart path{stroke-width:1.5px!important;stroke:#555!important;}');
             // --- KaTeX 公式样式（完整官方 katex.min.css v0.16.9 + CDN 字体）---
             if (f.katex) {
                 // 完整嵌入官方 katex.min.css（~26KB），替代自写不完整 CSS
@@ -4933,15 +4297,16 @@
                 c.push('.xf_editor-copybook-row-justified{justify-content:space-between !important;gap:0 !important;}.xf_editor-copybook-row-justified .xf_editor-copybook-pinyin-cell{flex:1 1 0;min-width:36px;max-width:80px;}.xf_editor-copybook-row-justified .xf_editor-copybook-pinyin-cell:not(:last-child){margin-right:2px;}');
                 // ★ 字帖组级宽度容器（花括号/圆括号语法 + (!width:NNN)）
                 c.push('.xf_editor-copybook-group{display:inline-flex!important;flex-wrap:nowrap;align-items:stretch;vertical-align:top;overflow:hidden!important;}');
-                c.push('.xf_editor-copybook-group-pinyin{display:inline-flex!important;flex-wrap:nowrap;align-items:stretch;overflow:hidden!important;}');
-                c.push('.xf_editor-copybook-group-pinyin>.xf_editor-copybook-pinyin-cell{flex:1 1 0!important;min-width:0!important;width:auto!important;max-width:none!important;overflow:hidden!important;}');
+                // ★ v1.17.27: group-pinyin 使用 center+gap 代替 space-evenly，cell 固定 52px 保证正方形
+                c.push('.xf_editor-copybook-group-pinyin{display:inline-flex!important;flex-wrap:nowrap;align-items:stretch;justify-content:center;gap:2px;overflow:hidden!important;}');
+                c.push('.xf_editor-copybook-group-pinyin>.xf_editor-copybook-pinyin-cell{flex:0 0 auto!important;min-width:0!important;width:52px!important;max-width:52px!important;overflow:hidden!important;}');
                 c.push('.xf_editor-copybook-group-grid{display:inline-flex!important;flex-wrap:nowrap;align-items:stretch;overflow:hidden!important;}');
                 c.push('.xf_editor-copybook-group-grid>.xf_editor-copybook-grid-cell{flex:1 1 0!important;min-width:0!important;width:auto!important;max-width:none!important;overflow:hidden!important;}');
-                // ★ 行级宽容器 — 组保持其显式宽度，非组单元格均分剩余空间
-                c.push('.xf_editor-copybook-row-wide{display:flex!important;flex-wrap:nowrap;justify-content:flex-start;gap:4px!important;}');
-                c.push('.xf_editor-copybook-row-wide>.xf_editor-copybook-cell{flex:1 1 0;min-width:0;}');
-                // ★ 关键修复：组元素保持显式 width 内联样式（不增长不收缩），否则 flex-basis:0 会使 width:Npx 失效
-                c.push('.xf_editor-copybook-row-wide>.xf_editor-copybook-group{flex:0 0 auto!important;min-width:0;max-width:100%;}');
+                // ★ v1.17.26: 行级宽容器 — 组可收缩以适应屏幕宽度，非组单元格均分剩余空间
+                c.push('.xf_editor-copybook-row-wide{display:flex!important;flex-wrap:wrap;justify-content:center;gap:4px 8px!important;}');
+                c.push('.xf_editor-copybook-row-wide>.xf_editor-copybook-cell{flex:1 1 0;min-width:0;max-width:68px;}');
+                // ★ 组元素可收缩响应式布局，max-width 确保不超出容器
+                c.push('.xf_editor-copybook-row-wide>.xf_editor-copybook-group{flex:0 1 auto!important;min-width:0;max-width:100%;}');
             }
             return c.join('\n');
         },
@@ -5220,7 +4585,7 @@
             if (f.tooltip) {
             s.push('function base64Decode(str){try{return decodeURIComponent(Array.prototype.map.call(atob(str),function(c){return"%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2);}).join(""));}catch(e){return"";}}');
             s.push('function escapeHTML(s){if(s==null||typeof s!=="string")return"";var d=document.createElement("div");d.textContent=s;return d.innerHTML;}');
-            s.push('function escapeAttr(s){return String(s).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}');
+            s.push('function escapeAttr(s){return String(s).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\x27/g,"&#39;");}');
             s.push('');
             s.push('function buildIframeHTML(code,langCls){');
             s.push('  if(!code||!code.trim())return"<!DOCTYPE html><html><body></body></html>";');
@@ -5525,9 +4890,14 @@
             var markdownText = this.getMarkdown();
             var settings = this.settings;
             
-            if (this.previewContainer && this.previewContainer.html() && this.previewContainer.html().trim() !== '') {
-                rawHTML = this.previewContainer.html();
-            } else if (markdownText) {
+            // ★ v1.17.25: 优化为单次 .html() 调用
+            if (this.previewContainer) {
+                var currentHtml = this.previewContainer.html();
+                if (currentHtml && currentHtml.trim() !== '') {
+                    rawHTML = currentHtml;
+                }
+            }
+            if (!rawHTML && markdownText) {
                 var rendererOptions = this._buildRendererOptions(settings, {toc: false, tocm: false});
                 var markedOptions = {
                     renderer: xfEditor.markedRenderer([], rendererOptions),
@@ -5653,10 +5023,11 @@
                     
                     var m = line.match(mdHeadingRegex);
                     if (m) {
+                        // ★ v1.17.26: 防御 m[2] 可能为 undefined
                         editorHeadings.push({
                             line: i,
                             level: m[1].length,
-                            text: m[2].replace(/\{#[^\}]*\}/g, '').trim()
+                            text: (m[2] || '').replace(/\{#[^\}]*\}/g, '').trim()
                         });
                     }
                 }
@@ -5918,9 +5289,10 @@
                         if (inCodeBlock) continue;
                         var m = line.match(headingRegex);
                         if (m) {
+                            // ★ v1.17.26: 防御 m[2] 可能为 undefined
                             editorHeadings.push({
                                 line: i,
-                                text: m[2].replace(/\{#[^\}]*\}/g, '').trim()
+                                text: (m[2] || '').replace(/\{#[^\}]*\}/g, '').trim()
                             });
                         }
                     }
@@ -7331,7 +6703,7 @@
             // 16进制颜色值输入校验
             $panel.on("input", ".xf_editor-color-picker-hex-input", function() {
                 var input = $(this);
-                var val = input.val();
+                var val = input.val() || "";
                 if (val && val.charAt(0) !== "#") {
                     val = "#" + val;
                 }
@@ -7422,11 +6794,11 @@
             $(window).off(".xf_editor-auto");  // 匹配 xf_editor-auto 命名空间的元素级事件
 
             // 3b. 销毁所有 ECharts 实例并解绑其 resize 事件
-            if (this.previewContainer) {
+            // ★ v1.17.27: 修复 _echarts_instance 属性名不匹配导致 dispose 不生效
+            if (this.previewContainer && typeof echarts !== "undefined") {
                 this.previewContainer.find(".xf_editor-echarts").each(function() {
-                    var $chart = $(this);
-                    var instanceId = $chart.attr("_echarts_instance");
-                    if (instanceId && typeof echarts !== "undefined") {
+                    // echarts 4.x 在 DOM 上存储实例的属性为 _echarts_instance_（尾下划线）
+                    if (echarts.getInstanceByDom && echarts.getInstanceByDom(this)) {
                         try { echarts.dispose(this); } catch(ex) {}
                     }
                 });
@@ -8843,7 +8215,10 @@
         // 脚注引用：[^脚注名称]
         footnoteRef   : /\[\^([^\]]+)\]/g,
         // 脚注定义标记：[^脚注名称]:  -- 用于按行定位定义位置
-        footnoteDefAnchor : /^\[\^([^\]]+)\]:/gm
+        footnoteDefAnchor : /^\[\^([^\]]+)\]:/gm,
+        
+        // ★ v1.17.24: 视频文件扩展名检测，避免多处重复定义
+        videoExts : /\.(mp4|webm|ogv|mov)(\?.*)?$/i
     };
 
     /**
@@ -9400,7 +8775,7 @@
 
         // 将新的图片/视频尺寸语法转换为内联 HTML 以兼容 marked 渲染器
         if (options.imageResize !== false) {
-            var videoExts = /\.(mp4|webm|ogv|mov)(\?.*)?$/i;
+            var videoExts = xfEditor.regexs.videoExts;
             try {
                 markdown = markdown.replace(xfEditor.regexs.imageSizeNew, function(match, alt, url, w, h) {
                     // 边界检查：确保参数有效
@@ -10808,7 +10183,7 @@
             // 支持类型：text、image、iframe、html、iframe:pre（提取pre元素内容以iframe展示）
             // 新增 iframe:pre 类型：iframe:pre#id 或 iframe:pre.class 提取指定pre元素内容
             // 宽度和高度为可选参数
-            if (settings.tooltip && href.indexOf("tooltip:") === 0) {
+            if (settings.tooltip && href && href.indexOf("tooltip:") === 0) {
                 var tooltipBody = href.substring(8); // 去掉 "tooltip:" 前缀
                 var tooltipType = "text";
                 var tooltipContent = tooltipBody;
@@ -10866,10 +10241,11 @@
                 return '<span class="xf_editor-tooltip-trigger" ' + attrs + ' tabindex="0">' + text + '</span>';
             }
 
-            var videoExts = /\.(mp4|webm|ogv|mov)(\?.*)?$/i;
+            var videoExts = xfEditor.regexs.videoExts;
             var imageExts = /\.(jpg|jpeg|png|gif|bmp|webp)(\?.*)?$/i;
             
-            if (videoExts.test(href)) {
+            // ★ v1.17.25: 防御性检查 href
+            if (href && videoExts.test(href)) {
                 var videoOut = '<video src="' + safeHref + '" controls preload="metadata" class="xf_editor-video-player"';
                 if (title) videoOut += ' title="' + xfEditor.escapeAttr(title) + '"';
                 videoOut += '>' + text + '</video>';
@@ -10878,7 +10254,7 @@
             
             var out = "<a href=\"" + safeHref + "\"";
             
-            if (!imageExts.test(href)) {
+            if (href && !imageExts.test(href)) {
                 out += ' download class="xf_editor-attachment-link"';
             }
             
@@ -10934,8 +10310,9 @@
             var safeText  = xfEditor.escapeAttr(text || "");
             var safeTitle = title ? xfEditor.escapeAttr(title) : "";
             
-            var videoExts = /\.(mp4|webm|ogv|mov)(\?.*)?$/i;
-            if (videoExts.test(href)) {
+            var videoExts = xfEditor.regexs.videoExts;
+            // ★ v1.17.25: 防御性检查 href
+            if (href && videoExts.test(href)) {
                 var videoOut = "<video src=\"" + safeHref + "\" controls preload=\"metadata\"";
                 if (title) {
                     videoOut += " title=\"" + safeTitle + "\"";
@@ -10977,6 +10354,9 @@
         };
         
         markedRenderer.heading = function(text, level, raw) {
+            // ★ v1.17.25: 防御 null/undefined text
+            if (typeof text !== "string") text = "";
+            if (raw == null) raw = "";
                     
             var linkText       = text;
             var hasLinkReg     = /\s*\<a\s*href\=\"(.*)\"\s*([^\>]*)\>(.*)\<\/a\>\s*/;
@@ -11508,7 +10888,8 @@
             {
                 html = html.replace(htmlTagRegex, function($1, $2, $3, $4, $5) {
                     var el = $("<" + $2 + ">" + $4 + "</" + $5 + ">");
-                    var _attrs = $($1)[0].attributes;
+                    // ★ v1.17.25: 防御 $($1)[0] 为 undefined
+                    var _attrs = $($1)[0] && $($1)[0].attributes;
                     var $attrs = {};
                     
                     $.each(_attrs, function(i, e) {
@@ -12192,6 +11573,374 @@
         });
     };
 
+    // ╔══════════════════════════════════════════════════════════════════════╗
+    // ║  ★ v1.17.23: 统一静态后处理方法 — 供编辑器预览和纯预览共用        ║
+    // ║  所有实例方法现简化为薄封装，markdownToHTML 直接调用静态方法       ║
+    // ╚══════════════════════════════════════════════════════════════════════╝
+    
+    /**
+     * 静态代码高亮 + 复制按钮（供编辑器预览和纯预览模式共用）
+     * @private
+     * @param {jQuery} $container  预览容器
+     * @param {Object} settings    设置对象
+     */
+    xfEditor._previewCodeHighlight = function($container, settings) {
+        if (!settings.previewCodeHighlight) {
+            xfEditor.initCodeCopy($container);
+            return;
+        }
+        // ★ 使用 extractCodeText 提取原始代码（保留缩进/换行/空格）
+        $container.find("pre").each(function() {
+            var $pre = $(this);
+            var $code = $pre.find("code");
+            if ($code.length > 0 && $pre.data("_originalCode") === undefined) {
+                $pre.data("_originalCode", xfEditor.extractCodeText($code));
+            }
+        });
+        $container.find("pre").addClass("prettyprint linenums");
+        if (typeof prettyPrint !== "undefined") {
+            prettyPrint();
+        }
+        xfEditor.initCodeCopy($container);
+    };
+
+    /**
+     * 静态 KaTeX 渲染（供编辑器预览和纯预览模式共用）
+     * 纯预览模式不包含双击编辑定位功能
+     * @private
+     * @param {jQuery}  $container  预览容器
+     * @param {Object}  settings    设置对象
+     * @param {boolean} isEditor    是否为编辑器模式（true 时启用双击编辑定位）
+     * @param {Object}  editorRef   编辑器实例引用（仅 editor 模式需要）
+     */
+    xfEditor._renderKatex = function($container, settings, isEditor, editorRef) {
+        if (!settings.tex || typeof xfEditor.$katex === "undefined") return;
+        var texSel = "." + xfEditor.classNames.tex;
+        $container.find(texSel).each(function() {
+            var tex  = $(this);
+            var texCode = tex.text().trim();
+            if (!texCode) return;
+            // 修复 KaTeX 对 &amp; 等实体处理
+            texCode = texCode.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"');
+            var isBlock = /^\\begin\{/.test(texCode);
+            try {
+                xfEditor.$katex.render(texCode, tex[0], { throwOnError: false, displayMode: isBlock });
+            } catch(e) { /* 渲染失败静默跳过 */ }
+            // 仅编辑器模式下启用双击编辑定位
+            if (isEditor && editorRef && editorRef.cm) {
+                tex.attr("title", "双击编辑公式").css("cursor", "pointer");
+                tex.off("dblclick.xf_editor-tex").on("dblclick.xf_editor-tex", (function(code) {
+                    return function() {
+                        var cm = editorRef.cm;
+                        if (!cm) return;
+                        var markdown = cm.getValue();
+                        var pattern = "$$" + code + "$$";
+                        var idx = markdown.indexOf(pattern);
+                        if (idx >= 0) {
+                            var line = markdown.substring(0, idx).split("\n").length - 1;
+                            var ch = idx - markdown.lastIndexOf("\n", idx) - 1;
+                            cm.setCursor({line: line, ch: ch});
+                            cm.focus();
+                        }
+                    };
+                })(texCode));
+            }
+        });
+    };
+
+    /**
+     * 静态流程图/时序图渲染（供编辑器预览和纯预览模式共用）
+     * @private
+     * @param {jQuery} $container  预览容器
+     * @param {Object} settings    设置对象
+     */
+    xfEditor._renderFlowChart = function($container, settings) {
+        // ★ v1.17.24: 移除已失效的 IE8 守卫
+        if (!$container || !$container.length) return;
+        if (settings.flowChart) {
+            $container.find(".flowchart").each(function() {
+                var $fc = $(this);
+                if ($fc.attr("data-fc-initialized") === "true") return;
+                if ($fc.is(":hidden") || $fc.width() === 0) return;
+                try {
+                    $fc.flowChart();
+                    $fc.attr("data-fc-initialized", "true");
+                } catch(e) {}
+            });
+        }
+        if (settings.sequenceDiagram) {
+            $container.find(".sequence-diagram").each(function() {
+                var $sd = $(this);
+                if ($sd.attr("data-sd-initialized") === "true") return;
+                try {
+                    $sd.sequenceDiagram({theme: "simple"});
+                    $sd.attr("data-sd-initialized", "true");
+                } catch(e) {}
+            });
+        }
+    };
+
+    /**
+     * 静态 ECharts 初始化（供编辑器预览和纯预览模式共用）
+     * @private
+     * @param {jQuery} $container      预览容器
+     * @param {Object} settings        设置对象
+     * @param {Object} [extraTheme]    额外主题设置（编辑器实例 theme）
+     */
+    xfEditor._initECharts = function($container, settings, extraTheme) {
+        if (typeof echarts === "undefined") return;
+        var editorTheme = extraTheme || settings.theme;
+        // 自动检测主题：优先从 options.theme，其次从 div 上溯查找 theme-* class
+        if (!editorTheme) {
+            var $themeParent = $container.closest('[class*="theme-"]');
+            if ($themeParent.length) {
+                // ★ v1.17.25: 防御 attr("class") 返回 undefined
+                var cls = $themeParent.attr("class") || "";
+                var m = cls.match(/(?:^|\s)theme-(\w+)/);
+                if (m) editorTheme = m[1];
+            }
+        }
+        $container.find(".xf_editor-echarts").each(function() {
+            var $chart = $(this);
+            if ($chart.attr("data-initialized") === "true") return;
+            if ($chart.is(":hidden") || $chart.width() === 0 || $chart.height() === 0) return;
+            var config = {};
+            try { config = JSON.parse($chart.attr("data-config")); } catch(e) { return; }
+            try {
+                var chartTheme = config.theme || editorTheme || undefined;
+                var chartInstance = echarts.init(this, chartTheme);
+                var option = {
+                    title: config.title || {},
+                    tooltip: config.tooltip || {},
+                    series: config.series || []
+                };
+                if (config.legend !== undefined) option.legend = config.legend;
+                if (config.radar !== undefined) option.radar = config.radar;
+                var chartType = config.type || (config.series && config.series[0] && config.series[0].type) || "";
+                var noAxisTypes = ["pie", "funnel", "gauge", "graph", "treemap", "sunburst", "tree"];
+                if (noAxisTypes.indexOf(chartType) === -1) {
+                    option.xAxis = config.xAxis || {};
+                    option.yAxis = config.yAxis || {};
+                }
+                if (config.tooltip === undefined) {
+                    var hasAxis = (noAxisTypes.indexOf(chartType) === -1);
+                    option.tooltip = { trigger: hasAxis ? "axis" : "item" };
+                }
+                if (config.backgroundColor !== undefined) option.backgroundColor = config.backgroundColor;
+                if (config.grid !== undefined) option.grid = config.grid;
+                if (config.dataZoom !== undefined) option.dataZoom = config.dataZoom;
+                if (config.visualMap !== undefined) option.visualMap = config.visualMap;
+                if (config.toolbox !== undefined) option.toolbox = config.toolbox;
+                chartInstance.setOption(option);
+                chartInstance.resize();
+                $chart.attr("data-initialized", "true");
+                if (!$chart.attr("data-resize-bound")) {
+                    $chart.attr("data-resize-bound", "true");
+                    var resizeTimer = null;
+                    var ecNsId = $chart.attr("id") || ("ec-" + Math.random().toString(36).slice(2, 9));
+                    $(window).on("resize.xf_editor-echarts." + ecNsId, function() {
+                        if (resizeTimer) clearTimeout(resizeTimer);
+                        resizeTimer = setTimeout(function() { chartInstance.resize(); }, 150);
+                    });
+                }
+            } catch(e) {
+                if (typeof console !== "undefined" && console.warn) {
+                    console.warn("[xfEditor] ECharts init failed:", e.message);
+                }
+            }
+        });
+    };
+
+    /**
+     * 静态 Tabs 标签页交互初始化（供编辑器预览和纯预览模式共用）
+     * @private
+     * @param {jQuery} $container      预览容器
+     * @param {Object} settings        设置对象
+     * @param {Object} [editorRef]     编辑器实例引用（用于面板切换时重新可见内容初始化）
+     */
+    xfEditor._initTabs = function($container, settings, editorRef) {
+        if (!$container || !$container.length) return;
+        // Tabs 面板可见时重新初始化隐藏内容（ECharts/KaTeX/FlowChart/代码高亮/Columns）
+        function reInitHiddenContent($panel, s, ref) {
+            if (!$panel || !$panel.length) return;
+            // 重新初始化 ECharts
+            if (s.echarts && typeof echarts !== "undefined") {
+                xfEditor._initECharts($panel, s);
+            }
+            // 重新渲染 KaTeX
+            if (s.tex && typeof xfEditor.$katex !== "undefined") {
+                xfEditor._renderKatex($panel, s, !!ref, ref);
+            }
+            // 重新渲染流程图
+            if (s.flowChart || s.sequenceDiagram) {
+                var hasLib = (s.flowChart && typeof flowchart !== "undefined") ||
+                             (s.sequenceDiagram && typeof Diagram !== "undefined");
+                if (hasLib) xfEditor._renderFlowChart($panel, s);
+            }
+            // 重新高亮代码
+            if (s.previewCodeHighlight && typeof prettyPrint !== "undefined") {
+                $panel.find("pre.prettyprint").each(function() {
+                    var $pre = $(this);
+                    if ($pre.find("li").length > 0) return;
+                    try { prettyPrint(); } catch(e) {}
+                });
+            }
+            // 重新计算多栏分隔线
+            if (s.columns) {
+                xfEditor._initColumns($panel);
+            }
+        }
+
+        $container.find(".xf_editor-tabs").each(function() {
+            var $tabs = $(this);
+            if ($tabs.attr("data-initialized") === "true") return;
+            var $nav = $tabs.find(".xf_editor-tab-nav");
+            var $body = $tabs.find(".xf_editor-tab-body");
+            // 初次初始化时，对第一个（默认激活的）面板中的内容进行渲染
+            var $firstPanel = $body.find(".xf_editor-tab-panel.active");
+            if ($firstPanel.length > 0) {
+                setTimeout(function() { reInitHiddenContent($firstPanel, settings, editorRef); }, 50);
+            }
+            $nav.off("click", "li").on("click", "li", function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                var $li = $(this);
+                var index = $li.attr("data-index");
+                $nav.find("li").removeClass("active");
+                $li.addClass("active");
+                $body.find(".xf_editor-tab-panel").removeClass("active");
+                var $panel = $body.find('.xf_editor-tab-panel[data-index="' + index + '"]');
+                $panel.addClass("active");
+                setTimeout(function() { reInitHiddenContent($panel, settings, editorRef); }, 50);
+            });
+            $tabs.attr("data-initialized", "true");
+        });
+    };
+
+    /**
+     * 静态多栏布局分隔线初始化（供编辑器预览和纯预览模式共用）
+     * @private
+     * @param {jQuery} $container  预览容器
+     */
+    xfEditor._initColumns = function($container) {
+        if (!$container || !$container.length) return;
+        $container.find(".xf_editor-columns").each(function() {
+            var $cols = $(this);
+            if ($cols.attr("data-initialized") === "true") return;
+            var count = parseInt($cols.attr("data-count"), 10) || 2;
+            if (count < 1 || count > 12) count = 2;
+            $cols.find(".xf_editor-column-divider").remove();
+            $cols.css("position", "relative");
+            for (var i = 1; i < count; i++) {
+                var $divider = $('<div class="xf_editor-column-divider"></div>');
+                $divider.css({
+                    position: "absolute",
+                    left: (i / count * 100) + "%",
+                    top: "8px", bottom: "8px", width: "0",
+                    transform: "translateX(-50%)",
+                    borderLeft: "1px dashed #bbb",
+                    pointerEvents: "none", zIndex: 1
+                });
+                $cols.append($divider);
+            }
+            $cols.attr("data-initialized", "true");
+        });
+    };
+
+    /**
+     * 静态页面分页处理（供编辑器预览和纯预览模式共用）
+     * 将超出一页的 [[page:*]] 内容拆分为多个页面
+     * @private
+     * @param {jQuery} $container  预览容器
+     */
+    xfEditor._initPages = function($container) {
+        if (!$container || !$container.length) return;
+        var pagePaperSizes = {
+            "A0": { w: 3179, h: 4494 }, "A1": { w: 2245, h: 3179 },
+            "A2": { w: 1587, h: 2245 }, "A3": { w: 1123, h: 1587 },
+            "A4": { w: 794,  h: 1123 }, "A5": { w: 559,  h: 794  },
+            "A6": { w: 397,  h: 559  }, "A7": { w: 280,  h: 397  },
+            "A8": { w: 198,  h: 280  }, "AN": { w: 794,  h: 1123 },
+            "LETTER": { w: 816, h: 1056 }, "LEGAL": { w: 816, h: 1344 }
+        };
+        function processFooterTemplate(template, pageNum, totalPages) {
+            if (!template) return "";
+            return template.replace(/\{page\}/gi, pageNum).replace(/\{total\}/gi, totalPages);
+        }
+        function splitPageContent($pageBlock) {
+            if (!$pageBlock || !$pageBlock.length) return;
+            if ($pageBlock.attr("data-split") === "true") return;
+            var paperKey = ($pageBlock.attr("data-paper") || "A4").toUpperCase();
+            if (!pagePaperSizes[paperKey]) paperKey = "A4";
+            var paperSize = pagePaperSizes[paperKey] || pagePaperSizes["A4"];
+            var pageContent = $pageBlock.find(".xf_editor-page-content");
+            if (!pageContent.length) return;
+            var watermark = $pageBlock.find(".xf_editor-page-watermark").detach();
+            var headerEl = $pageBlock.find(".xf_editor-page-header");
+            var footerEl = $pageBlock.find(".xf_editor-page-footer");
+            var headerText = headerEl.length ? headerEl.text() : "";
+            var footerTemplate = footerEl.length ? footerEl.attr("data-footer-template") || "" : "";
+            var headerHeight = headerEl.length ? headerEl.outerHeight(true) : 0;
+            var footerHeight = footerEl.length ? 32 : 0;
+            var contentHeight = pageContent[0].scrollHeight;
+            var pageHeight = paperSize.h;
+            var pageInnerPadding = 96 + headerHeight + footerHeight;
+            if (contentHeight <= pageHeight - pageInnerPadding + 5) {
+                $pageBlock.attr("data-split", "true");
+                $pageBlock.attr("data-page", "1").attr("data-total", "1");
+                if (footerEl.length && footerTemplate) {
+                    footerEl.text(processFooterTemplate(footerTemplate, 1, 1));
+                }
+                return;
+            }
+            var pageMargin = 4, containerWidth = paperSize.w;
+            var availableHeight = pageHeight - pageInnerPadding;
+            var $measure = $('<div class="xf_editor-page-content" style="position:absolute;visibility:hidden;width:' + containerWidth + 'px;left:-9999px;"></div>');
+            $("body").append($measure);
+            var $clone = pageContent.clone();
+            $measure.append($clone);
+            var pages = [], currentPage = [], currentHeight = 0;
+            $clone.children().each(function() {
+                var $child = $(this);
+                var childHeight = $child.outerHeight(true) || 0;
+                if (currentHeight + childHeight > availableHeight && currentPage.length > 0) {
+                    pages.push(currentPage);
+                    currentPage = [];
+                    currentHeight = 0;
+                }
+                currentPage.push(this.outerHTML);
+                currentHeight += childHeight;
+            });
+            if (currentPage.length > 0) pages.push(currentPage);
+            $measure.remove();
+            var totalPages = pages.length;
+            if (totalPages <= 1) {
+                $pageBlock.attr("data-split", "true");
+                $pageBlock.attr("data-page", "1").attr("data-total", "1");
+                if (footerEl.length && footerTemplate) {
+                    footerEl.text(processFooterTemplate(footerTemplate, 1, 1));
+                }
+                return;
+            }
+            var resultHtml = "";
+            for (var i = 0; i < totalPages; i++) {
+                var pageNum = i + 1;
+                resultHtml += '<div class="xf_editor-page-block xf_editor-page-split" data-paper="' + paperKey + '" data-page="' + pageNum + '" data-total="' + totalPages + '" style="width:' + containerWidth + 'px;min-height:' + pageHeight + 'px;margin-bottom:' + pageMargin + 'px;">';
+                if (headerText) resultHtml += '<div class="xf_editor-page-header">' + headerText + '</div>';
+                resultHtml += '<div class="xf_editor-page-content">' + pages[i].join("") + '</div>';
+                if (footerTemplate) resultHtml += '<div class="xf_editor-page-footer">' + processFooterTemplate(footerTemplate, pageNum, totalPages) + '</div>';
+                if (i === totalPages - 1 && watermark.length) resultHtml += '<div class="xf_editor-page-watermark">' + paperKey + '</div>';
+                resultHtml += '</div>';
+            }
+            var $newBlocks = $(resultHtml);
+            $pageBlock.replaceWith($newBlocks);
+            $newBlocks.attr("data-split", "true");
+        }
+        $container.find(".xf_editor-page-block").each(function() {
+            splitPageContent($(this));
+        });
+    };
+
     /**
      * 统一构建 rendererOptions 静态版本（供 markdownToHTML 等静态方法使用）
      * @private
@@ -12383,49 +12132,23 @@
             }
         }
             
-        if (settings.previewCodeHighlight) 
-        {
-            // ★ v1.17.16: 使用 extractCodeText 提取原始代码（保留缩进/换行/空格）
-            div.find("pre").each(function() {
-                var $pre = $(this);
-                var $code = $pre.find("code");
-                if ($code.length > 0 && $pre.data("_originalCode") === undefined) {
-                    $pre.data("_originalCode", xfEditor.extractCodeText($code));
-                }
-            });
-            div.find("pre").addClass("prettyprint linenums");
-            // ★ 方案 B: 若 prettyPrint 全局函数可用，执行高亮；否则忽略（已保存原始代码）
-            if (typeof prettyPrint !== "undefined" && prettyPrint) {
-                prettyPrint();
-            }
-        }
+        // ★ v1.17.23: 使用统一静态后处理方法，与编辑器预览模式完全一致
 
-        // 向所有 pre 代码块注入复制按钮
-        xfEditor.initCodeCopy(div);
-        
-        if (!xfEditor.isIE8) 
-        {
-            var mdHasFlowChart = div.find(".flowchart").length > 0;
-            var mdHasSequence  = div.find(".sequence-diagram").length > 0;
+        // 1. 代码高亮 + 复制按钮
+        xfEditor._previewCodeHighlight(div, settings);
+
+        // 2. 流程图/时序图（需异步加载依赖）
+        var mdHasFlowChart = div.find(".flowchart").length > 0;
+        var mdHasSequence  = div.find(".sequence-diagram").length > 0;
             if (mdHasFlowChart || mdHasSequence) {
-                var mdRenderFs = function() {
-                    if (settings.flowChart && mdHasFlowChart) {
-                        div.find(".flowchart").flowChart(); 
-                    }
-                    if (settings.sequenceDiagram && mdHasSequence) {
-                        div.find(".sequence-diagram").sequenceDiagram({theme: "simple"});
-                    }
-                };
+                var mdRenderFs = function() { xfEditor._renderFlowChart(div, settings); };
                 var mdNeedRaphael = (mdHasFlowChart && typeof flowchart === "undefined") || 
                                     (mdHasSequence && typeof Diagram === "undefined");
                 if (mdNeedRaphael) {
                     xfEditor.loadScript(xfEditor.defaults.path + "raphael.min", function() {
                         xfEditor.loadScript(xfEditor.defaults.path + "underscore.min", function() {
                             var mdPending = 0;
-                            var mdCheckDone = function() {
-                                mdPending--;
-                                if (mdPending <= 0) mdRenderFs();
-                            };
+                            var mdCheckDone = function() { mdPending--; if (mdPending <= 0) mdRenderFs(); };
                             if (mdHasFlowChart && typeof flowchart === "undefined") {
                                 mdPending++;
                                 xfEditor.loadScript(xfEditor.defaults.path + "flowchart.min", function() {
@@ -12443,175 +12166,50 @@
                     mdRenderFs();
                 }
             }
-        }
 
-        if (settings.tex)
-        {
-            var katexHandle = function() {
-                div.find("." + xfEditor.classNames.tex).each(function(){
-                    var tex  = $(this);
-                    // 使用 .text() 自动解码 HTML 实体，与同步渲染一致
-                    var texCode = tex.text();
-                    // 修复 KaTeX 对 &amp; 等实体处理
-                    texCode = texCode.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"');
-                    if (texCode.trim()) {
-                        // 自动检测 displayMode：公式含 \begin{...}（矩阵、行列式等）使用块级模式
-                        var isBlock = /^\\begin\{/.test(texCode);
-                        katex.render(texCode, tex[0], { throwOnError: false, displayMode: isBlock });
-                    }
-                });
-            };
-            
-            if (settings.autoLoadKaTeX && !xfEditor.$katex && !xfEditor.kaTeXLoaded)
-            {
-                // 使用 xfEditor.defaults.path 作为 KaTeX 资源加载的基础路径
-                    var katexBasePath = settings.path || xfEditor.defaults.path || "";
+        // 3. KaTeX 数学公式（纯预览模式，不启用双击编辑）
+        if (settings.tex) {
+            if (settings.autoLoadKaTeX && !xfEditor.$katex && !xfEditor.kaTeXLoaded) {
+                var katexBasePath = settings.path || xfEditor.defaults.path || "";
+                var _div = div, _settings = settings;
                 this.loadKaTeX(katexBasePath, function() {
-                    xfEditor.$katex      = katex;
+                    xfEditor.$katex = katex;
                     xfEditor.kaTeXLoaded = true;
-                    katexHandle();
-                });
-            }
-            else
-            {
-                katexHandle();
-            }
-        }
-        
-        if (settings.echarts)
-        {
-            // 移除旧的 resize 处理器防止累积（使用通配命名空间）
-            $(window).off("resize.xf_editor-echarts-md");
-            $(window).off("resize.xf_editor-echarts-md-chart-");
-            
-            var initMdECharts = function() {
-                // 自动检测主题：优先从 options.theme，其次从 div 上溯查找 theme-* class
-                var mdTheme = settings.theme;
-                if (!mdTheme) {
-                    var $themeParent = div.closest('[class*="theme-"]');
-                    if ($themeParent.length) {
-                        var m = $themeParent.attr("class").match(/(?:^|\s)theme-(\w+)/);
-                        if (m) mdTheme = m[1];
-                    }
-                }
-
-                div.find(".xf_editor-echarts").each(function() {
-                    var $chart = $(this);
-                    if ($chart.attr("data-initialized") === "true") return;
-                    if ($chart.is(":hidden") || $chart.width() === 0 || $chart.height() === 0) return;
-
-                    var config = {};
-                    try {
-                        config = JSON.parse($chart.attr("data-config"));
-                    } catch(e) { return; }
-
-                    try {
-                        var chartMdTheme = config.theme || mdTheme || undefined;
-                        var chartInstance = echarts.init(this, chartMdTheme);
-                        var option = {
-                            title: config.title || {},
-                            tooltip: config.tooltip || {},
-                            series: config.series || []
-                        };
-                        if (config.legend !== undefined) option.legend = config.legend;
-                        if (config.radar !== undefined) option.radar = config.radar;
-
-                        var chartType = config.type || (config.series && config.series[0] && config.series[0].type) || "";
-                        var noAxisTypes = ["pie", "funnel", "gauge", "graph", "treemap", "sunburst", "tree"];
-                        if (noAxisTypes.indexOf(chartType) === -1) {
-                            option.xAxis = config.xAxis || {};
-                            option.yAxis = config.yAxis || {};
-                        } else if (config.tooltip === undefined) {
-                            option.tooltip = { trigger: "item" };
-                        }
-                        if (config.backgroundColor !== undefined) option.backgroundColor = config.backgroundColor;
-                        if (config.grid !== undefined) option.grid = config.grid;
-                        if (config.dataZoom !== undefined) option.dataZoom = config.dataZoom;
-                        if (config.visualMap !== undefined) option.visualMap = config.visualMap;
-                        if (config.toolbox !== undefined) option.toolbox = config.toolbox;
-
-                        chartInstance.setOption(option);
-                        chartInstance.resize();
-                        $chart.attr("data-initialized", "true");
-                        // 使用 chart id 作为命名空间，避免多个 ECharts 实例共享同一 resize handler
-                        var mdEcId = $chart.attr("id") || ("md-ec-" + Math.random().toString(36).slice(2, 9));
-                        $(window).on("resize.xf_editor-echarts-md-chart-" + mdEcId, function() { chartInstance.resize(); });
-                    } catch(e) {
-                        if (typeof console !== "undefined" && console.warn) {
-                            console.warn("[xfEditor] ECharts markdownToHTML init failed:", e.message);
-                        }
-                    }
-                });
-            };
-
-            if (typeof echarts === "undefined") {
-                xfEditor.loadScript(xfEditor.defaults.path + "echarts.min", function() {
-                    initMdECharts();
+                    xfEditor._renderKatex(_div, _settings, false);
                 });
             } else {
-                initMdECharts();
+                xfEditor._renderKatex(div, settings, false);
             }
         }
-        
-        if (settings.tabs)
-        {
-            div.find(".xf_editor-tabs").each(function() {
-                var $tabs = $(this);
-                if ($tabs.attr("data-initialized") === "true") {
-                    return;
-                }
-                var $nav = $tabs.find("> .xf_editor-tab-nav");
-                var $body = $tabs.find("> .xf_editor-tab-body");
-                $nav.on("click", "> li", function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    var $li = $(this);
-                    var index = $li.attr("data-index");
-                    $nav.find("> li").removeClass("active");
-                    $li.addClass("active");
-                    $body.find("> .xf_editor-tab-panel").removeClass("active");
-                    var $panel = $body.find('> .xf_editor-tab-panel[data-index="' + index + '"]');
-                    $panel.addClass("active");
-                    // 面板变为可见后，重新初始化隐藏的 ECharts 图表
-                    if ($panel.length && typeof initMdECharts === "function") {
-                        setTimeout(function() { initMdECharts(); }, 100);
-                    }
+
+        // 4. ECharts 图表
+        if (settings.echarts) {
+            if (typeof echarts === "undefined") {
+                xfEditor.loadScript(xfEditor.defaults.path + "echarts.min", function() {
+                    xfEditor._initECharts(div, settings);
                 });
-                $tabs.attr("data-initialized", "true");
-            });
+            } else {
+                xfEditor._initECharts(div, settings);
+            }
         }
 
-        if (settings.columns)
-        {
-            div.find(".xf_editor-columns").each(function() {
-                var $cols = $(this);
-                if ($cols.attr("data-initialized") === "true") {
-                    return;
-                }
-                var count = parseInt($cols.attr("data-count"), 10) || 2;
-                $cols.find(".xf_editor-column-divider").remove();
-                $cols.css("position", "relative");
-                for (var i = 1; i < count; i++) {
-                    var $divider = $('<div class="xf_editor-column-divider"></div>');
-                    $divider.css({
-                        position: "absolute",
-                        left: (i / count * 100) + "%",
-                        top: "8px",
-                        bottom: "8px",
-                        width: "0",
-                        transform: "translateX(-50%)",
-                        borderLeft: "1px dashed #bbb",
-                        pointerEvents: "none",
-                        zIndex: 1
-                    });
-                    $cols.append($divider);
-                }
-                $cols.attr("data-initialized", "true");
-            });
+        // 5. Tabs 标签页交互
+        if (settings.tabs) {
+            xfEditor._initTabs(div, settings);
         }
-        
-        if (settings.tooltip)
-        {
+
+        // 6. Columns 多栏布局分隔线
+        if (settings.columns) {
+            xfEditor._initColumns(div);
+        }
+
+        // ★ v1.17.23: 新增 — 页面分页处理（与编辑器预览保持一致）
+        if (settings.pageBlock) {
+            xfEditor._initPages(div);
+        }
+
+        // 7. Tooltip 悬浮提示
+        if (settings.tooltip) {
             xfEditor.initTooltips(div);
         }
         
@@ -12697,27 +12295,10 @@
         css.type   = "text/css";
         css.rel    = "stylesheet";
         
-        if (xfEditor.isIE8) 
-        {            
-            css.onreadystatechange = function() {
-                if (css.readyState) 
-                {
-                    if (css.readyState === "loaded" || css.readyState === "complete") 
-                    {
-                        css.onreadystatechange = null; 
-                        xfEditor.loadFiles.css.push(fileName);
-                        callback();
-                    }
-                } 
-            };
-        }
-        else
-        {
-            css.onload = function() {
-                xfEditor.loadFiles.css.push(fileName);
-                callback();
-            };
-        }
+        css.onload = function() {
+            xfEditor.loadFiles.css.push(fileName);
+            callback();
+        };
 
         css.href   = (/\.css$/i.test(fileName)) ? fileName : (fileName + ".css");
 
@@ -12753,27 +12334,10 @@
         script.type   = "text/javascript";        
         script.src    = (/\.js$/i.test(fileName)) ? fileName : (fileName + ".js");
         
-        if (xfEditor.isIE8) 
-        {            
-            script.onreadystatechange = function() {
-                if(script.readyState) 
-                {
-                    if (script.readyState === "loaded" || script.readyState === "complete") 
-                    {
-                        script.onreadystatechange = null; 
-                        xfEditor.loadFiles.js.push(fileName);
-                        callback();
-                    }
-                } 
-            };
-        }
-        else
-        {
-            script.onload = function() {
-                xfEditor.loadFiles.js.push(fileName);
-                callback();
-            };
-        }
+        script.onload = function() {
+            xfEditor.loadFiles.js.push(fileName);
+            callback();
+        };
         
         // 优雅处理脚本加载失败
         script.onerror = function() {
@@ -13056,7 +12620,7 @@
 
         dialog.show().css({
             zIndex : xfEditor.dialogZindex,
-            border : (xfEditor.isIE8) ? "1px solid #ddd" : "",
+
             width  : (typeof options.width  === "number") ? options.width + "px"  : options.width,
             height : (typeof options.height === "string") ? options.height : "auto"
         });

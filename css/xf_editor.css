@@ -5088,13 +5088,21 @@
 .xf_editor-preview-container .sequence-diagram, .xf_editor-preview-container .flowchart, .xf_editor-html-preview .sequence-diagram, .xf_editor-html-preview .flowchart {
   margin: 0 auto;
   text-align: center;
+  max-width: 100%;
+  overflow-x: auto;
 }
 .xf_editor-preview-container .sequence-diagram svg, .xf_editor-preview-container .flowchart svg, .xf_editor-html-preview .sequence-diagram svg, .xf_editor-html-preview .flowchart svg {
   margin: 0 auto;
+  max-width: none !important;
+  height: auto !important;
 }
 .xf_editor-preview-container .sequence-diagram text, .xf_editor-preview-container .flowchart text, .xf_editor-html-preview .sequence-diagram text, .xf_editor-html-preview .flowchart text {
   font-size: 15px !important;
   font-family: "YaHei Consolas Hybrid", Consolas, "Microsoft YaHei", "Malgun Gothic", "Segoe UI", Helvetica, Arial !important;
+}
+.xf_editor-preview-container .flowchart rect, .xf_editor-preview-container .flowchart path, .xf_editor-html-preview .flowchart rect, .xf_editor-html-preview .flowchart path {
+  stroke-width: 1.5px !important;
+  stroke: #555 !important;
 }
 
 /* Pretty printing styles — Dark theme adapted for #0d1117 pre background */
@@ -6102,6 +6110,61 @@ hr.xf_editor-page-break {
   background: rgba(255, 243, 224, 0.95);
 }
 
+.xf_editor-copybook-group {
+  display: inline-flex !important;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  vertical-align: top;
+  overflow: hidden !important;
+}
+
+.xf_editor-copybook-group-pinyin {
+  display: inline-flex !important;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  justify-content: center;
+  gap: 2px;
+  overflow: hidden !important;
+}
+.xf_editor-copybook-group-pinyin > .xf_editor-copybook-pinyin-cell {
+  flex: 0 0 auto !important;
+  min-width: 0 !important;
+  width: 52px !important;
+  max-width: 52px !important;
+  overflow: hidden !important;
+}
+
+.xf_editor-copybook-group-grid {
+  display: inline-flex !important;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  overflow: hidden !important;
+}
+.xf_editor-copybook-group-grid > .xf_editor-copybook-grid-cell {
+  flex: 1 1 0 !important;
+  min-width: 0 !important;
+  width: auto !important;
+  max-width: none !important;
+  overflow: hidden !important;
+}
+
+.xf_editor-copybook-row-wide {
+  display: flex !important;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 8px !important;
+}
+.xf_editor-copybook-row-wide > .xf_editor-copybook-cell {
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 68px;
+}
+.xf_editor-copybook-row-wide > .xf_editor-copybook-group {
+  flex: 0 1 auto !important;
+  min-width: 0;
+  max-width: 100%;
+}
+
 @media (max-width: 600px) {
   .xf_editor-copybook-grid-cell {
     width: 42px;
@@ -6121,6 +6184,12 @@ hr.xf_editor-page-break {
   }
   .xf_editor-copybook-pinyin-top {
     height: 24px;
+  }
+  .xf_editor-copybook-group-pinyin > .xf_editor-copybook-pinyin-cell {
+    max-width: 52px !important;
+  }
+  .xf_editor-copybook-group-grid > .xf_editor-copybook-grid-cell {
+    max-width: 52px;
   }
 }
 /* ========== 表格编辑按钮 (Table Editing in Preview) ========== */
