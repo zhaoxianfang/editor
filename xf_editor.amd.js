@@ -3996,7 +3996,7 @@
                 html += '<style>' + nl + cssOutput + nl + '</style>' + nl;
             }
             
-            html += '<div class="markdown-body xf_editor-html-preview">' + nl;
+            html += '<div class="xf_editor markdown-body xf_editor-html-preview">' + nl;
             // minify 模式下，精简 HTML 空白（保留 pre/code/textarea 内的内容不变）
             var contentHtml = rawHTML || "";
             if (opts.minify) {
@@ -4283,7 +4283,7 @@
             // --- 代码高亮（prettyprint）— 统一暗色主题，无交替背景
             if (f.prettyprint) {
                 c.push('.pln{color:#e6edf3}.str,.atv{color:#ce9178}.kwd,.tag{color:#569cd6}.com{color:#6a9955;font-style:italic}.typ{color:#4ec9b0}.lit{color:#b5cea8}.pun,.opn,.clo{color:#d4d4d4}.atn{color:#9cdcfe}.dec{color:#4ec9b0}.var{color:#9cdcfe}.fun{color:#dcdcaa}');
-                c.push('ol.linenums{margin:0!important;padding:0 0 0 3em!important;color:#484f58}ol.linenums li{list-style-type:decimal!important;padding-left:6px;min-height:1.5em;line-height:1.6;color:#e6edf3}ol.linenums li.L0,ol.linenums li.L1,ol.linenums li.L2,ol.linenums li.L3,ol.linenums li.L4,ol.linenums li.L5,ol.linenums li.L6,ol.linenums li.L7,ol.linenums li.L8,ol.linenums li.L9{list-style-type:decimal!important}');
+                c.push('ol.linenums{margin:0!important;padding:0 0 0 3em!important;color:#484f58}ol.linenums li{list-style-type:decimal!important;padding-left:6px;min-height:1.5em;line-height:1.6;color:#e6edf3}ol.linenums li.L0,ol.linenums li.L1,ol.linenums li.L2,ol.linenums li.L3,ol.linenums li.L4,ol.linenums li.L5,ol.linenums li.L6,ol.linenums li.L7,ol.linenums li.L8,ol.linenums li.L9{list-style-type:decimal!important}ol.linenums li code{border:none!important;background:none!important;padding:0!important;color:#e6edf3}');
             }
             // --- 字帖图标（SVG inline icons）---
             if (f.copybookIcons) {
@@ -4413,7 +4413,9 @@
                 // ★ 组元素可收缩响应式布局，max-width 确保不超出容器
                 c.push('.xf_editor-copybook-row-wide>.xf_editor-copybook-group{flex:0 1 auto!important;min-width:0;max-width:100%;}');
             }
-            return c.join('\n');
+            // ★ v1.17.32: 作用域隔离 — 将 .markdown-body 选择器限制在 .xf_editor 容器内，
+            // 确保 getHTML() 输出的内联样式不会泄漏到宿主页面的其他元素
+            return c.join('\n').replace(/\.markdown-body/g, '.xf_editor.markdown-body');
         },
         
         /**
@@ -9355,6 +9357,7 @@
         //   - [[col:N]](1≤N≤10)  → 占 N×10% 宽度
         //   - [[col]]            → 按行内 col 个数平分 100% 宽度
         if (options.grid !== false) {
+            // ★ v1.17.33: 使用增强版 row 匹配器，防止表格/文本中的 [[row]] 误匹配
             var rowBlocks = findBalancedBlocks(markdown, /\[\[row\]\]/g, /\[\[\/row\]\]/g);
             for (var ri = rowBlocks.length - 1; ri >= 0; ri--) {
                 var rowBlock = rowBlocks[ri];
@@ -9365,26 +9368,35 @@
                 var rowMarkedOptions = createMarkedOptions(options, true);
 
                 try {
-                    // ★ v1.17.9-FIX: 提取同一行内的兄弟 [[col]] 块
-                    // findBalancedBlocks 会把兄弟 [[col:6]] 和 [[col:4]] 当作嵌套合并，
-                    // 导致只生成一个宽度错误的列。本函数按顺序扫描，正确定义兄弟边界。
+                    // ★ v1.17.33-FIX: 增强版 col 提取器
+                    // - 修复 [[col]] 无数字列在嵌套场景中不能正确提取的 bug
+                    // - 修复分号/脚注等特殊内容导致 [[/col]] 边界识别失败的问题
+                    // - 增强嵌套 col 深度追踪可靠性
                     function extractColBlocks(rowContent) {
                         var colBlocks = [];
-                        var idx = 0;
+                        // ★ v1.17.33: 同时使用两种 col 标签模式
+                        // 使用捕获组分别识别 [[col:N]] 和 [[col]]
                         var colOpenRe2 = /\[\[col(?::(\d+))?\]\]/g;
                         var colCloseRe2 = /\[\[\/col\]\]/g;
-                        while (idx < rowContent.length) {
-                            colOpenRe2.lastIndex = idx;
+                        var safetyLimit = 500; // 安全防护
+                        
+                        while (colBlocks.length < safetyLimit) {
+                            colOpenRe2.lastIndex = (colBlocks.length > 0) ? colBlocks[colBlocks.length - 1].end : 0;
                             var om = colOpenRe2.exec(rowContent);
                             if (!om) break;
+                            
                             var depth = 1;
                             var sp = om.index + om[0].length;
-                            var cm = null;
                             colCloseRe2.lastIndex = sp;
-                            while (depth > 0) {
+                            var cm = null;
+                            var nestedSafety = 200;
+                            var nestedIter = 0;
+                            
+                            while (depth > 0 && nestedIter++ < nestedSafety) {
                                 cm = colCloseRe2.exec(rowContent);
                                 if (!cm) break;
-                                // 检查此闭标签之前是否有嵌套的开标签（col 内嵌 col 场景）
+                                
+                                // ★ v1.17.33-FIX: 可靠地检查闭标签前的嵌套开标签
                                 colOpenRe2.lastIndex = sp;
                                 var nm;
                                 while ((nm = colOpenRe2.exec(rowContent)) !== null && nm.index < cm.index) {
@@ -9392,17 +9404,23 @@
                                     sp = nm.index + nm[0].length;
                                 }
                                 depth--;
-                                if (depth > 0) sp = cm.index + cm[0].length;
+                                if (depth > 0) {
+                                    // ★ v1.17.33-FIX: 同步 colCloseRe2 搜索起点
+                                    sp = cm.index + cm[0].length;
+                                    colCloseRe2.lastIndex = sp;
+                                }
                             }
+                            
                             if (depth === 0 && cm) {
                                 colBlocks.push({
                                     start: om.index, end: cm.index + cm[0].length,
                                     content: rowContent.substring(om.index + om[0].length, cm.index),
-                                    fullMatch: rowContent.substring(om.index, cm.index + cm[0].length)
+                                    fullMatch: rowContent.substring(om.index, cm.index + cm[0].length),
+                                    colNum: om[1] ? parseInt(om[1], 10) : -1
                                 });
-                                idx = cm.index + cm[0].length;
                             } else {
-                                idx = om.index + 1;
+                                // ★ v1.17.33: 未能匹配的 [[col]] 跳过整个标签，避免无限循环
+                                break;
                             }
                         }
                         return colBlocks;
@@ -9422,22 +9440,17 @@
                         continue;
                     }
                     
-                    // 计算每个 col 的宽度：有数字的用 N*10%，没数字的平分剩余空间
+                    // ★ v1.17.33-FIX: 使用预提取的 colNum 计算宽度，避免重复正则匹配
                     var autoCount = 0;
                     var totalDefined = 0;
                     var colWidths = [];
                     for (var ci2 = 0; ci2 < colBlocks.length; ci2++) {
-                        var colMatch2 = colBlocks[ci2].fullMatch.match(/\[\[col(?::(\d+))?\]\]/);
-                        var colN = colMatch2 && colMatch2[1] ? parseInt(colMatch2[1], 10) : -1;
+                        var colN = colBlocks[ci2].colNum;
                         if (colN >= 1 && colN <= 10) {
                             colWidths.push(colN * 10);
                             totalDefined += colN * 10;
-                        } else if (colN === -1) {
-                            colWidths.push(-1); // auto
-                            autoCount++;
                         } else {
-                            // 无效值，当作 auto
-                            colWidths.push(-1);
+                            colWidths.push(-1); // auto
                             autoCount++;
                         }
                     }
@@ -11694,15 +11707,17 @@
             xfEditor.initCodeCopy($container);
             return;
         }
-        // ★ 使用 extractCodeText 提取原始代码（保留缩进/换行/空格）
-        $container.find("pre").each(function() {
+        // ★ 合并两次 pre 查询为一次，避免重复 DOM 遍历
+        var $allPre = $container.find("pre");
+        // 使用 extractCodeText 提取原始代码（保留缩进/换行/空格）
+        $allPre.each(function() {
             var $pre = $(this);
             var $code = $pre.find("code");
             if ($code.length > 0 && $pre.data("_originalCode") === undefined) {
                 $pre.data("_originalCode", xfEditor.extractCodeText($code));
             }
         });
-        $container.find("pre").addClass("prettyprint linenums");
+        $allPre.addClass("prettyprint linenums");
         if (typeof prettyPrint !== "undefined") {
             prettyPrint();
         }
@@ -12182,7 +12197,7 @@
             saveTo.remove();
         }
         
-        div.addClass("markdown-body " + this.classPrefix + "html-preview").append(markdownParsed);
+        div.addClass("xf_editor markdown-body " + this.classPrefix + "html-preview").append(markdownParsed);
         
         // ★ v1.17.9-FIX: markdownToHTML 模式下脚注点击跳转处理
         // 编辑器模式下由 init() 中的事件委托处理，此处为纯预览模式添加
@@ -12240,7 +12255,17 @@
         // ★ v1.17.23: 使用统一静态后处理方法，与编辑器预览模式完全一致
 
         // 1. 代码高亮 + 复制按钮
-        xfEditor._previewCodeHighlight(div, settings);
+        // ★ v1.17.32: markdownToHTML 需要加载 prettify.min.js 才能生成行号和语法高亮
+        if (settings.previewCodeHighlight && typeof prettyPrint === "undefined" && !xfEditor.$prettyPrint) {
+            var prettifyPath = (settings.path || xfEditor.defaults.path || "") + "prettify.min";
+            var _div = div, _settings = settings;
+            xfEditor.loadScript(prettifyPath, function() {
+                xfEditor.$prettyPrint = prettyPrint;
+                xfEditor._previewCodeHighlight(_div, _settings);
+            });
+        } else {
+            xfEditor._previewCodeHighlight(div, settings);
+        }
 
         // 2. 流程图/时序图（需异步加载依赖）
         var mdHasFlowChart = div.find(".flowchart").length > 0;

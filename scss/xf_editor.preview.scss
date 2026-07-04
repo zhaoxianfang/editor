@@ -2,17 +2,20 @@
 
 @import "lib/variables";
 @import "lib/prefixes";
-@import "font-awesome";
 
 @import "xf_editor.logo";
 
-// github-markdown.css
-@import "github-markdown";
+// ★ v1.17.32: 所有第三方样式（font-awesome / github-markdown）嵌套在 .xf_editor 下，
+// 保证不会泄漏到宿主页面影响 .xf_editor 之外的元素
+.xf_editor {
+    @import "font-awesome";
+    @import "github-markdown";
+}
 
-// ★ v1.17.30: 导入暗色主题 — 独立预览 CSS 支持 data-theme="dark" 属性
-@import "xf_editor.preview.themes";
 
-#{$prefix}preview-container, #{$prefix}html-preview {
+// ★ v1.17.32: 使用 .markdown-body 组合选择器匹配实际 DOM，
+// 提升特指度至与 github-markdown 同级 (0,0,2,1)，靠后胜出
+.markdown-body#{$prefix}preview-container, .markdown-body#{$prefix}html-preview {
     text-align: left;
     font-size: 14px;
     line-height: 1.6;
@@ -27,13 +30,84 @@
         height: auto;
         box-sizing: border-box;
     }
-    // ★ 表格超出时显示水平滚动条
+    // ★ v1.17.33: 增强型表格样式 — 美化边框、斑马条纹、表头渐变
     table {
+        display: table;
+        width: 100%;
+        max-width: 100%;
+        margin: 16px 0;
+        border-collapse: collapse;
+        border-spacing: 0;
+        word-break: normal;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        font-size: 14px;
+        line-height: 1.6;
+        border: 1px solid #e1e4e8;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+
+        // 表头样式 - 渐变背景
+        thead tr {
+            background: linear-gradient(180deg, #f6f8fa 0%, #eef1f5 100%);
+            border-bottom: 2px solid #d1d5db;
+            
+            th {
+                padding: 10px 16px;
+                font-weight: 700;
+                font-size: 13px;
+                color: #1f2937;
+                text-align: left;
+                white-space: nowrap;
+                letter-spacing: 0.02em;
+                border-right: 1px solid #e5e7eb;
+                &:last-child { border-right: none; }
+            }
+        }
+
+        // 表体样式 - 斑马条纹
+        tbody {
+            tr {
+                transition: background-color 0.15s ease;
+                border-bottom: 1px solid #f0f0f0;
+
+                &:nth-child(even) {
+                    background-color: #fafbfc;
+                }
+                &:nth-child(odd) {
+                    background-color: #ffffff;
+                }
+                &:hover {
+                    background-color: #f0f7ff;
+                }
+                &:last-child {
+                    border-bottom: none;
+                }
+            }
+
+            td {
+                padding: 8px 16px;
+                color: #374151;
+                font-size: 13.5px;
+                border-right: 1px solid #f3f4f6;
+                vertical-align: middle;
+                &:last-child { border-right: none; }
+            }
+        }
+
+        // 对齐类
+        th[align="center"], td[align="center"] { text-align: center; }
+        th[align="right"], td[align="right"] { text-align: right; }
+    }
+
+    // ★ v1.17.33: 表格外包装 — 当表格内容超出时允许水平滚动
+    .xf_editor-table-scroll {
         display: block;
         max-width: 100%;
         overflow-x: auto;
-        word-break: normal;
         -webkit-overflow-scrolling: touch;
+        margin: 16px 0;
     }
 
     blockquote {
@@ -61,16 +135,18 @@
         background: none;
     }
 
-    /* --- Inline code (not inside pre) — 淡绿色背景 --- */
+    /* --- Inline code (not inside pre) — 精致淡绿色标签 --- */
     code:not(pre code) {
         color: #1a6b3c;
         background: #e6ffed;
         border: 1px solid #b7ebc9;
-        padding: 2px 6px;
-        border-radius: 3px;
+        padding: 2px 7px;
+        border-radius: 4px;
         font-size: 85%;
-        font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+        font-family: "SFMono-Regular", "Cascadia Code", Consolas, "Liberation Mono", Menlo, Courier, monospace;
         white-space: nowrap;
+        word-break: keep-all;
+        transition: background 0.15s ease;
     }
 
     /* --- Pre block (code block container) — 精致暗色主题 --- */
@@ -80,48 +156,68 @@
         background: #0d1117;
         padding: 44px 20px 20px 20px;
         margin-bottom: 20px;
+        margin-top: 20px;
         overflow: auto;
-        line-height: 1.65;
+        line-height: 1.7;
         font-size: 13.5px;
         word-wrap: normal;
-        border-radius: 6px;
-        font-family: "SF Mono", "Fira Code", "Cascadia Code", Consolas, "Liberation Mono", Menlo, Monaco, monospace;
+        border-radius: 8px;
+        font-family: "SF Mono", "Fira Code", "Cascadia Code", "JetBrains Mono", Consolas, "Liberation Mono", Menlo, Monaco, monospace;
         color: #e6edf3;
-        box-shadow: 0 1px 3px rgba(0,0,0,.12), inset 0 1px 0 rgba(255,255,255,.03);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15), 0 1px 3px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.04);
+        tab-size: 4;
+        -moz-tab-size: 4;
 
         // ★ 顶部 macOS 风格红绿灯
         &::before {
             content: "";
             position: absolute;
             top: 0; left: 0; right: 0;
-            height: 36px;
-            background: #161b22;
+            height: 38px;
+            background: linear-gradient(180deg, #1a1f2b 0%, #161b22 100%);
             border-bottom: 1px solid #30363d;
-            border-radius: 6px 6px 0 0;
+            border-radius: 8px 8px 0 0;
         }
         &::after {
             content: "";
             position: absolute;
-            top: 12px; left: 16px;
-            width: 10px; height: 10px;
+            top: 14px; left: 16px;
+            width: 11px; height: 11px;
             border-radius: 50%;
             background: #ff5f57;
             box-shadow: 
-                18px 0 0 #febc2e,
-                36px 0 0 #28c840;
+                20px 0 0 #febc2e,
+                40px 0 0 #28c840;
             z-index: 2;
         }
 
         code {
             padding: 0;
-            background: transparent;
-            border: none;
+            background: transparent !important;
+            border: none !important;
             font-size: 13.5px;
-            line-height: 1.65;
+            line-height: 1.7;
             color: #e6edf3;
             white-space: pre;
             word-break: normal;
+            word-wrap: normal;
             font-family: inherit;
+            border-radius: 0;
+        }
+
+        // ★ 语言标签 — 显示在标题栏右上角
+        .xf_editor-code-lang {
+            position: absolute;
+            top: 9px;
+            left: 72px;
+            z-index: 3;
+            font-size: 11px;
+            color: rgba(255,255,255,0.35);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            letter-spacing: 0.03em;
+            text-transform: uppercase;
+            pointer-events: none;
+            user-select: none;
         }
 
         /* 暗色滚动条 */
@@ -136,9 +232,7 @@
         &::-webkit-scrollbar-thumb {
             background: #444c56;
             border-radius: 3px;
-        }
-        &::-webkit-scrollbar-thumb:hover {
-            background: #6e7681;
+            &:hover { background: #6e7681; }
         }
     }
 
@@ -206,8 +300,14 @@
         }
     }
     
+    // ★ v1.17.33: 表头增强（与内嵌 table 样式中的 thead 保持一致）
     table thead tr {
-        background-color: #F8F8F8;
+        background: linear-gradient(180deg, #f6f8fa 0%, #eef1f5 100%);
+        border-bottom: 2px solid #d1d5db;
+    }
+    table thead tr th {
+        color: #1f2937;
+        font-weight: 700;
     }
 
     .markdown-toc {
@@ -314,26 +414,30 @@
     }
 }
 
-// Pretty printing styles — Dark theme (imported from prettify.scss)
-@import "prettify";
+// Pretty printing styles — Dark theme
+// ★ v1.17.32: 作用域化 — prettify 样式仅作用于 .xf_editor 内
+.xf_editor {
+    @import "prettify";
+}
 
-// Prettify 行号容器暗色适配
-#{$prefix}preview-container, #{$prefix}html-preview {
+// ★ v1.17.32+: Prettify 行号容器 — 使用 !important 防御 github-markdown 和浏览器默认样式覆盖
+.markdown-body#{$prefix}preview-container, .markdown-body#{$prefix}html-preview {
     ol.linenums { 
-        color: #484f58; 
-        padding: 0 0 0 3.5em;
-        margin: 0;
+        color: #484f58 !important; 
+        padding: 0 0 0 3.5em !important;
+        padding-inline-start: 3.5em !important;
+        margin: 0 !important;
 
         li { 
-            list-style-type: decimal; 
+            list-style-type: decimal !important; 
             padding-left: 6px;
             line-height: 1.6;
             min-height: 1.5em;
 
             code {
-                border: none;
-                background: none;  
-                padding: 0;
+                border: none !important;
+                background: none !important;  
+                padding: 0 !important;
                 color: #e6edf3;
                 font-size: 13.5px;
             }
@@ -341,7 +445,7 @@
     }
 }
 
-#{$prefix}preview-container, #{$prefix}html-preview {
+.markdown-body#{$prefix}preview-container, .markdown-body#{$prefix}html-preview {
 
     #{$prefix}toc-menu {
         margin: 8px 0 12px 0;
@@ -519,11 +623,13 @@ hr.xf_editor-page-break {
     table {
         display: table;
         width: 100%;
+        max-width: 100%;
     }
 
     pre {
         white-space: pre-wrap;
-        word-break: break-all;
+        word-wrap: break-word;
+        max-width: 100%;
     }
 }
 
@@ -1024,13 +1130,20 @@ hr.xf_editor-page-break {
 
 /* Multi-column layout */
 #{$prefix}columns {
-    margin: 15px 0;
-    padding: 15px;
-    border: 1px dashed #ddd;
-    border-radius: 4px;
-    -webkit-column-gap: 30px;
-    -moz-column-gap: 30px;
-    column-gap: 30px;
+    margin: 16px 0;
+    padding: 18px 20px;
+    border: 1px solid #e1e4e8;
+    border-radius: 8px;
+    background: #fafbfc;
+    -webkit-column-gap: 32px;
+    -moz-column-gap: 32px;
+    column-gap: 32px;
+    -webkit-column-rule: 1px solid #e5e7eb;
+    -moz-column-rule: 1px solid #e5e7eb;
+    column-rule: 1px solid #e5e7eb;
+
+    > :first-child { margin-top: 0 !important; }
+    > :last-child { margin-bottom: 0 !important; }
 }
 
 /* Grid Layout (Bootstrap-like 10-column system) */
@@ -1038,24 +1151,49 @@ hr.xf_editor-page-break {
     display: flex;
     flex-wrap: wrap;
     width: 100%;
-    margin: 12px 0;
+    margin: 16px 0;
     gap: 0;
     box-sizing: border-box;
+    align-items: stretch;
 }
 #{$prefix}col {
     box-sizing: border-box;
-    padding: 0 8px;
+    padding: 0 10px;
     min-height: 1px;
+    min-width: 0;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 
     &:first-child { padding-left: 0; }
     &:last-child { padding-right: 0; }
+
+    // ★ v1.17.33: col 内嵌的各组件间距优化
+    > :first-child { margin-top: 0 !important; }
+    > :last-child { margin-bottom: 0 !important; }
+
+    // ★ v1.17.33: col 内的表格和 pre 块适应列宽
+    table, pre, .xf_editor-echarts, .xf_editor-tabs, .xf_editor-columns {
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+
+    // ★ v1.17.33: 相邻 col 之间的分隔线
+    + #{$prefix}col {
+        border-left: 1px solid rgba(0,0,0,0.06);
+    }
 }
 @media (max-width: 768px) {
     #{$prefix}row { flex-wrap: wrap; }
     #{$prefix}col {
         width: 100% !important;
-        padding: 0;
-        margin-bottom: 10px;
+        padding: 0 !important;
+        margin-bottom: 12px;
+        border-left: none !important;
+    }
+    #{$prefix}col + #{$prefix}col {
+        padding-top: 12px;
+        border-top: 1px solid rgba(0,0,0,0.08);
+        border-left: none !important;
     }
 }
 
@@ -1410,8 +1548,11 @@ hr.xf_editor-page-break {
         }
     }
     
-    #{$prefix}footnote-list {
+    // ★ 使用 ol 元素选择器提高特指度 (0,0,2,1)，覆盖 github-markdown 的 padding-left: 2em
+    //    同时显式设置 padding-inline-start 覆盖现代浏览器的逻辑属性默认值
+    ol#{$prefix}footnote-list {
         padding: 0;
+        padding-inline-start: 0;
         margin: 0;
         list-style: none;
         counter-reset: xf_editor-fn-counter;
@@ -1427,6 +1568,11 @@ hr.xf_editor-page-break {
             border-radius: 4px;
             border: 1px solid #e5e7eb;
             transition: background-color 0.25s ease, border-color 0.25s ease;
+            
+            // ★ v1.17.32: 显式删除 ::marker 默认列表编号
+            &::marker {
+                content: none;
+            }
             
             &::before {
                 counter-increment: xf_editor-fn-counter;
@@ -1591,3 +1737,6 @@ hr.xf_editor-page-break {
     content: none !important;
     border: none !important;
 }
+
+// ★ v1.17.30+: 暗色主题在文件末尾引入，保证主题样式覆盖所有 base 和 github-markdown 样式
+@import "xf_editor.preview.themes";

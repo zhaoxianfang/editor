@@ -60,17 +60,6 @@
   border-radius: 3px;
   background: #ff9900;
 }
-.xf_editor-preview-theme-dark .xf_editor-preview-container code {
-  color: #fff;
-  border: none;
-  padding: 1px 3px;
-  -webkit-border-radius: 3px;
-  -moz-border-radius: 3px;
-  -ms-border-radius: 3px;
-  -o-border-radius: 3px;
-  border-radius: 3px;
-  background: #5A9600;
-}
 .xf_editor-preview-theme-dark .xf_editor-preview-container table {
   border: none;
 }
@@ -133,36 +122,67 @@
   border-color: #2d3a52;
 }
 .xf_editor-preview-theme-dark .markdown-body {
-  /* ── 表格暗色适配 ── */
+  /* ── v1.17.33: 表格暗色增强 ── */
 }
-.xf_editor-preview-theme-dark .markdown-body table th,
-.xf_editor-preview-theme-dark .markdown-body table td {
-  border-color: #2d3a52;
-}
-.xf_editor-preview-theme-dark .markdown-body table tr {
-  background-color: #0f172a;
-  border-top-color: #2d3a52;
-}
-.xf_editor-preview-theme-dark .markdown-body table tr:nth-child(2n) {
-  background-color: #1e293b;
+.xf_editor-preview-theme-dark .markdown-body table {
+  border-color: #2d3a52 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 .xf_editor-preview-theme-dark .markdown-body table thead tr {
-  background-color: #1e293b;
+  background: linear-gradient(180deg, #1e293b 0%, #1a2332 100%) !important;
+  border-bottom-color: #3b4f6d !important;
+}
+.xf_editor-preview-theme-dark .markdown-body table thead tr th {
+  color: #e2e8f0;
+  border-right-color: #2d3a52;
+}
+.xf_editor-preview-theme-dark .markdown-body table tbody tr {
+  border-bottom-color: #1e2d42;
+}
+.xf_editor-preview-theme-dark .markdown-body table tbody tr:nth-child(even) {
+  background-color: #131d2d;
+}
+.xf_editor-preview-theme-dark .markdown-body table tbody tr:nth-child(odd) {
+  background-color: #0f172a;
+}
+.xf_editor-preview-theme-dark .markdown-body table tbody tr:hover {
+  background-color: #1a2a4a;
+}
+.xf_editor-preview-theme-dark .markdown-body table tbody td {
+  color: #cbd5e1;
+  border-right-color: #1e2d42;
+}
+.xf_editor-preview-theme-dark .markdown-body table th, .xf_editor-preview-theme-dark .markdown-body table td {
+  border-color: #2d3a52;
 }
 .xf_editor-preview-theme-dark {
-  /* 预览容器内表格表头 */
+  /* v1.17.33: 单独作用于预览容器内的表格 */
 }
-.xf_editor-preview-theme-dark table thead tr {
-  background-color: #1e293b;
+.xf_editor-preview-theme-dark .xf_editor-preview-container table thead tr {
+  background: linear-gradient(180deg, #1e293b 0%, #1a2332 100%) !important;
 }
 .xf_editor-preview-theme-dark pre {
-  color: #cbd5e1;
-  background-color: #0f172a;
-  background-color: rgba(0, 0, 0, 0.3);
-  /* plain text */
+  background-color: #1e293b !important;
+  border-color: #2d3a52 !important;
+}
+.xf_editor-preview-theme-dark pre::before {
+  background: #0f172a !important;
+  border-bottom-color: #2d3a52 !important;
+}
+.xf_editor-preview-theme-dark pre code {
+  color: #f1f5f9 !important;
 }
 .xf_editor-preview-theme-dark pre .pln {
   color: #cbd5e1;
+}
+.xf_editor-preview-theme-dark pre::-webkit-scrollbar-track {
+  background: #0f172a !important;
+}
+.xf_editor-preview-theme-dark pre::-webkit-scrollbar-thumb {
+  background: #444c56 !important;
+}
+.xf_editor-preview-theme-dark pre::-webkit-scrollbar-thumb:hover {
+  background: #6e7681 !important;
 }
 .xf_editor-preview-theme-dark li.L1, .xf_editor-preview-theme-dark li.L3, .xf_editor-preview-theme-dark li.L5, .xf_editor-preview-theme-dark li.L7, .xf_editor-preview-theme-dark li.L9 {
   background: none;
@@ -714,14 +734,27 @@
   color: #64748b;
 }
 [data-theme=dark] .xf_editor-html-preview pre {
-  border-color: #2d3a52;
-  background-color: #1e293b;
+  border-color: #2d3a52 !important;
+  background-color: #1e293b !important;
   color: #e6edf3;
+}
+[data-theme=dark] .xf_editor-html-preview pre::before {
+  background: #0f172a !important;
+  border-bottom-color: #2d3a52 !important;
 }
 [data-theme=dark] .xf_editor-html-preview pre code {
   color: #f1f5f9;
   border: none;
   background: transparent;
+}
+[data-theme=dark] .xf_editor-html-preview pre::-webkit-scrollbar-track {
+  background: #0f172a !important;
+}
+[data-theme=dark] .xf_editor-html-preview pre::-webkit-scrollbar-thumb {
+  background: #444c56 !important;
+}
+[data-theme=dark] .xf_editor-html-preview pre::-webkit-scrollbar-thumb:hover {
+  background: #6e7681 !important;
 }
 [data-theme=dark] .xf_editor-html-preview code:not(pre code) {
   color: #f1f5f9;
@@ -766,15 +799,6 @@
   border-color: #f85149;
   background: #2b1215;
 }
-[data-theme=dark] .xf_editor-html-preview pre::-webkit-scrollbar-track {
-  background: #1e293b;
-}
-[data-theme=dark] .xf_editor-html-preview pre::-webkit-scrollbar-thumb {
-  background: #444c56;
-}
-[data-theme=dark] .xf_editor-html-preview pre::-webkit-scrollbar-thumb:hover {
-  background: #6e7681;
-}
 [data-theme=dark] .xf_editor-html-preview .str {
   color: #a5d6ff;
 }
@@ -807,6 +831,12 @@
 }
 [data-theme=dark] .xf_editor-html-preview .fun {
   color: #fde68a;
+}
+[data-theme=dark] .xf_editor-html-preview ol.linenums {
+  color: #64748b !important;
+}
+[data-theme=dark] .xf_editor-html-preview ol.linenums li {
+  color: #cbd5e1;
 }
 [data-theme=dark] .xf_editor-html-preview .flowchart {
   background: #0f1a2e;
@@ -1030,6 +1060,12 @@
 }
 [data-theme=dark] .xf_editor-html-preview .xf_editor-col + .xf_editor-col {
   border-left-color: #2d3a52;
+}
+@media (max-width: 768px) {
+  [data-theme=dark] .xf_editor-html-preview .xf_editor-col + .xf_editor-col {
+    border-left: none !important;
+    border-top-color: #2d3a52;
+  }
 }
 [data-theme=dark] .xf_editor-html-preview .xf_editor-echarts {
   border-color: #2d3a52;

@@ -70,14 +70,6 @@
             background:#ff9900;
         }
 
-        code {
-            color: #fff;
-            border: none;
-            padding: 1px 3px;
-            @include border-radius(3px); 
-            background: #5A9600;
-        }
-
         table {
             border: none;
         }
@@ -150,39 +142,79 @@
             border-color: #2d3a52;      
         }
 
-        /* ── 表格暗色适配 ── */
-        table th,
-        table td {
-            border-color: #2d3a52;
-        }
-        table tr {
-            background-color: #0f172a;
-            border-top-color: #2d3a52;
-        }
-        table tr:nth-child(2n) {
-            background-color: #1e293b;
-        }
-        table thead tr {
-            background-color: #1e293b;
+        /* ── v1.17.33: 表格暗色增强 ── */
+        table {
+            border-color: #2d3a52 !important;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+
+            thead tr {
+                background: linear-gradient(180deg, #1e293b 0%, #1a2332 100%) !important;
+                border-bottom-color: #3b4f6d !important;
+
+                th {
+                    color: #e2e8f0;
+                    border-right-color: #2d3a52;
+                }
+            }
+
+            tbody {
+                tr {
+                    border-bottom-color: #1e2d42;
+
+                    &:nth-child(even) {
+                        background-color: #131d2d;
+                    }
+                    &:nth-child(odd) {
+                        background-color: #0f172a;
+                    }
+                    &:hover {
+                        background-color: #1a2a4a;
+                    }
+                }
+
+                td {
+                    color: #cbd5e1;
+                    border-right-color: #1e2d42;
+                }
+            }
+
+            th, td {
+                border-color: #2d3a52;
+            }
         }
     }
 
-    /* 预览容器内表格表头 */
-    table thead tr {
-        background-color: #1e293b;
+    /* v1.17.33: 单独作用于预览容器内的表格 */
+    #{$prefix}preview-container table thead tr {
+        background: linear-gradient(180deg, #1e293b 0%, #1a2332 100%) !important;
     }
     
+    // ★ v1.17.32: 暗色主题下的 pre 代码块 — 遵循 5b49578 设计：代码块始终保持暗色，
+    //   暗色主题只是微调为更纯的深色背景（而非半透明叠加）
     pre {
-        color: #cbd5e1;
-        background-color: #0f172a;
-        background-color: rgba(0,0,0,.3);
+        background-color: #1e293b !important;
+        border-color: #2d3a52 !important;
 
-        /* plain text */
+        // 顶部 macOS 红绿灯标题栏
+        &::before {
+            background: #0f172a !important;
+            border-bottom-color: #2d3a52 !important;
+        }
+
+        code {
+            color: #f1f5f9 !important;
+        }
         .pln { 
             color: #cbd5e1;
-        } 
+        }
+
+        // 暗色滚动条
+        &::-webkit-scrollbar-track { background: #0f172a !important; }
+        &::-webkit-scrollbar-thumb { background: #444c56 !important; }
+        &::-webkit-scrollbar-thumb:hover { background: #6e7681 !important; }
     }
 
+    // ★ line number lines — no alternating background
     li.L1, li.L3, li.L5, li.L7, li.L9 { 
         background: none;
     }
@@ -719,17 +751,28 @@
     em { color: #94a3b8; }
     del { color: #64748b; }
     
-    // ── 代码块 pre ──
+    // ── 代码块 pre（暗色主题遵循 5b49578 设计，微调为纯深色背景）──
     pre {
-        border-color: #2d3a52;
-        background-color: #1e293b;
+        border-color: #2d3a52 !important;
+        background-color: #1e293b !important;
         color: #e6edf3;
+
+        // 顶部 macOS 红绿灯标题栏
+        &::before {
+            background: #0f172a !important;
+            border-bottom-color: #2d3a52 !important;
+        }
 
         code {
             color: #f1f5f9;
             border: none;
             background: transparent;
         }
+
+        // 暗色滚动条
+        &::-webkit-scrollbar-track { background: #0f172a !important; }
+        &::-webkit-scrollbar-thumb { background: #444c56 !important; }
+        &::-webkit-scrollbar-thumb:hover { background: #6e7681 !important; }
     }
 
     // ── 行内 code ──
@@ -788,10 +831,7 @@
         }
     }
 
-    // ── 滚动条 ──
-    pre::-webkit-scrollbar-track { background: #1e293b; }
-    pre::-webkit-scrollbar-thumb { background: #444c56; }
-    pre::-webkit-scrollbar-thumb:hover { background: #6e7681; }
+    // ── 滚动条（已集成到 pre 块内）──
 
     // ── Prettify 代码高亮 ──
     .str { color: #a5d6ff }
@@ -805,6 +845,12 @@
     .atv { color: #a5d6ff }
     .dec, .var { color: #67e8f9; }
     .fun { color: #fde68a }
+
+    // ── 行号暗色适配 ──
+    ol.linenums {
+        color: #64748b !important;
+        li { color: #cbd5e1; }
+    }
 
     // ── 流程图（★ v1.17.31 全面升级：节点类型区分 + SVG背景） ──
     .flowchart {
@@ -1066,8 +1112,17 @@
     }
 
     // ── Grid 栅格 ──
+    .xf_editor-row {
+        // 保留暗色背景一致
+    }
     .xf_editor-col + .xf_editor-col {
         border-left-color: #2d3a52;
+    }
+    @media (max-width: 768px) {
+        .xf_editor-col + .xf_editor-col {
+            border-left: none !important;
+            border-top-color: #2d3a52;
+        }
     }
 
     // ── ECharts ──
