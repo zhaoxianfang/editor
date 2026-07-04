@@ -46,9 +46,9 @@
 }
 .xf_editor-preview-theme-dark .xf_editor-preview-container blockquote {
   color: #94a3b8;
-  padding: 0.5em;
   background: #1e293b;
   border-color: #2d3a52;
+  border-radius: 0 6px 6px 0;
 }
 .xf_editor-preview-theme-dark .xf_editor-preview-container abbr {
   color: #fff;
@@ -105,12 +105,23 @@
 .xf_editor-preview-theme-dark .markdown-toc {
   background: #1e293b;
   border-color: #2d3a52;
+  border-left-color: #60a5fa;
+}
+.xf_editor-preview-theme-dark .markdown-toc-list ul {
+  border-left-color: #2d3a52;
 }
 .xf_editor-preview-theme-dark .markdown-toc-list a {
   color: #93c5fd;
 }
 .xf_editor-preview-theme-dark .markdown-toc-list a:hover {
   color: #60a5fa;
+  background: #1a2a4a;
+}
+.xf_editor-preview-theme-dark .markdown-toc-list a.toc-level-1 {
+  color: #f1f5f9;
+}
+.xf_editor-preview-theme-dark .markdown-toc-list a.toc-level-2 {
+  color: #e2e8f0;
 }
 .xf_editor-preview-theme-dark .markdown-toc-list a.toc-level-3 {
   color: #94a3b8;
@@ -415,12 +426,24 @@
 }
 .xf_editor-preview-theme-dark .xf_editor-columns {
   border-color: #2d3a52;
+  background: #151e2e;
+  -webkit-column-rule-color: #2d3a52;
+  -moz-column-rule-color: #2d3a52;
+  column-rule-color: #2d3a52;
 }
 .xf_editor-preview-theme-dark {
   /* Grid (row/col) */
 }
 .xf_editor-preview-theme-dark .xf_editor-row {
   background: transparent;
+}
+.xf_editor-preview-theme-dark .xf_editor-col + .xf_editor-col {
+  border-left-color: #2d3a52;
+}
+@media (max-width: 768px) {
+  .xf_editor-preview-theme-dark .xf_editor-col + .xf_editor-col {
+    border-top-color: #2d3a52;
+  }
 }
 .xf_editor-preview-theme-dark {
   /* ECharts */
@@ -643,17 +666,7 @@
   color: #475569;
 }
 .xf_editor-preview-theme-dark {
-  /* Page block 内的表格、代码块 */
-}
-.xf_editor-preview-theme-dark .xf_editor-page-content table th, .xf_editor-preview-theme-dark .xf_editor-page-content table td {
-  border-color: #2d3a52;
-}
-.xf_editor-preview-theme-dark .xf_editor-page-content table tr {
-  background: transparent;
-  border-top-color: #2d3a52;
-}
-.xf_editor-preview-theme-dark .xf_editor-page-content table tr:nth-child(2n) {
-  background: #233044;
+  /* Page block 内的代码块 */
 }
 .xf_editor-preview-theme-dark .xf_editor-page-content pre, .xf_editor-preview-theme-dark .xf_editor-page-content code {
   background: #0f172a;
@@ -765,19 +778,61 @@
   color: #94a3b8;
   background: #1e293b;
   border-left-color: #2d3a52;
+  border-radius: 0 6px 6px 0;
 }
-[data-theme=dark] .xf_editor-html-preview table th, [data-theme=dark] .xf_editor-html-preview table td {
-  border-color: #2d3a52;
-}
-[data-theme=dark] .xf_editor-html-preview table tr {
-  background-color: #0f172a;
-  border-top-color: #2d3a52;
-}
-[data-theme=dark] .xf_editor-html-preview table tr:nth-child(2n) {
-  background-color: #1e293b;
+[data-theme=dark] .xf_editor-html-preview table {
+  border-color: #2d3a52 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
 }
 [data-theme=dark] .xf_editor-html-preview table thead tr {
-  background-color: #1e293b;
+  background: linear-gradient(180deg, #1e293b 0%, #1a2332 100%) !important;
+  border-bottom: 2px solid #3b4f6d !important;
+}
+[data-theme=dark] .xf_editor-html-preview table thead tr th {
+  color: #e2e8f0;
+  font-weight: 700;
+  border-right-color: #2d3a52;
+}
+[data-theme=dark] .xf_editor-html-preview table thead tr th:last-child {
+  border-right: none;
+}
+[data-theme=dark] .xf_editor-html-preview table tbody tr {
+  border-bottom-color: #1e2d42;
+  transition: background-color 0.15s ease;
+}
+[data-theme=dark] .xf_editor-html-preview table tbody tr:nth-child(even) {
+  background-color: #131d2d;
+}
+[data-theme=dark] .xf_editor-html-preview table tbody tr:nth-child(odd) {
+  background-color: #0f172a;
+}
+[data-theme=dark] .xf_editor-html-preview table tbody tr:hover {
+  background-color: #1a2a4a;
+}
+[data-theme=dark] .xf_editor-html-preview table tbody tr:last-child {
+  border-bottom: none;
+}
+[data-theme=dark] .xf_editor-html-preview table tbody td {
+  color: #cbd5e1;
+  border-right-color: #1e2d42;
+}
+[data-theme=dark] .xf_editor-html-preview table tbody td:last-child {
+  border-right: none;
+}
+[data-theme=dark] .xf_editor-html-preview .xf_editor-table-scroll::-webkit-scrollbar {
+  height: 6px;
+}
+[data-theme=dark] .xf_editor-html-preview .xf_editor-table-scroll::-webkit-scrollbar-track {
+  background: #0f172a;
+  border-radius: 3px;
+}
+[data-theme=dark] .xf_editor-html-preview .xf_editor-table-scroll::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 3px;
+}
+[data-theme=dark] .xf_editor-html-preview .xf_editor-table-scroll::-webkit-scrollbar-thumb:hover {
+  background: #475569;
 }
 [data-theme=dark] .xf_editor-html-preview .xf_editor-code-copy-btn {
   color: #94a3b8;
@@ -1003,12 +1058,29 @@
 [data-theme=dark] .xf_editor-html-preview .markdown-toc {
   background: #1e293b;
   border-color: #2d3a52;
+  border-left-color: #60a5fa;
+}
+[data-theme=dark] .xf_editor-html-preview .markdown-toc-list ul {
+  border-left-color: #2d3a52;
 }
 [data-theme=dark] .xf_editor-html-preview .markdown-toc-list a {
   color: #93c5fd;
 }
 [data-theme=dark] .xf_editor-html-preview .markdown-toc-list a:hover {
   color: #60a5fa;
+  background: #1a2a4a;
+}
+[data-theme=dark] .xf_editor-html-preview .markdown-toc-list a.toc-level-1 {
+  color: #f1f5f9;
+}
+[data-theme=dark] .xf_editor-html-preview .markdown-toc-list a.toc-level-2 {
+  color: #e2e8f0;
+}
+[data-theme=dark] .xf_editor-html-preview .markdown-toc-list a.toc-level-3 {
+  color: #cbd5e1;
+}
+[data-theme=dark] .xf_editor-html-preview .markdown-toc-list a.toc-level-4, [data-theme=dark] .xf_editor-html-preview .markdown-toc-list a.toc-level-5, [data-theme=dark] .xf_editor-html-preview .markdown-toc-list a.toc-level-6 {
+  color: #94a3b8;
 }
 [data-theme=dark] .xf_editor-html-preview .xf_editor-toc-menu > .markdown-toc {
   background: #1e293b;
@@ -1057,6 +1129,10 @@
 }
 [data-theme=dark] .xf_editor-html-preview .xf_editor-columns {
   border-color: #2d3a52;
+  background: #151e2e;
+  -webkit-column-rule-color: #2d3a52;
+  -moz-column-rule-color: #2d3a52;
+  column-rule-color: #2d3a52;
 }
 [data-theme=dark] .xf_editor-html-preview .xf_editor-col + .xf_editor-col {
   border-left-color: #2d3a52;
@@ -1129,6 +1205,26 @@
 [data-theme=dark] .xf_editor-html-preview .xf_editor-copybook-footnote a:hover {
   color: #60a5fa;
   background: rgba(26, 42, 74, 0.95);
+}
+[data-theme=dark] .xf_editor-html-preview .xf_editor-page-content h1, [data-theme=dark] .xf_editor-html-preview .xf_editor-page-content h2 {
+  border-bottom-color: #2d3a52;
+}
+[data-theme=dark] .xf_editor-html-preview .xf_editor-tooltip-popup .xf_editor-tooltip-max-btn,
+[data-theme=dark] .xf_editor-html-preview .xf_editor-tooltip-popup .xf_editor-tooltip-close-btn {
+  color: #94a3b8;
+  background: rgba(30, 41, 59, 0.9);
+}
+[data-theme=dark] .xf_editor-html-preview .xf_editor-tooltip-popup .xf_editor-tooltip-max-btn:hover,
+[data-theme=dark] .xf_editor-html-preview .xf_editor-tooltip-popup .xf_editor-tooltip-close-btn:hover {
+  opacity: 1;
+}
+[data-theme=dark] .xf_editor-html-preview .xf_editor-tooltip-popup .xf_editor-tooltip-close-btn:hover {
+  background: #e74c3c;
+  color: #fff;
+}
+[data-theme=dark] .xf_editor-html-preview .xf_editor-tooltip-popup .xf_editor-tooltip-max-btn:hover {
+  background: #3498db;
+  color: #fff;
 }
 [data-theme=dark] .xf_editor-html-preview .xf_editor-footnotes-section {
   border-top-color: #2d3a52;
@@ -1264,16 +1360,6 @@
 }
 [data-theme=dark] .xf_editor-html-preview .xf_editor-page-content {
   color: #cbd5e1;
-}
-[data-theme=dark] .xf_editor-html-preview .xf_editor-page-content table th, [data-theme=dark] .xf_editor-html-preview .xf_editor-page-content table td {
-  border-color: #2d3a52;
-}
-[data-theme=dark] .xf_editor-html-preview .xf_editor-page-content table tr {
-  background: transparent;
-  border-top-color: #2d3a52;
-}
-[data-theme=dark] .xf_editor-html-preview .xf_editor-page-content table tr:nth-child(2n) {
-  background: #233044;
 }
 [data-theme=dark] .xf_editor-html-preview .xf_editor-page-content pre, [data-theme=dark] .xf_editor-html-preview .xf_editor-page-content code {
   background: #0f172a;

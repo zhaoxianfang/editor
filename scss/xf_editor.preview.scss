@@ -108,15 +108,27 @@
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
         margin: 16px 0;
+
+        // ★ v1.17.35: 表格滚动条美化
+        &::-webkit-scrollbar { height: 6px; }
+        &::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 3px; }
+        &::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 3px; }
+        &::-webkit-scrollbar-thumb:hover { background: #a1a1a1; }
     }
 
     blockquote {
         color: $color;
         border-left: 4px solid $borderColor;
-        padding-left: 20px;
-        margin-left: 0;
+        padding: 12px 20px;
+        margin: 16px 0;
         font-size: 14px;
-        font-style: italic;
+        font-style: normal;
+        background: #f8f9fb;
+        border-radius: 0 6px 6px 0;
+        line-height: 1.7;
+        
+        > :first-child { margin-top: 0; }
+        > :last-child { margin-bottom: 0; }
     }
 
     p code {
@@ -133,6 +145,51 @@
         border: none;
         border-top: 1px solid $borderColor;
         background: none;
+        margin: 28px 0;
+    }
+
+    // ★ v1.17.35: 标题层次优化 — 更清晰的视觉层级
+    h1, h2, h3, h4, h5, h6 {
+        margin-top: 1.2em;
+        margin-bottom: 0.6em;
+        line-height: 1.35;
+    }
+    h1 { 
+        font-size: 2em; 
+        padding-bottom: 0.35em;
+        border-bottom: 1px solid #eaecef;
+    }
+    h2 { 
+        font-size: 1.55em; 
+        padding-bottom: 0.3em;
+        border-bottom: 1px solid #eaecef;
+    }
+    h3 { font-size: 1.3em; }
+    h4 { font-size: 1.1em; }
+    h5 { font-size: 1em; }
+    h6 { font-size: 0.9em; color: #6a737d; }
+
+    // ★ v1.17.35: 列表缩进对齐统一
+    ul, ol {
+        padding-left: 2em;
+        
+        ul, ol {
+            margin-top: 4px;
+            margin-bottom: 4px;
+        }
+        
+        li {
+            margin-bottom: 4px;
+            
+            > p { margin: 4px 0; }
+        }
+    }
+
+    // ★ v1.17.35: 段落间距优化
+    p {
+        margin-top: 0;
+        margin-bottom: 12px;
+        line-height: 1.7;
     }
 
     /* --- Inline code (not inside pre) — 精致淡绿色标签 --- */
@@ -311,26 +368,30 @@
     }
 
     .markdown-toc {
-        padding: 16px 20px;
-        margin: 16px 0;
+        padding: 18px 22px;
+        margin: 18px 0;
         background: #f8f9fb;
         border: 1px solid #e1e4e8;
-        border-radius: 8px;
+        border-left: 4px solid #0366d6;
+        border-radius: 0 8px 8px 0;
         font-size: 14px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.04);
     }
 
     .markdown-toc-list {
         margin: 0;
-        padding: 0 0 0 4px;
+        padding: 0;
         list-style: none;
 
         ul {
-            padding-left: 18px;
+            padding-left: 20px;
             list-style: none;
+            border-left: 1px solid #e8eaed;
+            margin-left: 4px;
         }
 
         li {
-            margin: 3px 0;
+            margin: 4px 0;
             position: relative;
         }
 
@@ -338,37 +399,43 @@
             color: #0366d6;
             text-decoration: none;
             font-size: 13px;
-            line-height: 1.65;
-            display: inline-block;
-            padding: 2px 0;
+            line-height: 1.7;
+            display: block;
+            padding: 3px 8px;
+            border-radius: 4px;
             transition: all 150ms ease;
 
             &:hover {
                 color: #005cc5;
-                text-decoration: underline;
+                background: #eef2ff;
+                text-decoration: none;
             }
 
             &.toc-level-1 {
-                font-weight: 600;
-                font-size: 14px;
+                font-weight: 700;
+                font-size: 14.5px;
+                padding-left: 8px;
+                color: #1a1a2e;
             }
             &.toc-level-2 {
-                font-weight: 500;
-                font-size: 13px;
-                padding-left: 4px;
+                font-weight: 600;
+                font-size: 13.5px;
+                padding-left: 16px;
+                color: #24292e;
             }
             &.toc-level-3 {
-                font-weight: 400;
-                font-size: 12.5px;
-                padding-left: 8px;
-                color: #586069;
+                font-weight: 500;
+                font-size: 13px;
+                padding-left: 24px;
+                color: #444d56;
             }
             &.toc-level-4,
             &.toc-level-5,
             &.toc-level-6 {
-                font-size: 12px;
-                padding-left: 12px;
-                color: #6a737d;
+                font-weight: 400;
+                font-size: 12.5px;
+                padding-left: 32px;
+                color: #586069;
             }
         }
     } 
@@ -613,6 +680,14 @@ hr.xf_editor-page-break {
     word-wrap: break-word;
     overflow-wrap: break-word;
 
+    // ★ v1.17.35: 页面内标题间距优化
+    h1, h2, h3, h4, h5, h6 {
+        margin-top: 1em;
+        margin-bottom: 0.5em;
+    }
+    h1 { border-bottom: 1px solid #eaecef; padding-bottom: 0.3em; }
+    h2 { border-bottom: 1px solid #eaecef; padding-bottom: 0.25em; }
+
     // Ensure all content fits within the paper width
     img, video, table, pre, iframe, svg {
         max-width: 100%;
@@ -624,6 +699,11 @@ hr.xf_editor-page-break {
         display: table;
         width: 100%;
         max-width: 100%;
+    }
+
+    // ★ v1.17.35: page-content 内嵌 TOC 样式
+    .markdown-toc {
+        margin: 16px 0;
     }
 
     pre {

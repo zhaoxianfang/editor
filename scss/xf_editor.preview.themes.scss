@@ -58,9 +58,9 @@
 
         blockquote {
             color: #94a3b8;
-            padding: 0.5em;
             background: #1e293b;
             border-color: #2d3a52;
+            border-radius: 0 6px 6px 0;
         }
 
         abbr {
@@ -123,18 +123,27 @@
     .markdown-toc {
         background: #1e293b;
         border-color: #2d3a52;
+        border-left-color: #60a5fa;
     }
-    .markdown-toc-list a {
-        color: #93c5fd;
-
-        &:hover {
-            color: #60a5fa;
+    .markdown-toc-list {
+        ul {
+            border-left-color: #2d3a52;
         }
+        a {
+            color: #93c5fd;
 
-        &.toc-level-3 { color: #94a3b8; }
-        &.toc-level-4,
-        &.toc-level-5,
-        &.toc-level-6 { color: #64748b; }
+            &:hover {
+                color: #60a5fa;
+                background: #1a2a4a;
+            }
+
+            &.toc-level-1 { color: #f1f5f9; }
+            &.toc-level-2 { color: #e2e8f0; }
+            &.toc-level-3 { color: #94a3b8; }
+            &.toc-level-4,
+            &.toc-level-5,
+            &.toc-level-6 { color: #64748b; }
+        }
     }
     
     .markdown-body {
@@ -458,14 +467,23 @@
     /* Columns */
     #{$prefix}columns {
         border-color: #2d3a52;
+        background: #151e2e;
+        -webkit-column-rule-color: #2d3a52;
+        -moz-column-rule-color: #2d3a52;
+        column-rule-color: #2d3a52;
     }
 
     /* Grid (row/col) */
     #{$prefix}row {
         background: transparent;
     }
-    #{$prefix}col {
-        // Inherit parent theme colors
+    #{$prefix}col + #{$prefix}col {
+        border-left-color: #2d3a52;
+    }
+    @media (max-width: 768px) {
+        #{$prefix}col + #{$prefix}col {
+            border-top-color: #2d3a52;
+        }
     }
 
     /* ECharts */
@@ -690,13 +708,8 @@
     #{$prefix}page-split::before {
         color: #475569;
     }
-    /* Page block 内的表格、代码块 */
+    /* Page block 内的代码块 */
     #{$prefix}page-content {
-        table {
-            th, td { border-color: #2d3a52; }
-            tr { background: transparent; border-top-color: #2d3a52; }
-            tr:nth-child(2n) { background: #233044; }
-        }
         pre, code {
             background: #0f172a;
             border-color: #2d3a52;
@@ -787,23 +800,60 @@
         color: #94a3b8;
         background: #1e293b;
         border-left-color: #2d3a52;
+        border-radius: 0 6px 6px 0;
     }
 
-    // ── 表格 ──
+    // ── 表格（★ v1.17.35: 全面增强暗色表格 — 渐变表头、hover、斑马纹、阴影）──
     table {
-        th, td {
-            border-color: #2d3a52;
-        }
-        tr {
-            background-color: #0f172a;
-            border-top-color: #2d3a52;
-        }
-        tr:nth-child(2n) {
-            background-color: #1e293b;
-        }
+        border-color: #2d3a52 !important;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        overflow: hidden;
+
         thead tr {
-            background-color: #1e293b;
+            background: linear-gradient(180deg, #1e293b 0%, #1a2332 100%) !important;
+            border-bottom: 2px solid #3b4f6d !important;
+
+            th {
+                color: #e2e8f0;
+                font-weight: 700;
+                border-right-color: #2d3a52;
+                &:last-child { border-right: none; }
+            }
         }
+
+        tbody {
+            tr {
+                border-bottom-color: #1e2d42;
+                transition: background-color 0.15s ease;
+
+                &:nth-child(even) {
+                    background-color: #131d2d;
+                }
+                &:nth-child(odd) {
+                    background-color: #0f172a;
+                }
+                &:hover {
+                    background-color: #1a2a4a;
+                }
+                &:last-child {
+                    border-bottom: none;
+                }
+            }
+
+            td {
+                color: #cbd5e1;
+                border-right-color: #1e2d42;
+                &:last-child { border-right: none; }
+            }
+        }
+    }
+
+    // ★ v1.17.35: 表格滚动包装暗色
+    .xf_editor-table-scroll {
+        &::-webkit-scrollbar { height: 6px; }
+        &::-webkit-scrollbar-track { background: #0f172a; border-radius: 3px; }
+        &::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+        &::-webkit-scrollbar-thumb:hover { background: #475569; }
     }
 
     // ── 代码复制按钮 ──
@@ -1050,14 +1100,38 @@
         }
     }
 
-    // ── TOC 目录 ──
+    // ── TOC 目录（★ v1.17.35: 完整层级颜色 + 左侧蓝色边框 + hover 背景）──
     .markdown-toc {
         background: #1e293b;
         border-color: #2d3a52;
+        border-left-color: #60a5fa;
     }
-    .markdown-toc-list a {
-        color: #93c5fd;
-        &:hover { color: #60a5fa; }
+    .markdown-toc-list {
+        ul {
+            border-left-color: #2d3a52;
+        }
+        a {
+            color: #93c5fd;
+            &:hover {
+                color: #60a5fa;
+                background: #1a2a4a;
+            }
+
+            &.toc-level-1 {
+                color: #f1f5f9;
+            }
+            &.toc-level-2 {
+                color: #e2e8f0;
+            }
+            &.toc-level-3 {
+                color: #cbd5e1;
+            }
+            &.toc-level-4,
+            &.toc-level-5,
+            &.toc-level-6 {
+                color: #94a3b8;
+            }
+        }
     }
 
     .xf_editor-toc-menu > .markdown-toc {
@@ -1106,9 +1180,13 @@
         }
     }
 
-    // ── Columns 多列 ──
+    // ── Columns 多列（★ v1.17.35: 完整暗色 — 背景 + 列分隔线 + 边框）──
     .xf_editor-columns {
         border-color: #2d3a52;
+        background: #151e2e;
+        -webkit-column-rule-color: #2d3a52;
+        -moz-column-rule-color: #2d3a52;
+        column-rule-color: #2d3a52;
     }
 
     // ── Grid 栅格 ──
@@ -1197,6 +1275,32 @@
         &:hover {
             color: #60a5fa;
             background: rgba(26,42,74,0.95);
+        }
+    }
+
+    // ★ v1.17.35: 页面内容块标题暗色边框
+    .xf_editor-page-content {
+        h1, h2 { border-bottom-color: #2d3a52; }
+    }
+
+    // ★ v1.17.35: Tooltip 按钮暗色
+    .xf_editor-tooltip-popup {
+        .xf_editor-tooltip-max-btn,
+        .xf_editor-tooltip-close-btn {
+            color: #94a3b8;
+            background: rgba(30, 41, 59, 0.9);
+
+            &:hover {
+                opacity: 1;
+            }
+        }
+        .xf_editor-tooltip-close-btn:hover {
+            background: #e74c3c;
+            color: #fff;
+        }
+        .xf_editor-tooltip-max-btn:hover {
+            background: #3498db;
+            color: #fff;
         }
     }
 
@@ -1342,11 +1446,6 @@
     .xf_editor-page-content {
         color: #cbd5e1;
 
-        table {
-            th, td { border-color: #2d3a52; }
-            tr { background: transparent; border-top-color: #2d3a52; }
-            tr:nth-child(2n) { background: #233044; }
-        }
         pre, code {
             background: #0f172a;
             border-color: #2d3a52;
