@@ -1,36 +1,40 @@
+@charset "UTF-8";
+@import "lib/variables";
+@import "lib/prefixes";
+
+// ★ v1.17.28: 暗色主题全面调整为 Slate Blue 色系，参考"智慧文档·精细版"设计语言
 /* Preview dark theme */
             
 #{$prefix}preview-theme-dark {
-    color: #777;
-    background:#2C2827;
+    color: #94a3b8;
+    background: #0f172a;
     
     #{$prefix}preview-container {
-        color: #888;
-        background-color: #2C2827;  
-        //font-family: "Meiryo UI", "Helvetica Neue", "Microsoft YaHei";
+        color: #cbd5e1;
+        background-color: #0f172a;
 
         pre.prettyprint {
             border: none;
         }
 
         pre {
-            border-color: #333;
-            background-color: #1a1a1a;
+            border-color: #2d3a52;
+            background-color: #1e293b;
 
             code {
-                color: #e6e6e6;
+                color: #f1f5f9;
             }
         }
 
         #{$prefix}code-copy-btn {
-            color: #b0b0b0;
-            background: #252525;
-            border-color: #444;
+            color: #94a3b8;
+            background: #1e293b;
+            border-color: #2d3a52;
 
             &:hover {
-                color: #58a6ff;
-                border-color: #58a6ff;
-                background: #1f2937;
+                color: #60a5fa;
+                border-color: #60a5fa;
+                background: #1a2a4a;
             }
 
             &.copied {
@@ -47,16 +51,16 @@
         }
 
         code:not(pre code) {
-            color: #e6e6e6;
-            background: #3d4300;
-            border-color: #5a6400;
+            color: #f1f5f9;
+            background: #1a2a4a;
+            border-color: #2d3a52;
         }
 
         blockquote {
-            color: #555;
+            color: #94a3b8;
             padding: 0.5em;
-            background: #222;
-            border-color: #333;
+            background: #1e293b;
+            border-color: #2d3a52;
         }
 
         abbr {
@@ -83,32 +87,99 @@
         }
     }
 
+    /* ── TOC 内嵌目录 & 下拉菜单 ── */
     .xf_editor-toc-menu {
         > .markdown-toc {
-            background:#fff;
-            border:none;
+            background: #1e293b;
+            border: 1px solid #2d3a52;
+            border-radius: 6px;
+
+            > ul {
+                background: #1e293b;
+                border-color: #2d3a52;
+                box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+
+                > li a {
+                    color: #cbd5e1;
+
+                    &:hover {
+                        background: #2a3852;
+                        color: #60a5fa;
+                    }
+                }
+            }
 
             h1 {
-                border-color:#ddd;
+                color: #cbd5e1;
+                border-bottom-color: #2d3a52;
             }
         }
+
+        .toc-menu-btn {
+            color: #cbd5e1;
+            background: #1e293b;
+            border-color: #2d3a52;
+
+            &:hover {
+                background: #2a3852;
+                border-color: #60a5fa;
+            }
+        }
+    }
+
+    /* TOC 内嵌列表（[TOC] 语法渲染） */
+    .markdown-toc {
+        background: #1e293b;
+        border-color: #2d3a52;
+    }
+    .markdown-toc-list a {
+        color: #93c5fd;
+
+        &:hover {
+            color: #60a5fa;
+        }
+
+        &.toc-level-3 { color: #94a3b8; }
+        &.toc-level-4,
+        &.toc-level-5,
+        &.toc-level-6 { color: #64748b; }
     }
     
     .markdown-body {
         h1, h2, hr {
-            border-color: #222;      
-        }    
+            border-color: #2d3a52;      
+        }
+
+        /* ── 表格暗色适配 ── */
+        table th,
+        table td {
+            border-color: #2d3a52;
+        }
+        table tr {
+            background-color: #0f172a;
+            border-top-color: #2d3a52;
+        }
+        table tr:nth-child(2n) {
+            background-color: #1e293b;
+        }
+        table thead tr {
+            background-color: #1e293b;
+        }
+    }
+
+    /* 预览容器内表格表头 */
+    table thead tr {
+        background-color: #1e293b;
     }
     
     pre {
-        color: #999;
-        // ★ v1.17.18: 合并重复 background-color，使用 rgba 回退到 #111
-        background-color: #111;
-        background-color: rgba(0,0,0,.4);
+        color: #cbd5e1;
+        background-color: #0f172a;
+        background-color: rgba(0,0,0,.3);
 
         /* plain text */
         .pln { 
-            color: #999;
+            color: #cbd5e1;
         } 
     }
 
@@ -117,61 +188,244 @@
     }
 
     [class*=xf_editor-logo] {
-        color: #2196F3;
+        color: #60a5fa;
     }
 
+    /* ── 时序图暗色（★ v1.17.31 全面升级） ── */
     .sequence-diagram {
-        text {
-            fill: #fff;
+        background: #0f1a2e;
+        border-radius: 4px;
+        padding: 8px;
+
+        svg {
+            background: #0f1a2e;
         }
 
+        /* 标题 */
+        text.title {
+            fill: #f1f5f9;
+            font-weight: bold;
+        }
+
+        /* 参与者（actor）标签 — 顶部圆角矩形 */
+        .actor {
+            rect, path {
+                fill: #2563eb;
+                stroke: #3b82f6;
+            }
+            text {
+                fill: #fff;
+            }
+        }
+
+        /* 生命线 — 垂直虚线 */
+        .lifeline {
+            path, line {
+                stroke: #3b4f6d;
+                stroke-dasharray: 6,4;
+            }
+        }
+
+        /* 激活框 — 垂直矩形 */
+        .activation {
+            rect {
+                fill: #1e3a5f;
+                stroke: #3b82f6;
+            }
+        }
+
+        /* 消息箭头 */
+        .message {
+            path {
+                stroke: #60a5fa;
+            }
+            text {
+                fill: #cbd5e1;
+            }
+        }
+
+        /* 注释框 */
+        .note {
+            rect {
+                fill: #2d2a1a;
+                stroke: #a78b4a;
+            }
+            text {
+                fill: #e5d9a0;
+            }
+        }
+
+        /* 循环/分支/可选 框架 */
+        .loop, .alt, .opt {
+            rect {
+                fill: transparent;
+                stroke: #3b4f6d;
+            }
+            text {
+                fill: #94a3b8;
+            }
+        }
+
+        /* 分隔线 */
+        .divider {
+            line, path {
+                stroke: #2d3a52;
+            }
+        }
+
+        /* 通用 rect/path — 默认降级 */
         rect, path {
             color:#fff;
             fill : #64D1CB;
             stroke : #64D1CB;
         }
+        text {
+            fill: #fff;
+        }
     }
     
+    /* ── 流程图暗色（★ v1.17.31 全面升级） ── */
     .flowchart {
+        background: #0f1a2e;
+        border-radius: 4px;
+        padding: 8px;
+
+        svg {
+            background: #0f1a2e;
+        }
+
+        /* ★ 节点类型区分 */
+        /* 开始/结束（圆角矩形） */
+        .start, .end {
+            rect, path {
+                fill: #166534;
+                stroke: #22c55e;
+            }
+            text {
+                fill: #bbf7d0;
+            }
+        }
+
+        /* 操作（矩形） */
+        .operation {
+            rect, path {
+                fill: #1e3a5f;
+                stroke: #3b82f6;
+            }
+            text {
+                fill: #bfdbfe;
+            }
+        }
+
+        /* 条件/判断（菱形） */
+        .condition {
+            rect, path {
+                fill: #5c3d0a;
+                stroke: #eab308;
+            }
+            text {
+                fill: #fef08a;
+            }
+        }
+
+        /* 输入输出（平行四边形） */
+        .inputoutput {
+            rect, path {
+                fill: #3b1f6e;
+                stroke: #8b5cf6;
+            }
+            text {
+                fill: #ddd6fe;
+            }
+        }
+
+        /* 子流程（带双竖线矩形） */
+        .subroutine {
+            rect, path {
+                fill: #1e293b;
+                stroke: #64748b;
+            }
+            text {
+                fill: #e2e8f0;
+            }
+        }
+
+        /* 并行 */
+        .parallel {
+            rect, path {
+                fill: #1e3a3a;
+                stroke: #14b8a6;
+            }
+            text {
+                fill: #ccfbf1;
+            }
+        }
+
+        /* ★ 连线/箭头 ★ */
+        .edge {
+            path, line {
+                stroke: #64748b;
+                marker-end: none;
+            }
+            polygon, .arrowhead, path[d] {
+                fill: #64748b;
+                stroke: #64748b;
+            }
+            text {
+                fill: #94a3b8;
+            }
+        }
+
+        /* ★ 组/泳道（swimlane / group） */
+        .group {
+            rect {
+                fill: transparent;
+                stroke: #3b4f6d;
+                stroke-dasharray: 6,4;
+            }
+            text {
+                fill: #94a3b8;
+            }
+        }
+
+        /* 通用节点降级 — 未匹配到具体类型时 */
         rect, path {
-            stroke : #A6C6FF;
+            stroke : #93c5fd;
         }
-
         rect {
-            fill: #A6C6FF;
+            fill: #93c5fd;
         }
-
         text {
-            fill: #5879B4;
+            fill: #e2e8f0;
         }
     }
 
     /* Tabs */
     #{$prefix}tabs {
-        background: #2a2a2a;
-        border-color: #444;
+        background: #1e293b;
+        border-color: #2d3a52;
     }
     #{$prefix}tab-nav {
-        background: #222;
-        border-bottom-color: #444;
+        background: #0f172a;
+        border-bottom-color: #2d3a52;
 
         li {
-            border-right-color: #444;
-            color: #aaa;
+            border-right-color: #2d3a52;
+            color: #94a3b8;
 
-            &:hover { background: #333; }
+            &:hover { background: #2a3852; }
 
             &.active {
-                background: #2a2a2a;
-                border-bottom-color: #58a6ff;
-                color: #58a6ff;
+                background: #1e293b;
+                border-bottom-color: #60a5fa;
+                color: #60a5fa;
             }
         }
     }
 
     /* Columns */
     #{$prefix}columns {
-        border-color: #444;
+        border-color: #2d3a52;
     }
 
     /* Grid (row/col) */
@@ -184,24 +438,33 @@
 
     /* ECharts */
     #{$prefix}echarts {
-        border-color: #444;
-        background: #1a1a1a;
+        border-color: #2d3a52;
+        background: #1e293b;
     }
 
     /* Pinyin */
     #{$prefix}pinyin rt {
-        color: #999;
+        color: #94a3b8;
     }
 
-    /* Tooltip text */
+    /* Tooltip text — 完整覆盖背景、内容区、箭头 */
     #{$prefix}tooltip-popup#{$prefix}tooltip-text {
-        background: #2a2a2a;
+        background: #1e293b;
+    }
+    #{$prefix}tooltip-text-content {
+        background: #1e293b;
+    }
+    #{$prefix}tooltip-arrow-bottom#{$prefix}tooltip-text #{$prefix}tooltip-arrow {
+        border-top-color: #1e293b;
+    }
+    #{$prefix}tooltip-arrow-top#{$prefix}tooltip-text #{$prefix}tooltip-arrow {
+        border-bottom-color: #1e293b;
     }
 
     /* Badges */
     .badge {
-        color: #ccc;
-        background: #333;
+        color: #cbd5e1;
+        background: #2d3a52;
     }
     .badge-new {
         color: #6ee7b7;
@@ -210,48 +473,867 @@
 
     /* Attachment */
     #{$prefix}file-list {
-        background: #222;
-        border-color: #444;
+        background: #1e293b;
+        border-color: #2d3a52;
     }
     #{$prefix}attachment-link {
-        color: #58a6ff;
-        background: #2a2a2a;
-        border-color: #444;
+        color: #60a5fa;
+        background: #1e293b;
+        border-color: #2d3a52;
 
         &:hover {
             color: #fff;
-            background: #58a6ff;
-            border-color: #58a6ff;
+            background: #60a5fa;
+            border-color: #60a5fa;
         }
     }
 
-    /* Copybook */
-    #{$prefix}copybook {
-        background: #2a2218;
+    /* ── 脚注暗色适配（★ v1.17.32: 嵌套修复 — 特异性匹配 base 的 3 层深度） ── */
+    #{$prefix}footnotes-section {
+        border-top-color: #2d3a52;
+
+        #{$prefix}footnote-sep {
+            // 保持 display:none
+        }
+
+        #{$prefix}footnote-title {
+            color: #f1f5f9;
+            border-bottom-color: #2d3a52;
+
+            strong { color: #f1f5f9; }
+        }
+
+        #{$prefix}footnote-list {
+            color: #cbd5e1;
+            background: transparent;
+
+            #{$prefix}footnote-item {
+                color: #cbd5e1;
+                background: #1e293b;
+                border-color: #2d3a52;
+
+                &::before {
+                    color: #60a5fa;
+                    background: #1a2a4a;
+                }
+
+                &:target {
+                    background: #2a2030;
+                    border-color: #f59e0b;
+                    box-shadow: 0 0 0 3px rgba(245,158,11,0.12);
+                }
+
+                #{$prefix}footnote-content {
+                    p { color: #cbd5e1; }
+                    strong { color: #f1f5f9; }
+                    em     { color: #94a3b8; }
+                    code   { background: #2d3a52; color: #fde68a; }
+                    a      { color: #60a5fa; }
+
+                    blockquote {
+                        border-left-color: #2d3a52;
+                        background: #0f172a;
+                        color: #94a3b8;
+                    }
+
+                    pre {
+                        background: #0f172a;
+                        border-color: #2d3a52;
+                        code {
+                            color: #cbd5e1;
+                            background: none;
+                        }
+                    }
+
+                    table {
+                        th, td { border-color: #2d3a52; }
+                        th     { background: #1e293b; color: #f1f5f9; }
+                        td     { color: #cbd5e1; }
+                    }
+
+                    br { /* 保持隐藏 */ }
+                }
+
+                // ★ 返回链接 — 覆盖 base 的 display:none
+                #{$prefix}footnote-backref {
+                    display: inline;
+                    color: #60a5fa;
+                    text-decoration: none;
+                    margin-left: 6px;
+                    font-size: 13px;
+
+                    &:hover {
+                        color: #fff;
+                        background: #2a3852;
+                        border-radius: 3px;
+                        padding: 1px 4px;
+                        text-decoration: none;
+                    }
+                }
+            }
+        }
     }
 
-    /* Page Block */
+    // ★ 正文中的脚注引用链接 (sup 内的小数字)
+    #{$prefix}footnote-ref-wrapper a {
+        color: #60a5fa;
+
+        &:hover {
+            color: #fff;
+            background: #60a5fa;
+        }
+
+        &:visited {
+            color: #c4b5fd;
+            &:hover {
+                background: #c4b5fd;
+                color: #fff;
+            }
+        }
+    }
+
+    // ★ 脚注高亮动画覆盖
+    #{$prefix}footnotes-section #{$prefix}footnote-list #{$prefix}footnote-highlight,
+    #{$prefix}footnotes-section #{$prefix}footnote-list #{$prefix}footnote-item.xf_editor-footnote-highlight {
+        background: #2d2a1a !important;
+        border-color: #f59e0b !important;
+        box-shadow: 0 0 12px rgba(245,158,11,0.25) !important;
+    }
+
+    /* ── 字帖暗色适配 ── */
+    #{$prefix}copybook {
+        background: #1a2332;
+    }
+    .xf_editor-copybook-grid-cell {
+        background: #1e293b;
+        border-color: #4a5568;
+    }
+    .xf_editor-copybook-hanzi-text {
+        color: #cbd5e1;
+    }
+    .xf_editor-copybook-pinyin-top {
+        background: #1e293b;
+    }
+    .xf_editor-copybook-pinyin-text {
+        color: #7dd3fc;
+    }
+    .xf_editor-copybook-pinyin-bottom {
+        background: #0f172a;
+        border-color: #4a5568;
+    }
+    .xf_editor-copybook-footnote a {
+        color: #93c5fd;
+        background: rgba(15,23,42,0.85);
+
+        &:hover {
+            color: #60a5fa;
+            background: rgba(26,42,74,0.95);
+        }
+    }
+
+    /* ── Page Block 纸张暗色（★ v1.17.31 全面升级） ── */
     #{$prefix}page-block {
-        background: #242424;
-        border-color: #444;
+        background: #1e293b;
+        border-color: #2d3a52;
+        box-shadow: 0 2px 16px rgba(0,0,0,0.4), 0 1px 4px rgba(0,0,0,0.2);
+
+        &:hover {
+            box-shadow: 0 4px 24px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.3);
+        }
+    }
+    #{$prefix}page-content {
+        color: #cbd5e1;
+    }
+    #{$prefix}page-watermark {
+        color: #334155;
+    }
+    #{$prefix}page-header {
+        color: #94a3b8;
+        border-bottom-color: #2d3a52;
+    }
+    #{$prefix}page-footer {
+        color: #64748b;
+        border-top-color: #2d3a52;
+    }
+    #{$prefix}page-split::before {
+        color: #475569;
+    }
+    /* Page block 内的表格、代码块 */
+    #{$prefix}page-content {
+        table {
+            th, td { border-color: #2d3a52; }
+            tr { background: transparent; border-top-color: #2d3a52; }
+            tr:nth-child(2n) { background: #233044; }
+        }
+        pre, code {
+            background: #0f172a;
+            border-color: #2d3a52;
+        }
     }
 }
 
+// ★ v1.17.28: 暗色主题下的代码高亮色彩升级，从旧式暗色改为 Slate Blue 适配色
 @media screen {
     
     #{$prefix}preview-theme-dark {
-        .str { color: #080 }  /* string content */
-        .kwd { color: #ff9900; }  /* a keyword */
-        .com { color: #444444; }  /* a comment */
-        .typ { color: #606 }  /* a type name */
-        .lit { color: #066 }  /* a literal value */
+        .str { color: #a5d6ff }  /* string content */
+        .kwd { color: #93c5fd; }  /* a keyword */
+        .com { color: #64748b; }  /* a comment */
+        .typ { color: #7dd3fc }  /* a type name */
+        .lit { color: #c4b5fd }  /* a literal value */
         /* punctuation, lisp open bracket, lisp close bracket */
-        .pun, .opn, .clo { color: #660 }
-        .tag { color: #ff9900; }  /* a markup tag name */
-        .atn { color: #6C95F5; }  /* a markup attribute name */
-        .atv { color: #080 }  /* a markup attribute value */
-        .dec, .var { color: #008BA7; }  /* a declaration; a variable name */
-        .fun { color: red }  /* a function name */
+        .pun, .opn, .clo { color: #94a3b8 }
+        .tag { color: #93c5fd; }  /* a markup tag name */
+        .atn { color: #7dd3fc; }  /* a markup attribute name */
+        .atv { color: #a5d6ff }  /* a markup attribute value */
+        .dec, .var { color: #67e8f9; }  /* a declaration; a variable name */
+        .fun { color: #fde68a }  /* a function name */
     }
     
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ★ v1.17.30: [data-theme="dark"] 属性支持 — 独立 HTML 预览暗色主题
+// 
+// 用法：在 html、body 或任意 div 上添加 data-theme="dark" 属性，
+//       所有 .xf_editor-html-preview 元素自动应用暗色主题。
+// 示例：<html data-theme="dark"> ... </html>
+//       <body data-theme="dark"> ... </body>
+//       <div data-theme="dark"> ... <div class="xf_editor-html-preview"> ... </div> </div>
+//
+// ★ 与编辑器暗色主题的区别：
+//   编辑器模式：.xf_editor-preview-theme-dark > .xf_editor-preview-container
+//   独立模式：  [data-theme="dark"] .xf_editor-html-preview
+//   两种模式的暗色值完全一致（Slate Blue 色系）
+// ═══════════════════════════════════════════════════════════════
+[data-theme="dark"] #{$prefix}html-preview {
+    color: #cbd5e1;
+    background-color: #0f172a;
+    
+    // ── 容器基础 ──
+    hr { border-color: #2d3a52; }
+    h1, h2 { border-bottom-color: #2d3a52; color: #f1f5f9; }
+    h3, h4, h5, h6 { color: #e2e8f0; }
+    a { color: #60a5fa; }
+    strong { color: #f1f5f9; }
+    em { color: #94a3b8; }
+    del { color: #64748b; }
+    
+    // ── 代码块 pre ──
+    pre {
+        border-color: #2d3a52;
+        background-color: #1e293b;
+        color: #e6edf3;
+
+        code {
+            color: #f1f5f9;
+            border: none;
+            background: transparent;
+        }
+    }
+
+    // ── 行内 code ──
+    code:not(pre code) {
+        color: #f1f5f9;
+        background: #1a2a4a;
+        border-color: #2d3a52;
+    }
+
+    // ── 引用 ──
+    blockquote {
+        color: #94a3b8;
+        background: #1e293b;
+        border-left-color: #2d3a52;
+    }
+
+    // ── 表格 ──
+    table {
+        th, td {
+            border-color: #2d3a52;
+        }
+        tr {
+            background-color: #0f172a;
+            border-top-color: #2d3a52;
+        }
+        tr:nth-child(2n) {
+            background-color: #1e293b;
+        }
+        thead tr {
+            background-color: #1e293b;
+        }
+    }
+
+    // ── 代码复制按钮 ──
+    .xf_editor-code-copy-btn {
+        color: #94a3b8;
+        background: #1e293b;
+        border-color: #2d3a52;
+
+        &:hover {
+            color: #60a5fa;
+            border-color: #60a5fa;
+            background: #1a2a4a;
+        }
+
+        &.copied {
+            color: #3fb950;
+            border-color: #3fb950;
+            background: #162b1a;
+        }
+
+        &.failed {
+            color: #f85149;
+            border-color: #f85149;
+            background: #2b1215;
+        }
+    }
+
+    // ── 滚动条 ──
+    pre::-webkit-scrollbar-track { background: #1e293b; }
+    pre::-webkit-scrollbar-thumb { background: #444c56; }
+    pre::-webkit-scrollbar-thumb:hover { background: #6e7681; }
+
+    // ── Prettify 代码高亮 ──
+    .str { color: #a5d6ff }
+    .kwd { color: #93c5fd; }
+    .com { color: #64748b; }
+    .typ { color: #7dd3fc }
+    .lit { color: #c4b5fd }
+    .pun, .opn, .clo { color: #94a3b8 }
+    .tag { color: #93c5fd; }
+    .atn { color: #7dd3fc; }
+    .atv { color: #a5d6ff }
+    .dec, .var { color: #67e8f9; }
+    .fun { color: #fde68a }
+
+    // ── 流程图（★ v1.17.31 全面升级：节点类型区分 + SVG背景） ──
+    .flowchart {
+        background: #0f1a2e;
+        border-radius: 4px;
+        padding: 8px;
+
+        svg {
+            background: #0f1a2e;
+        }
+
+        /* ★ 开始/结束节点 */
+        .start, .end {
+            rect, path {
+                fill: #166534;
+                stroke: #22c55e;
+            }
+            text {
+                fill: #bbf7d0;
+            }
+        }
+
+        /* ★ 操作节点 */
+        .operation {
+            rect, path {
+                fill: #1e3a5f;
+                stroke: #3b82f6;
+            }
+            text {
+                fill: #bfdbfe;
+            }
+        }
+
+        /* ★ 条件/判断节点（菱形） */
+        .condition {
+            rect, path {
+                fill: #5c3d0a;
+                stroke: #eab308;
+            }
+            text {
+                fill: #fef08a;
+            }
+        }
+
+        /* ★ 输入输出节点 */
+        .inputoutput {
+            rect, path {
+                fill: #3b1f6e;
+                stroke: #8b5cf6;
+            }
+            text {
+                fill: #ddd6fe;
+            }
+        }
+
+        /* ★ 子流程节点 */
+        .subroutine {
+            rect, path {
+                fill: #1e293b;
+                stroke: #64748b;
+            }
+            text {
+                fill: #e2e8f0;
+            }
+        }
+
+        /* ★ 并行节点 */
+        .parallel {
+            rect, path {
+                fill: #1e3a3a;
+                stroke: #14b8a6;
+            }
+            text {
+                fill: #ccfbf1;
+            }
+        }
+
+        /* ★ 连线箭头 */
+        .edge {
+            path, line {
+                stroke: #64748b;
+            }
+            polygon, .arrowhead, path[d] {
+                fill: #64748b;
+                stroke: #64748b;
+            }
+            text {
+                fill: #94a3b8;
+            }
+        }
+
+        /* ★ 组/泳道 */
+        .group {
+            rect {
+                fill: transparent;
+                stroke: #3b4f6d;
+                stroke-dasharray: 6,4;
+            }
+            text {
+                fill: #94a3b8;
+            }
+        }
+
+        /* 通用降级 */
+        rect, path {
+            stroke: #93c5fd;
+        }
+        rect {
+            fill: #93c5fd;
+        }
+        text {
+            fill: #e2e8f0;
+        }
+    }
+
+    // ── 时序图（★ v1.17.31 全面升级：完整元素覆盖） ──
+    .sequence-diagram {
+        background: #0f1a2e;
+        border-radius: 4px;
+        padding: 8px;
+
+        svg {
+            background: #0f1a2e;
+        }
+
+        text.title {
+            fill: #f1f5f9;
+            font-weight: bold;
+        }
+
+        .actor {
+            rect, path {
+                fill: #2563eb;
+                stroke: #3b82f6;
+            }
+            text {
+                fill: #fff;
+            }
+        }
+
+        .lifeline {
+            path, line {
+                stroke: #3b4f6d;
+                stroke-dasharray: 6,4;
+            }
+        }
+
+        .activation {
+            rect {
+                fill: #1e3a5f;
+                stroke: #3b82f6;
+            }
+        }
+
+        .message {
+            path {
+                stroke: #60a5fa;
+            }
+            text {
+                fill: #cbd5e1;
+            }
+        }
+
+        .note {
+            rect {
+                fill: #2d2a1a;
+                stroke: #a78b4a;
+            }
+            text {
+                fill: #e5d9a0;
+            }
+        }
+
+        .loop, .alt, .opt {
+            rect {
+                fill: transparent;
+                stroke: #3b4f6d;
+            }
+            text {
+                fill: #94a3b8;
+            }
+        }
+
+        .divider {
+            line, path {
+                stroke: #2d3a52;
+            }
+        }
+
+        rect, path {
+            color: #fff;
+            fill: #64D1CB;
+            stroke: #64D1CB;
+        }
+        text {
+            fill: #fff;
+        }
+    }
+
+    // ── TOC 目录 ──
+    .markdown-toc {
+        background: #1e293b;
+        border-color: #2d3a52;
+    }
+    .markdown-toc-list a {
+        color: #93c5fd;
+        &:hover { color: #60a5fa; }
+    }
+
+    .xf_editor-toc-menu > .markdown-toc {
+        background: #1e293b;
+        border-color: #2d3a52;
+        > ul {
+            background: #1e293b;
+            border-color: #2d3a52;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+            li a {
+                color: #cbd5e1;
+                &:hover {
+                    background: #2a3852;
+                    color: #60a5fa;
+                }
+            }
+        }
+    }
+    .xf_editor-toc-menu .toc-menu-btn {
+        color: #cbd5e1;
+        background: #1e293b;
+        border-color: #2d3a52;
+        &:hover {
+            background: #2a3852;
+            border-color: #60a5fa;
+        }
+    }
+
+    // ── Tabs 标签页 ──
+    .xf_editor-tabs {
+        background: #1e293b;
+        border-color: #2d3a52;
+    }
+    .xf_editor-tab-nav {
+        background: #0f172a;
+        border-bottom-color: #2d3a52;
+        li {
+            border-right-color: #2d3a52;
+            color: #94a3b8;
+            &:hover { background: #2a3852; }
+            &.active {
+                background: #1e293b;
+                border-bottom-color: #60a5fa;
+                color: #60a5fa;
+            }
+        }
+    }
+
+    // ── Columns 多列 ──
+    .xf_editor-columns {
+        border-color: #2d3a52;
+    }
+
+    // ── Grid 栅格 ──
+    .xf_editor-col + .xf_editor-col {
+        border-left-color: #2d3a52;
+    }
+
+    // ── ECharts ──
+    .xf_editor-echarts {
+        border-color: #2d3a52;
+        background: #1e293b;
+    }
+
+    // ── Pinyin 拼音 ──
+    .xf_editor-pinyin rt {
+        color: #94a3b8;
+    }
+
+    // ── Tooltip ──
+    .xf_editor-tooltip-popup.xf_editor-tooltip-text {
+        background: #1e293b;
+    }
+    .xf_editor-tooltip-text-content {
+        background: #1e293b;
+    }
+
+    // ── Badge ──
+    .badge {
+        color: #cbd5e1;
+        background: #2d3a52;
+    }
+    .badge-new {
+        color: #6ee7b7;
+        background: #064e3b;
+    }
+
+    // ── 附件链接 ──
+    .xf_editor-file-list {
+        background: #1e293b;
+        border-color: #2d3a52;
+    }
+    .xf_editor-attachment-link {
+        color: #60a5fa;
+        background: #1e293b;
+        border-color: #2d3a52;
+        &:hover {
+            color: #fff;
+            background: #60a5fa;
+            border-color: #60a5fa;
+        }
+    }
+
+    // ── 字帖 ──
+    .xf_editor-copybook {
+        background: #1a2332;
+    }
+    .xf_editor-copybook-grid-cell {
+        background: #1e293b;
+        border-color: #4a5568;
+    }
+    .xf_editor-copybook-hanzi-text {
+        color: #cbd5e1;
+    }
+    .xf_editor-copybook-pinyin-top {
+        background: #1e293b;
+    }
+    .xf_editor-copybook-pinyin-text {
+        color: #7dd3fc;
+    }
+    .xf_editor-copybook-pinyin-bottom {
+        background: #0f172a;
+        border-color: #4a5568;
+    }
+    .xf_editor-copybook-footnote a {
+        color: #93c5fd;
+        background: rgba(15,23,42,0.85);
+        &:hover {
+            color: #60a5fa;
+            background: rgba(26,42,74,0.95);
+        }
+    }
+
+    // ── 脚注（★ v1.17.32: 嵌套修复 — 特异性匹配 base 的 3 层深度） ──
+    .xf_editor-footnotes-section {
+        border-top-color: #2d3a52;
+
+        .xf_editor-footnote-sep {
+            // 保持 display:none
+        }
+
+        .xf_editor-footnote-title {
+            color: #f1f5f9;
+            border-bottom-color: #2d3a52;
+
+            strong { color: #f1f5f9; }
+        }
+
+        .xf_editor-footnote-list {
+            color: #cbd5e1;
+            background: transparent;
+
+            .xf_editor-footnote-item {
+                color: #cbd5e1;
+                background: #1e293b;
+                border-color: #2d3a52;
+
+                &::before {
+                    color: #60a5fa;
+                    background: #1a2a4a;
+                }
+
+                &:target {
+                    background: #2a2030;
+                    border-color: #f59e0b;
+                    box-shadow: 0 0 0 3px rgba(245,158,11,0.12);
+                }
+
+                .xf_editor-footnote-content {
+                    p { color: #cbd5e1; }
+                    strong { color: #f1f5f9; }
+                    em     { color: #94a3b8; }
+                    code   { background: #2d3a52; color: #fde68a; }
+                    a      { color: #60a5fa; }
+
+                    blockquote {
+                        border-left-color: #2d3a52;
+                        background: #0f172a;
+                        color: #94a3b8;
+                    }
+
+                    pre {
+                        background: #0f172a;
+                        border-color: #2d3a52;
+                        code {
+                            color: #cbd5e1;
+                            background: none;
+                        }
+                    }
+
+                    table {
+                        th, td { border-color: #2d3a52; }
+                        th     { background: #1e293b; color: #f1f5f9; }
+                        td     { color: #cbd5e1; }
+                    }
+
+                    br { /* 保持隐藏 */ }
+                }
+
+                // ★ 返回链接 — 覆盖 base 的 display:none
+                .xf_editor-footnote-backref {
+                    display: inline;
+                    color: #60a5fa;
+                    text-decoration: none;
+                    margin-left: 6px;
+                    font-size: 13px;
+
+                    &:hover {
+                        color: #fff;
+                        background: #2a3852;
+                        border-radius: 3px;
+                        padding: 1px 4px;
+                        text-decoration: none;
+                    }
+                }
+            }
+        }
+    }
+
+    // ★ 正文中的脚注引用链接 (sup 内的小数字)
+    .xf_editor-footnote-ref-wrapper a {
+        color: #60a5fa;
+        &:hover {
+            color: #fff;
+            background: #60a5fa;
+        }
+        &:visited {
+            color: #c4b5fd;
+            &:hover {
+                background: #c4b5fd;
+                color: #fff;
+            }
+        }
+    }
+
+    // ★ 脚注高亮（:target）暗色
+    .xf_editor-footnotes-section .xf_editor-footnote-list .xf_editor-footnote-item.xf_editor-footnote-highlight {
+        background: #2d2a1a !important;
+        border-color: #f59e0b !important;
+        box-shadow: 0 0 12px rgba(245,158,11,0.25) !important;
+    }
+
+    // ★ :target 高亮动画暗色覆盖
+    @keyframes xf_editor-fn-flash-dark {
+        0%   { background: #2d2a1a; border-color: #f59e0b; }
+        50%  { background: #3d3020; border-color: #fcd34d; }
+        100% { background: #1e293b; border-color: #2d3a52; }
+    }
+    .xf_editor-footnotes-section .xf_editor-footnote-list .xf_editor-footnote-item:target {
+        animation: xf_editor-fn-flash-dark 2s ease-out;
+    }
+
+    // ── 分页线 ──
+    hr.xf_editor-page-break {
+        border-color: #2d3a52;
+    }
+
+    // ── 任务列表 ──
+    .task-list-item-checkbox {
+        accent-color: #60a5fa;
+    }
+
+    // ── A4 纸张/页面块（★ v1.17.31 全面实现） ──
+    .xf_editor-page-block {
+        background: #1e293b;
+        border-color: #2d3a52;
+        box-shadow: 0 2px 16px rgba(0,0,0,0.4), 0 1px 4px rgba(0,0,0,0.2);
+
+        &:hover {
+            box-shadow: 0 4px 24px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.3);
+        }
+    }
+    .xf_editor-page-content {
+        color: #cbd5e1;
+
+        table {
+            th, td { border-color: #2d3a52; }
+            tr { background: transparent; border-top-color: #2d3a52; }
+            tr:nth-child(2n) { background: #233044; }
+        }
+        pre, code {
+            background: #0f172a;
+            border-color: #2d3a52;
+        }
+    }
+    .xf_editor-page-watermark {
+        color: #334155;
+    }
+    .xf_editor-page-header {
+        color: #94a3b8;
+        border-bottom-color: #2d3a52;
+    }
+    .xf_editor-page-footer {
+        color: #64748b;
+        border-top-color: #2d3a52;
+    }
+    .xf_editor-page-split::before {
+        color: #475569;
+    }
+
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ★ v1.17.31: 暗色主题 — 打印媒体（页面块打印时保真暗色）
+// ═══════════════════════════════════════════════════════════════
+@media print {
+    [data-theme="dark"] {
+        .xf_editor-page-block,
+        .xf_editor-page-split {
+            box-shadow: none;
+            border-color: #2d3a52;
+            background: #1e293b;
+            color: #cbd5e1;
+        }
+    }
+    #{$prefix}preview-theme-dark {
+        #{$prefix}page-block,
+        #{$prefix}page-split {
+            box-shadow: none;
+            border-color: #2d3a52;
+            background: #1e293b;
+            color: #cbd5e1;
+        }
+    }
 }

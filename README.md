@@ -4,7 +4,7 @@
 
 </p>
 
-# xfEditor 编辑器 v1.17.27
+# xfEditor 编辑器 v1.17.32
 
 > **xfEditor 是一款更适合教育、教学、网页演示、数据呈现、内容排版的现代化 Markdown 开源在线编辑器。** 基于 [pandao/editor.md](https://github.com/pandao/editor.md) 深度改进，在原有基础上进行了系统性优化、Bug 修复和新功能拓展。
 
@@ -18,6 +18,72 @@
 - [图表](https://zhaoxianfang.github.io/xfeditor/examples/echarts.html)
 - [完整演示](https://zhaoxianfang.github.io/xfeditor/examples/all-features.html)
 - [API 接口文档](https://zhaoxianfang.github.io/xfeditor/examples/api-reference.html)
+
+**v1.17.32 脚注暗色主题硬核修复 — 特异性 + backref + 全面回归验证：**
+- **🔧 根因修复：CSS 特异性不匹配导致暗色脚注样式无效**
+  - Base 规则：`.xf_editor-footnotes-section .xf_editor-footnote-list .xf_editor-footnote-item` — 特异性 (0,0,3,0)
+  - 旧暗色规则：`.xf_editor-preview-theme-dark .xf_editor-footnote-item` — 特异性 (0,0,2,0) ❌ **base 覆盖暗色！**
+  - 旧 `[data-theme]` 规则：`[data-theme="dark"] .xf_editor-html-preview .xf_editor-footnote-item` — 特异性 (0,0,3,0) ⚠️ **相同特异性 + cascade 中 base 更晚 → 暗色失效！**
+  - **修复**：暗色脚注选择器嵌套至与 base 相同的 3 层深度
+    - `preview-theme-dark`: `#{$prefix}footnotes-section #{$prefix}footnote-list #{$prefix}footnote-item` → 特异性 (0,0,4,0) ✓
+    - `[data-theme="dark"]`: `.xf_editor-footnotes-section .xf_editor-footnote-list .xf_editor-footnote-item` → 特异性 (0,0,4,0) ✓
+    - JS 内联 CSS 同样升级为完整嵌套选择器链
+- **↩️ backref 返回链接修复**：Base 样式设 `display:none` 但暗色未覆盖
+  - 修复：暗色规则新增 `display:inline` + 完整 hover/padding 样式，backref 在暗色模式下正常显示
+- **🎨 脚注暗色覆盖全面强化**（从 8 条规则扩展到 25+ 条）：
+  - `footnote-list`：新增 `background:transparent`、`color:#cbd5e1`
+  - `footnote-content p/strong/em/code/a`：全部独立暗色覆盖
+  - `footnote-content pre code`：嵌套代码块暗色适配
+  - `footnote-content blockquote`：引用暗色适配
+  - `footnote-content table`：表格暗色适配（th/td 边框及背景）
+  - `footnote-highlight`：程序触发滚动高亮暗色覆盖（使用完整嵌套选择器）
+  - `footnote-item:target`：新增暗色动画 `xf_editor-fn-flash-dark`
+- **🗑 SCSS 清理**：移除 `[data-theme="dark"]` 块中重复的扁平 `footnote-list`/`footnote-backref` 规则（已合并至嵌套块）
+- **📦 全部构建产物已重新编译并压缩**
+
+**v1.17.31 纸张/脚注/流程图/时序图 暗色主题全面升级：**
+- **📄 A4 纸张暗色主题全面实现**：`page-block`/`page-content`/`page-watermark`/`page-header`/`page-footer`/`page-split` 全部覆盖暗色
+  - page-block：`background:#1e293b`、`border-color:#2d3a52`、深色投影（`rgba(0,0,0,0.4)`）
+  - page-content：文字色 `#cbd5e1`，内部表格/代码块全暗色适配
+  - page-header 分界线从 `#eee` → `#2d3a52`，文字 `#666` → `#94a3b8`
+  - page-footer 分界线、文字色同样覆盖，page-watermark `#ccc` → `#334155`
+  - page-split::before 页码计数器 `#bbb` → `#475569`
+  - `@media print` 暗色打印保真：打印时也应用暗色背景和边框
+  - 两种暗色模式（`preview-theme-dark` + `[data-theme]`）和 JS 内联 CSS（`getHTML()` 输出）全部同步
+- **🔀 流程图暗色主题全面升级**：从简单矩形填充升级为 8 种节点类型独立着色
+  - 开始/结束（`.start`/`.end`）：绿色系 `#166534` 填充 + `#22c55e` 描边 + `#bbf7d0` 文字
+  - 操作（`.operation`）：蓝色系 `#1e3a5f` 填充 + `#3b82f6` 描边 + `#bfdbfe` 文字
+  - 条件/判断（`.condition`）：琥珀色系 `#5c3d0a` 填充 + `#eab308` 描边 + `#fef08a` 文字
+  - 输入输出（`.inputoutput`）：紫色系 `#3b1f6e` 填充 + `#8b5cf6` 描边 + `#ddd6fe` 文字
+  - 子流程（`.subroutine`）：深灰 `#1e293b` 填充 + `#64748b` 描边
+  - 并行（`.parallel`）：青绿系 `#1e3a3a` 填充 + `#14b8a6` 描边 + `#ccfbf1` 文字
+  - 连线（`.edge`）：`#64748b` 描边 + `#94a3b8` 箭头/文字
+  - 组/泳道（`.group`）：透明填充 + `#3b4f6d` 虚线框
+  - SVG 容器背景：`#0f1a2e` 深蓝底色 + 圆角 4px + 8px padding
+- **⏱ 时序图暗色主题全面升级**：从 3 个 SVG 元素覆盖到 10+ 种元素
+  - actor 参与者：`#2563eb` 填充 + `#3b82f6` 描边 + 白色文字
+  - lifeline 生命线：`#3b4f6d` 虚线（stroke-dasharray: 6,4）
+  - activation 激活框：`#1e3a5f` 填充 + `#3b82f6` 描边
+  - message 消息：`#60a5fa` 箭头 + `#cbd5e1` 文字
+  - note 注释：`#2d2a1a` 填充（暗琥珀背景）+ `#a78b4a` 描边
+  - loop/alt/opt 框架：透明填充 + `#3b4f6d` 虚线框
+  - divider 分隔线：`#2d3a52`
+  - SVG 容器背景：`#0f1a2e` + 圆角
+- **📝 脚注增强**：新增 `footnote-list`（ol 容器）和 `footnote-backref`（返回链接）暗色样式
+  - `preview-theme-dark` 和 `[data-theme]` 双模式覆盖
+  - backref：`#60a5fa` 链接色，hover 时 `#fff` 文字 + `#2a3852` 背景
+- **📦 全部构建产物已重新编译**（CSS: +8KB 暗色规则，JS: +15 条内联规则）
+
+**v1.17.28 暗色主题色调升级为 Slate Blue（石板蓝）：**
+- **🎨 暗色主题全面重新设计**：参考"智慧文档·精细版"设计语言，将旧暖灰暗色（`#2C2827`/`#1A1A17`）全面替换为 Slate Blue 色系
+  - 编辑器工具栏背景：`#1A1A17` → `#0f172a`，菜单悬停：`#333` → `#2a3852`
+  - 预览区背景：`#2C2827` → `#0f172a`，代码区：`#1a1a1a` → `#1e293b`
+  - 边框色：`#333`/`#222`/`#444` → 统一 `#2d3a52`
+  - 文字色：`#777`/`#555` → `#94a3b8`，主文字：`#e6e6e6` → `#f1f5f9`
+  - Accent：`#58a6ff` → `#60a5fa`，Hover 背景：`#1f2937` → `#1a2a4a`
+- **🎨 代码高亮色调同步升级**：旧暗色 `@media screen` 覆盖（如 `#080` 深绿字符串、`#606` 暗紫类型）改为 Slate Blue 适配色（`#a5d6ff`/`#93c5fd`/`#7dd3fc`）
+- **🎨 Tooltip 箭头完整覆盖**：暗色主题下 text-tooltip 的箭头边框也从 `#1e1e1e` 覆盖为 `#1e293b`，避免视觉不一致
+- **🎨 流程图节点色微调**：填充色从 `#A6C6FF` → `#93c5fd`，与 Slate Blue 调色板协调
 
 **v1.17.27 流程图/时序图滚动条修复 + 节点边框 100% 覆盖 + 字帖 Flex 精确修复：**
 - **🐛 流程图/时序图滚动条彻底修复**：根因定位——SVG 上的 `max-width:100%!important` 阻止 SVG 溢出容器，导致 `overflow-x:auto` 永不触发。改为 `max-width:none!important`，让 SVG 可按实际宽度渲染，容器产生水平滚动条
@@ -1185,6 +1251,34 @@ editor.setPreviewTheme("default");
 ```
 编辑区支持所有 CodeMirror 主题色系。预览区内置 `default` / `dark` 两种。
 
+### `[data-theme="dark"]` 属性支持 🆕v1.17.30
+
+独立 HTML 预览页面（通过 `getHTML()` 或 `markdownToHTML()` 生成的内容）无需加载完整编辑器 JS，只需在父元素上添加 `data-theme="dark"` 属性即可启用暗色主题：
+
+```html
+<!-- 整页暗色 -->
+<html data-theme="dark">
+<body>
+  <div class="xf_editor-html-preview">...</div>
+</body>
+</html>
+
+<!-- 仅某个区域暗色 -->
+<div data-theme="dark">
+  <div class="xf_editor-html-preview">...</div>
+</div>
+
+<!-- JS 动态切换 -->
+<script>
+  // 切换为暗色
+  document.documentElement.setAttribute('data-theme', 'dark');
+  // 恢复亮色
+  document.documentElement.removeAttribute('data-theme');
+</script>
+```
+
+暗色覆盖范围：背景色、文字色、代码块、行内代码、引用块、表格、**脚注**、流程图、时序图、Tabs、TOC 目录、Badge、ECharts、字帖、附件链接、滚动条等全部元素。
+
 ### 多语言
 内置 `zh-cn`（简体中文）、`zh-tw`（繁体中文）、`en`（英文）。自定义语言包：
 
@@ -1343,8 +1437,8 @@ $(element).off("click");
 
 ---
 
-**最后更新**: 2026-07-01
-**版本**: v1.17.27
+**最后更新**: 2026-07-04
+**版本**: v1.17.32
 
 ### 最新优化 (2026-07-01)
 

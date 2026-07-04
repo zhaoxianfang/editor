@@ -22,7 +22,8 @@
 .fun   { color: #dcdcaa }  /* function name */
 
 /* Line numbering */
-ol.linenums { margin-top: 0; margin-bottom: 0; color: #484f58; }
+// ★ v1.17.28: 行号颜色适配 Slate Blue 暗色背景
+ol.linenums { margin-top: 0; margin-bottom: 0; color: #64748b; }
 
 /* All lines get uniform styling — no alternating background */
 li.L0,li.L1,li.L2,li.L3,li.L4,li.L5,li.L6,li.L7,li.L8,li.L9 {

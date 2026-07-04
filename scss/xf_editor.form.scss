@@ -163,10 +163,6 @@
         }
     }
 
-    #{$prefix}btn {
-        padding: 5px 8px 4px\0;
-    }
-
     #{$prefix}btn + #{$prefix}btn {
         margin-left: 8px;
     }
@@ -193,9 +189,6 @@
         &::-webkit-file-upload-button {
             visibility: hidden;
         }
-    }
-
-    input[type="submit"]  {
     }
 
     &:hover input[type="submit"]  {

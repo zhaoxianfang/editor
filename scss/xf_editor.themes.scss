@@ -1,28 +1,132 @@
-/* xfEditor Dark theme */
-
+// ★ v1.17.28: 暗色主题色调从暖灰改为 Slate Blue（石板蓝），参考"智慧文档·精细版"主题
+//           CodeMirror 编辑区 + 工具栏 + 预览区同步覆盖
 #{$prefix}theme-dark {
-    border-color: #1a1a17;
+    border-color: #0f172a;
 
     #{$prefix}toolbar {
-        background: #1A1A17;
-        border-color: #1a1a17;
+        background: #0f172a;
+        border-color: #1e293b;
     }
 
     #{$prefix}menu > li > a {
-        color: #777;
-        border-color: #1a1a17;
+        color: #94a3b8;
+        border-color: #0f172a;
 
         &:hover, &.active {
-            border-color: #333;
-            background: #333;
+            border-color: #2a3852;
+            background: #2a3852;
+            color: #cbd5e1;
         }
     }
 
     #{$prefix}menu > li.divider {
-        border-right: 1px solid #111;
+        border-right: 1px solid #1e293b;
     }
     
+    // ── CodeMirror 编辑区基础外观 ──
     .CodeMirror {
-        border-right: 1px solid rgba(0,0,0,0.1);
+        border-right: 1px solid rgba(0,0,0,0.3);
+    }
+
+    // 覆盖 monokai 主题的暖色 → Slate Blue
+    .cm-s-monokai {
+        &.CodeMirror {
+            background: #0f172a;
+            color: #cbd5e1;
+        }
+
+        .CodeMirror-gutters {
+            background: #0f172a;
+            border-right-color: #2d3a52;
+        }
+
+        .CodeMirror-linenumber {
+            color: #64748b;
+        }
+
+        .CodeMirror-cursor {
+            border-left-color: #cbd5e1;
+        }
+
+        // 选中区域（monokai 用了 !important，这里必须同步）
+        div.CodeMirror-selected {
+            background: #1a2a4a !important;
+        }
+
+        .CodeMirror-activeline-background {
+            background: #1e293b !important;
+        }
+
+        .CodeMirror-matchingbracket {
+            color: #60a5fa !important;
+            text-decoration: underline;
+        }
+
+        .CodeMirror-guttermarker {
+            color: #f1f5f9;
+        }
+        .CodeMirror-guttermarker-subtle {
+            color: #64748b;
+        }
+
+        // ── 语法高亮 Slate Blue 适配 ──
+        span.cm-comment   { color: #64748b; }  // 注释
+        span.cm-keyword   { color: #93c5fd; }  // 关键词
+        span.cm-string    { color: #a5d6ff; }  // 字符串
+        span.cm-number,
+        span.cm-atom      { color: #fde68a; }  // 数字 / 原子
+        span.cm-property,
+        span.cm-attribute { color: #7dd3fc; }  // 属性
+        span.cm-variable  { color: #cbd5e1; }  // 变量
+        span.cm-variable-2{ color: #93c5fd; }  // 变量-2
+        span.cm-variable-3{ color: #7dd3fc; }  // 变量-3
+        span.cm-def       { color: #c4b5fd; }  // 定义
+        span.cm-bracket   { color: #94a3b8; }  // 括号
+        span.cm-tag       { color: #60a5fa; }  // 标签
+        span.cm-link      { color: #7dd3fc; }  // 链接
+        span.cm-error     { background: #7f1d1d; color: #fca5a5; }  // 错误
+        span.cm-meta      { color: #94a3b8; }  // 元信息
+        span.cm-qualifier { color: #fde68a; }  // 限定符
+        span.cm-builtin   { color: #c4b5fd; }  // 内置
+        span.cm-header    { color: #60a5fa; }  // 标题
+        span.cm-hr        { color: #64748b; }  // 水平线
+        span.cm-quote     { color: #7dd3fc; }  // 引用
+        span.cm-negative  { color: #f87171; }  // 负值/diff删除
+        span.cm-positive  { color: #4ade80; }  // 正值/diff添加
+        span.cm-strong    { color: #fb923c; }  // 加粗
+        span.cm-em        { color: #fde68a; }  // 斜体
+    }
+
+    // ── 覆盖通用 codemirror.scss 中的浅色默认值 ──
+    .CodeMirror-selected {
+        background: #1a2a4a;
+    }
+
+    .CodeMirror-focused .CodeMirror-selected {
+        background: #1a2a4a;
+    }
+
+    .CodeMirror pre.CodeMirror-placeholder {
+        color: #64748b;
+    }
+
+    // 尾随空格提示适配暗色
+    .cm-trailingspace {
+        background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAACCAYAAAB/qH1jAAAABmJLR0QA/wD/AP+gvaeTAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH3QUXCToH00Y1UgAAACFJREFUCNdjPMDBUc/AwNDAAAFMTAwMDA0OP34wQgX/AQBYgwYEx4f9lQAAAABJRU5ErkJggg==);
+        background-position: bottom left;
+        background-repeat: repeat-x;
+    }
+
+    // 匹配高亮适配暗色
+    .CodeMirror-focused .cm-matchhighlight {
+        background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAFklEQVQI12NgYGBgkKzc8x9CMDAwAAAmhwSbidEoSQAAAABJRU5ErkJggg==);
+        background-position: bottom;
+        background-repeat: repeat-x;
+    }
+
+    // 搜索匹配高亮
+    .cm-searching {
+        background: #1a2a4a;
+        // 保留默认的黄色盒阴影作为备用
     }
 }

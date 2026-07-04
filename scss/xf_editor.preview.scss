@@ -7,7 +7,10 @@
 @import "xf_editor.logo";
 
 // github-markdown.css
-@import "github-markdown";  
+@import "github-markdown";
+
+// ★ v1.17.30: 导入暗色主题 — 独立预览 CSS 支持 data-theme="dark" 属性
+@import "xf_editor.preview.themes";
 
 #{$prefix}preview-container, #{$prefix}html-preview {
     text-align: left;

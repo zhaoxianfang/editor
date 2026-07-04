@@ -143,7 +143,7 @@
 @import "xf_editor.form";
 @import "xf_editor.codemirror";
 @import "xf_editor.preview";
-@import "xf_editor.preview.themes";
+// ★ v1.17.30: xf_editor.preview.themes 已由 xf_editor.preview.scss 间接导入，不再重复引入
 
 /* ===========================================
  * 颜色选择器样式 (Color Picker Styles)
