@@ -2461,7 +2461,9 @@
   padding: 20px;
   overflow: auto;
   width: 100%;
+  max-width: 100%;
   background-color: #fff;
+  box-sizing: border-box;
 }
 .markdown-body.xf_editor-preview-container img, .markdown-body.xf_editor-preview-container video, .markdown-body.xf_editor-preview-container iframe, .markdown-body.xf_editor-preview-container svg, .markdown-body.xf_editor-preview-container .katex, .markdown-body.xf_editor-preview-container .flowchart, .markdown-body.xf_editor-preview-container .sequence-diagram, .markdown-body.xf_editor-html-preview img, .markdown-body.xf_editor-html-preview video, .markdown-body.xf_editor-html-preview iframe, .markdown-body.xf_editor-html-preview svg, .markdown-body.xf_editor-html-preview .katex, .markdown-body.xf_editor-html-preview .flowchart, .markdown-body.xf_editor-html-preview .sequence-diagram {
   max-width: 100% !important;
@@ -2476,8 +2478,6 @@
   border-collapse: collapse;
   border-spacing: 0;
   word-break: normal;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
   font-size: 14px;
   line-height: 1.6;
   border: 1px solid #e1e4e8;
@@ -2541,6 +2541,9 @@
   -webkit-overflow-scrolling: touch;
   margin: 16px 0;
 }
+.markdown-body.xf_editor-preview-container .xf_editor-table-scroll > table, .markdown-body.xf_editor-html-preview .xf_editor-table-scroll > table {
+  margin: 0;
+}
 .markdown-body.xf_editor-preview-container .xf_editor-table-scroll::-webkit-scrollbar, .markdown-body.xf_editor-html-preview .xf_editor-table-scroll::-webkit-scrollbar {
   height: 6px;
 }
@@ -2555,22 +2558,50 @@
 .markdown-body.xf_editor-preview-container .xf_editor-table-scroll::-webkit-scrollbar-thumb:hover, .markdown-body.xf_editor-html-preview .xf_editor-table-scroll::-webkit-scrollbar-thumb:hover {
   background: #a1a1a1;
 }
+.markdown-body.xf_editor-preview-container .xf_editor-table-wrapper, .markdown-body.xf_editor-html-preview .xf_editor-table-wrapper {
+  display: block;
+  max-width: 100%;
+  position: relative;
+  overflow: visible;
+  margin: 5px 0;
+}
+.markdown-body.xf_editor-preview-container .xf_editor-table-wrapper > .xf_editor-table-scroll, .markdown-body.xf_editor-html-preview .xf_editor-table-wrapper > .xf_editor-table-scroll {
+  margin: 0;
+  border-radius: 8px;
+}
 .markdown-body.xf_editor-preview-container blockquote, .markdown-body.xf_editor-html-preview blockquote {
-  color: #666;
-  border-left: 4px solid #ddd;
-  padding: 12px 20px;
-  margin: 16px 0;
+  color: #4b5563;
+  border-left: 0;
+  padding: 16px 20px 16px 24px;
+  margin: 20px 0;
   font-size: 14px;
   font-style: normal;
   background: #f8f9fb;
-  border-radius: 0 6px 6px 0;
-  line-height: 1.7;
+  border-radius: 0 8px 8px 0;
+  line-height: 1.75;
+  position: relative;
+  box-shadow: inset 4px 0 0 0 #2C7EEA, inset 0 0 0 1px rgba(0, 0, 0, 0.04);
 }
 .markdown-body.xf_editor-preview-container blockquote > :first-child, .markdown-body.xf_editor-html-preview blockquote > :first-child {
   margin-top: 0;
 }
 .markdown-body.xf_editor-preview-container blockquote > :last-child, .markdown-body.xf_editor-html-preview blockquote > :last-child {
   margin-bottom: 0;
+}
+.markdown-body.xf_editor-preview-container blockquote p, .markdown-body.xf_editor-html-preview blockquote p {
+  margin-bottom: 10px;
+  line-height: 1.75;
+}
+.markdown-body.xf_editor-preview-container blockquote code:not(pre code), .markdown-body.xf_editor-html-preview blockquote code:not(pre code) {
+  color: #1a6b3c;
+  background: rgba(255, 255, 255, 0.85);
+  border-color: #b7ebc9;
+}
+.markdown-body.xf_editor-preview-container blockquote blockquote, .markdown-body.xf_editor-html-preview blockquote blockquote {
+  margin: 14px 0;
+  background: #f0f2f5;
+  box-shadow: inset 4px 0 0 0 #9ca3af, inset 0 0 0 1px rgba(0, 0, 0, 0.04);
+  border-radius: 0 6px 6px 0;
 }
 .markdown-body.xf_editor-preview-container p code, .markdown-body.xf_editor-html-preview p code {
   margin-left: 5px;
@@ -2632,20 +2663,71 @@
   margin-bottom: 12px;
   line-height: 1.7;
 }
+.markdown-body.xf_editor-preview-container p, .markdown-body.xf_editor-preview-container li, .markdown-body.xf_editor-preview-container h1, .markdown-body.xf_editor-preview-container h2, .markdown-body.xf_editor-preview-container h3, .markdown-body.xf_editor-preview-container h4, .markdown-body.xf_editor-preview-container h5, .markdown-body.xf_editor-preview-container h6, .markdown-body.xf_editor-preview-container blockquote, .markdown-body.xf_editor-preview-container td, .markdown-body.xf_editor-preview-container th, .markdown-body.xf_editor-html-preview p, .markdown-body.xf_editor-html-preview li, .markdown-body.xf_editor-html-preview h1, .markdown-body.xf_editor-html-preview h2, .markdown-body.xf_editor-html-preview h3, .markdown-body.xf_editor-html-preview h4, .markdown-body.xf_editor-html-preview h5, .markdown-body.xf_editor-html-preview h6, .markdown-body.xf_editor-html-preview blockquote, .markdown-body.xf_editor-html-preview td, .markdown-body.xf_editor-html-preview th {
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  word-break: normal;
+}
+.markdown-body.xf_editor-preview-container, .markdown-body.xf_editor-html-preview {
+  /* --- Links — 更精致的交互与颜色层级 --- */
+}
+.markdown-body.xf_editor-preview-container a, .markdown-body.xf_editor-html-preview a {
+  word-break: break-all;
+}
+.markdown-body.xf_editor-preview-container a, .markdown-body.xf_editor-html-preview a {
+  color: #0366d6;
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: color 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
+}
+.markdown-body.xf_editor-preview-container a:hover, .markdown-body.xf_editor-html-preview a:hover {
+  color: #005cc5;
+  border-bottom-color: #005cc5;
+  text-decoration: none;
+}
+.markdown-body.xf_editor-preview-container a:visited, .markdown-body.xf_editor-html-preview a:visited {
+  color: #8250df;
+}
+.markdown-body.xf_editor-preview-container a:visited:hover, .markdown-body.xf_editor-html-preview a:visited:hover {
+  color: #5a32a3;
+  border-bottom-color: #5a32a3;
+}
+.markdown-body.xf_editor-preview-container a:focus, .markdown-body.xf_editor-html-preview a:focus {
+  outline: 2px solid #2C7EEA;
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+.markdown-body.xf_editor-preview-container a:active, .markdown-body.xf_editor-html-preview a:active {
+  color: #0246a2;
+}
+.markdown-body.xf_editor-preview-container a[href^=http]:not([href*="javascript:"])::after, .markdown-body.xf_editor-preview-container a[target=_blank]::after, .markdown-body.xf_editor-html-preview a[href^=http]:not([href*="javascript:"])::after, .markdown-body.xf_editor-html-preview a[target=_blank]::after {
+  content: "↗";
+  display: inline-block;
+  margin-left: 2px;
+  font-size: 0.75em;
+  line-height: 1;
+  opacity: 0.6;
+  vertical-align: top;
+}
 .markdown-body.xf_editor-preview-container, .markdown-body.xf_editor-html-preview {
   /* --- Inline code (not inside pre) — 精致淡绿色标签 --- */
 }
 .markdown-body.xf_editor-preview-container code:not(pre code), .markdown-body.xf_editor-html-preview code:not(pre code) {
-  color: #1a6b3c;
-  background: #e6ffed;
-  border: 1px solid #b7ebc9;
+  color: #0d5a3b;
+  background: #e8fff1;
+  border: 1px solid #b4e8cc;
   padding: 2px 7px;
-  border-radius: 4px;
+  border-radius: 5px;
   font-size: 85%;
   font-family: "SFMono-Regular", "Cascadia Code", Consolas, "Liberation Mono", Menlo, Courier, monospace;
   white-space: nowrap;
   word-break: keep-all;
-  transition: background 0.15s ease;
+  transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.03);
+}
+.markdown-body.xf_editor-preview-container code:not(pre code):hover, .markdown-body.xf_editor-html-preview code:not(pre code):hover {
+  background: #d4fce6;
+  border-color: #86dba8;
 }
 .markdown-body.xf_editor-preview-container, .markdown-body.xf_editor-html-preview {
   /* --- Pre block (code block container) — 精致暗色主题 --- */
@@ -2657,7 +2739,7 @@
   padding: 44px 20px 20px 20px;
   margin-bottom: 20px;
   margin-top: 20px;
-  overflow: auto;
+  overflow: hidden;
   line-height: 1.7;
   font-size: 13.5px;
   word-wrap: normal;
@@ -2692,6 +2774,7 @@
   z-index: 2;
 }
 .markdown-body.xf_editor-preview-container pre code, .markdown-body.xf_editor-html-preview pre code {
+  display: block;
   padding: 0;
   background: transparent !important;
   border: none !important;
@@ -2703,6 +2786,13 @@
   word-wrap: normal;
   font-family: inherit;
   border-radius: 0;
+}
+.markdown-body.xf_editor-preview-container pre > code,
+.markdown-body.xf_editor-preview-container pre > ol.linenums, .markdown-body.xf_editor-html-preview pre > code,
+.markdown-body.xf_editor-html-preview pre > ol.linenums {
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 .markdown-body.xf_editor-preview-container pre .xf_editor-code-lang, .markdown-body.xf_editor-html-preview pre .xf_editor-code-lang {
   position: absolute;
@@ -2718,21 +2808,29 @@
   user-select: none;
 }
 .markdown-body.xf_editor-preview-container pre, .markdown-body.xf_editor-html-preview pre {
-  /* 暗色滚动条 */
+  /* 暗色滚动条（作用于代码内容滚动区） */
 }
-.markdown-body.xf_editor-preview-container pre::-webkit-scrollbar, .markdown-body.xf_editor-html-preview pre::-webkit-scrollbar {
+.markdown-body.xf_editor-preview-container pre > code::-webkit-scrollbar,
+.markdown-body.xf_editor-preview-container pre > ol.linenums::-webkit-scrollbar, .markdown-body.xf_editor-html-preview pre > code::-webkit-scrollbar,
+.markdown-body.xf_editor-html-preview pre > ol.linenums::-webkit-scrollbar {
   height: 6px;
   width: 6px;
 }
-.markdown-body.xf_editor-preview-container pre::-webkit-scrollbar-track, .markdown-body.xf_editor-html-preview pre::-webkit-scrollbar-track {
+.markdown-body.xf_editor-preview-container pre > code::-webkit-scrollbar-track,
+.markdown-body.xf_editor-preview-container pre > ol.linenums::-webkit-scrollbar-track, .markdown-body.xf_editor-html-preview pre > code::-webkit-scrollbar-track,
+.markdown-body.xf_editor-html-preview pre > ol.linenums::-webkit-scrollbar-track {
   background: #161b22;
   border-radius: 3px;
 }
-.markdown-body.xf_editor-preview-container pre::-webkit-scrollbar-thumb, .markdown-body.xf_editor-html-preview pre::-webkit-scrollbar-thumb {
+.markdown-body.xf_editor-preview-container pre > code::-webkit-scrollbar-thumb,
+.markdown-body.xf_editor-preview-container pre > ol.linenums::-webkit-scrollbar-thumb, .markdown-body.xf_editor-html-preview pre > code::-webkit-scrollbar-thumb,
+.markdown-body.xf_editor-html-preview pre > ol.linenums::-webkit-scrollbar-thumb {
   background: #444c56;
   border-radius: 3px;
 }
-.markdown-body.xf_editor-preview-container pre::-webkit-scrollbar-thumb:hover, .markdown-body.xf_editor-html-preview pre::-webkit-scrollbar-thumb:hover {
+.markdown-body.xf_editor-preview-container pre > code::-webkit-scrollbar-thumb:hover,
+.markdown-body.xf_editor-preview-container pre > ol.linenums::-webkit-scrollbar-thumb:hover, .markdown-body.xf_editor-html-preview pre > code::-webkit-scrollbar-thumb:hover,
+.markdown-body.xf_editor-html-preview pre > ol.linenums::-webkit-scrollbar-thumb:hover {
   background: #6e7681;
 }
 .markdown-body.xf_editor-preview-container, .markdown-body.xf_editor-html-preview {
@@ -2877,11 +2975,18 @@
 .markdown-body.xf_editor-preview-container .katex, .markdown-body.xf_editor-html-preview .katex {
   font-size: 1.4em;
 }
+.markdown-body.xf_editor-preview-container .katex-display,
+.markdown-body.xf_editor-preview-container .sequence-diagram,
+.markdown-body.xf_editor-preview-container .flowchart, .markdown-body.xf_editor-html-preview .katex-display,
+.markdown-body.xf_editor-html-preview .sequence-diagram,
+.markdown-body.xf_editor-html-preview .flowchart {
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
 .markdown-body.xf_editor-preview-container .sequence-diagram, .markdown-body.xf_editor-preview-container .flowchart, .markdown-body.xf_editor-html-preview .sequence-diagram, .markdown-body.xf_editor-html-preview .flowchart {
   margin: 0 auto;
   text-align: center;
-  max-width: 100%;
-  overflow-x: auto;
 }
 .markdown-body.xf_editor-preview-container .sequence-diagram svg, .markdown-body.xf_editor-preview-container .flowchart svg, .markdown-body.xf_editor-html-preview .sequence-diagram svg, .markdown-body.xf_editor-html-preview .flowchart svg {
   margin: 0 auto;
@@ -3711,6 +3816,7 @@ hr.xf_editor-page-break {
   margin: 0;
   padding: 0;
   display: flex;
+  flex-wrap: wrap;
   border-bottom: 1px solid #ddd;
   background: #f8f8f8;
 }
@@ -3765,6 +3871,13 @@ hr.xf_editor-page-break {
   margin-bottom: 0 !important;
 }
 
+@media (max-width: 768px) {
+  .xf_editor-columns {
+    -webkit-column-count: 1 !important;
+    -moz-column-count: 1 !important;
+    column-count: 1 !important;
+  }
+}
 /* Grid Layout (Bootstrap-like 10-column system) */
 .xf_editor-row {
   display: flex;
@@ -4088,7 +4201,9 @@ hr.xf_editor-page-break {
 /* ========== 表格编辑按钮 (Table Editing in Preview) ========== */
 .xf_editor-table-wrapper {
   position: relative;
-  display: inline-block;
+  display: block;
+  max-width: 100%;
+  overflow: visible;
   margin: 5px 0;
 }
 
@@ -4400,13 +4515,68 @@ hr.xf_editor-page-break {
 .xf_editor-preview-theme-dark .xf_editor-preview-container code:not(pre code) {
   color: #f1f5f9;
   background: #1a2a4a;
-  border-color: #2d3a52;
+  border: 1px solid #2d3a52;
+  border-radius: 5px;
+  padding: 2px 7px;
+  transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.08);
+}
+.xf_editor-preview-theme-dark .xf_editor-preview-container code:not(pre code):hover {
+  background: #243b63;
+  border-color: #3b4f6d;
 }
 .xf_editor-preview-theme-dark .xf_editor-preview-container blockquote {
   color: #94a3b8;
   background: #1e293b;
-  border-color: #2d3a52;
-  border-radius: 0 6px 6px 0;
+  border-radius: 0 8px 8px 0;
+  box-shadow: inset 4px 0 0 0 #60a5fa, inset 0 0 0 1px #2d3a52;
+  padding: 16px 20px 16px 24px;
+  margin: 20px 0;
+  line-height: 1.75;
+}
+.xf_editor-preview-theme-dark .xf_editor-preview-container blockquote > :first-child {
+  margin-top: 0;
+}
+.xf_editor-preview-theme-dark .xf_editor-preview-container blockquote > :last-child {
+  margin-bottom: 0;
+}
+.xf_editor-preview-theme-dark .xf_editor-preview-container blockquote p {
+  line-height: 1.75;
+}
+.xf_editor-preview-theme-dark .xf_editor-preview-container blockquote blockquote {
+  background: #151e2e;
+  box-shadow: inset 4px 0 0 0 #475569, inset 0 0 0 1px #2d3a52;
+}
+.xf_editor-preview-theme-dark .xf_editor-preview-container a {
+  color: #60a5fa;
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+.xf_editor-preview-theme-dark .xf_editor-preview-container a:hover {
+  color: #93c5fd;
+  border-bottom-color: #93c5fd;
+}
+.xf_editor-preview-theme-dark .xf_editor-preview-container a:visited {
+  color: #c4b5fd;
+}
+.xf_editor-preview-theme-dark .xf_editor-preview-container a:visited:hover {
+  color: #a78bfa;
+  border-bottom-color: #a78bfa;
+}
+.xf_editor-preview-theme-dark .xf_editor-preview-container a:focus {
+  outline: 2px solid #60a5fa;
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+.xf_editor-preview-theme-dark .xf_editor-preview-container a[href^=http]:not([href*="javascript:"])::after, .xf_editor-preview-theme-dark .xf_editor-preview-container a[target=_blank]::after {
+  content: "↗";
+  display: inline-block;
+  margin-left: 2px;
+  font-size: 0.75em;
+  line-height: 1;
+  opacity: 0.6;
+  vertical-align: top;
 }
 .xf_editor-preview-theme-dark .xf_editor-preview-container abbr {
   color: #fff;
@@ -5094,6 +5264,35 @@ hr.xf_editor-page-break {
 }
 [data-theme=dark] .xf_editor-html-preview a {
   color: #60a5fa;
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+[data-theme=dark] .xf_editor-html-preview a:hover {
+  color: #93c5fd;
+  border-bottom-color: #93c5fd;
+}
+[data-theme=dark] .xf_editor-html-preview a:visited {
+  color: #c4b5fd;
+}
+[data-theme=dark] .xf_editor-html-preview a:visited:hover {
+  color: #a78bfa;
+  border-bottom-color: #a78bfa;
+}
+[data-theme=dark] .xf_editor-html-preview a:focus {
+  outline: 2px solid #60a5fa;
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+[data-theme=dark] .xf_editor-html-preview a[href^=http]:not([href*="javascript:"])::after,
+[data-theme=dark] .xf_editor-html-preview a[target=_blank]::after {
+  content: "↗";
+  display: inline-block;
+  margin-left: 2px;
+  font-size: 0.75em;
+  line-height: 1;
+  opacity: 0.6;
+  vertical-align: top;
 }
 [data-theme=dark] .xf_editor-html-preview strong {
   color: #f1f5f9;
@@ -5118,6 +5317,28 @@ hr.xf_editor-page-break {
   border: none;
   background: transparent;
 }
+[data-theme=dark] .xf_editor-html-preview pre > code,
+[data-theme=dark] .xf_editor-html-preview pre > ol.linenums {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+[data-theme=dark] .xf_editor-html-preview pre > code::-webkit-scrollbar,
+[data-theme=dark] .xf_editor-html-preview pre > ol.linenums::-webkit-scrollbar {
+  height: 6px;
+  width: 6px;
+}
+[data-theme=dark] .xf_editor-html-preview pre > code::-webkit-scrollbar-track,
+[data-theme=dark] .xf_editor-html-preview pre > ol.linenums::-webkit-scrollbar-track {
+  background: #0f172a !important;
+}
+[data-theme=dark] .xf_editor-html-preview pre > code::-webkit-scrollbar-thumb,
+[data-theme=dark] .xf_editor-html-preview pre > ol.linenums::-webkit-scrollbar-thumb {
+  background: #444c56 !important;
+}
+[data-theme=dark] .xf_editor-html-preview pre > code::-webkit-scrollbar-thumb:hover,
+[data-theme=dark] .xf_editor-html-preview pre > ol.linenums::-webkit-scrollbar-thumb:hover {
+  background: #6e7681 !important;
+}
 [data-theme=dark] .xf_editor-html-preview pre::-webkit-scrollbar-track {
   background: #0f172a !important;
 }
@@ -5130,13 +5351,38 @@ hr.xf_editor-page-break {
 [data-theme=dark] .xf_editor-html-preview code:not(pre code) {
   color: #f1f5f9;
   background: #1a2a4a;
-  border-color: #2d3a52;
+  border: 1px solid #2d3a52;
+  border-radius: 5px;
+  padding: 2px 7px;
+  transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.08);
+}
+[data-theme=dark] .xf_editor-html-preview code:not(pre code):hover {
+  background: #243b63;
+  border-color: #3b4f6d;
 }
 [data-theme=dark] .xf_editor-html-preview blockquote {
   color: #94a3b8;
   background: #1e293b;
-  border-left-color: #2d3a52;
-  border-radius: 0 6px 6px 0;
+  border-left-color: transparent;
+  border-radius: 0 8px 8px 0;
+  box-shadow: inset 4px 0 0 0 #60a5fa, inset 0 0 0 1px #2d3a52;
+  padding: 16px 20px 16px 24px;
+  margin: 20px 0;
+  line-height: 1.75;
+}
+[data-theme=dark] .xf_editor-html-preview blockquote > :first-child {
+  margin-top: 0;
+}
+[data-theme=dark] .xf_editor-html-preview blockquote > :last-child {
+  margin-bottom: 0;
+}
+[data-theme=dark] .xf_editor-html-preview blockquote p {
+  line-height: 1.75;
+}
+[data-theme=dark] .xf_editor-html-preview blockquote blockquote {
+  background: #151e2e;
+  box-shadow: inset 4px 0 0 0 #475569, inset 0 0 0 1px #2d3a52;
 }
 [data-theme=dark] .xf_editor-html-preview table {
   border-color: #2d3a52 !important;

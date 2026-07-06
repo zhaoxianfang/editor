@@ -53,15 +53,74 @@
         code:not(pre code) {
             color: #f1f5f9;
             background: #1a2a4a;
-            border-color: #2d3a52;
+            border: 1px solid #2d3a52;
+            border-radius: 5px;
+            padding: 2px 7px;
+            transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+            box-shadow: 0 1px 1px rgba(0,0,0,0.08);
+
+            &:hover {
+                background: #243b63;
+                border-color: #3b4f6d;
+            }
         }
+
 
         blockquote {
             color: #94a3b8;
             background: #1e293b;
-            border-color: #2d3a52;
-            border-radius: 0 6px 6px 0;
+            border-radius: 0 8px 8px 0;
+            box-shadow: inset 4px 0 0 0 #60a5fa, inset 0 0 0 1px #2d3a52;
+            padding: 16px 20px 16px 24px;
+            margin: 20px 0;
+            line-height: 1.75;
+
+            > :first-child { margin-top: 0; }
+            > :last-child { margin-bottom: 0; }
+
+            p { line-height: 1.75; }
+
+            blockquote {
+                background: #151e2e;
+                box-shadow: inset 4px 0 0 0 #475569, inset 0 0 0 1px #2d3a52;
+            }
         }
+
+        a {
+            color: #60a5fa;
+            text-decoration: none;
+            border-bottom: 1px solid transparent;
+            transition: color 0.15s ease, border-color 0.15s ease;
+
+            &:hover {
+                color: #93c5fd;
+                border-bottom-color: #93c5fd;
+            }
+            &:visited {
+                color: #c4b5fd;
+            }
+            &:visited:hover {
+                color: #a78bfa;
+                border-bottom-color: #a78bfa;
+            }
+            &:focus {
+                outline: 2px solid #60a5fa;
+                outline-offset: 2px;
+                border-radius: 2px;
+            }
+
+            &[href^="http"]:not([href*="javascript:"])::after,
+            &[target="_blank"]::after {
+                content: "↗";
+                display: inline-block;
+                margin-left: 2px;
+                font-size: 0.75em;
+                line-height: 1;
+                opacity: 0.6;
+                vertical-align: top;
+            }
+        }
+
 
         abbr {
             color: #fff;
@@ -69,6 +128,7 @@
             @include border-radius(3px); 
             background:#ff9900;
         }
+
 
         table {
             border: none;
@@ -759,7 +819,13 @@
     hr { border-color: #2d3a52; }
     h1, h2 { border-bottom-color: #2d3a52; color: #f1f5f9; }
     h3, h4, h5, h6 { color: #e2e8f0; }
-    a { color: #60a5fa; }
+    a { color: #60a5fa; text-decoration: none; border-bottom: 1px solid transparent; transition: color 0.15s ease, border-color 0.15s ease; }
+    a:hover { color: #93c5fd; border-bottom-color: #93c5fd; }
+    a:visited { color: #c4b5fd; }
+    a:visited:hover { color: #a78bfa; border-bottom-color: #a78bfa; }
+    a:focus { outline: 2px solid #60a5fa; outline-offset: 2px; border-radius: 2px; }
+    a[href^="http"]:not([href*="javascript:"])::after,
+    a[target="_blank"]::after { content: "↗"; display: inline-block; margin-left: 2px; font-size: 0.75em; line-height: 1; opacity: 0.6; vertical-align: top; }
     strong { color: #f1f5f9; }
     em { color: #94a3b8; }
     del { color: #64748b; }
@@ -782,6 +848,30 @@
             background: transparent;
         }
 
+        > code,
+        > ol.linenums {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        > code::-webkit-scrollbar,
+        > ol.linenums::-webkit-scrollbar {
+            height: 6px;
+            width: 6px;
+        }
+        > code::-webkit-scrollbar-track,
+        > ol.linenums::-webkit-scrollbar-track {
+            background: #0f172a !important;
+        }
+        > code::-webkit-scrollbar-thumb,
+        > ol.linenums::-webkit-scrollbar-thumb {
+            background: #444c56 !important;
+        }
+        > code::-webkit-scrollbar-thumb:hover,
+        > ol.linenums::-webkit-scrollbar-thumb:hover {
+            background: #6e7681 !important;
+        }
+
         // 暗色滚动条
         &::-webkit-scrollbar-track { background: #0f172a !important; }
         &::-webkit-scrollbar-thumb { background: #444c56 !important; }
@@ -792,16 +882,41 @@
     code:not(pre code) {
         color: #f1f5f9;
         background: #1a2a4a;
-        border-color: #2d3a52;
+        border: 1px solid #2d3a52;
+        border-radius: 5px;
+        padding: 2px 7px;
+        transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+        box-shadow: 0 1px 1px rgba(0,0,0,0.08);
+
+        &:hover {
+            background: #243b63;
+            border-color: #3b4f6d;
+        }
     }
+
 
     // ── 引用 ──
     blockquote {
         color: #94a3b8;
         background: #1e293b;
-        border-left-color: #2d3a52;
-        border-radius: 0 6px 6px 0;
+        border-left-color: transparent;
+        border-radius: 0 8px 8px 0;
+        box-shadow: inset 4px 0 0 0 #60a5fa, inset 0 0 0 1px #2d3a52;
+        padding: 16px 20px 16px 24px;
+        margin: 20px 0;
+        line-height: 1.75;
+
+        > :first-child { margin-top: 0; }
+        > :last-child { margin-bottom: 0; }
+
+        p { line-height: 1.75; }
+
+        blockquote {
+            background: #151e2e;
+            box-shadow: inset 4px 0 0 0 #475569, inset 0 0 0 1px #2d3a52;
+        }
     }
+
 
     // ── 表格（★ v1.17.35: 全面增强暗色表格 — 渐变表头、hover、斑马纹、阴影）──
     table {

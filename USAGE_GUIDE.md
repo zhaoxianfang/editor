@@ -872,27 +872,30 @@ https://example.com/file2.docx | 文件名2
 ```javascript
 editor.getMarkdown();          // 获取 Markdown
 editor.setMarkdown(md);        // 设置 Markdown
-editor.getHTML();              // 获取完整独立 HTML 文档（含 DOCTYPE、内联 CSS/JS，默认压缩）
+editor.getHTML();              // 获取片段或完整独立 HTML 文档（含 DOCTYPE、内联 CSS/JS，默认压缩）
 editor.getHTML(true);          // 强制压缩输出（与无参调用等效）
 editor.getHTML(false);         // 不压缩输出，保留格式化可读代码（适合调试）
 editor.getPreviewedHTML();     // 获取预览区 HTML（支持全页、片段、压缩模式）
 editor.getTextareaSavedHTML(); // 获取保存的 HTML（getHTML 的别名）
 ```
 
-**获取独立 HTML**：`getHTML(options)` — ⭐v1.12.1加强，生成完全不依赖外部文件的完整 HTML 文档：
+**获取独立 HTML**：`getHTML(options)` — ⭐v1.17.36 增强，生成可直接独立展示的 HTML 文档或片段：
 ```javascript
 var html = editor.getHTML({
-    title: "我的文章",               // 页面标题
+    wrap: true,                     // 是否包裹为完整 HTML 文档（含 DOCTYPE、html/head/body）
+    title: "我的文章",               // 页面标题（wrap=true 时生效）
     description: "文章简介",          // meta description
     author: "作者名",                // meta author
     keywords: "关键词, 标签",        // meta keywords
     includeStyles: true,             // 内联所有 CSS 样式
-    includeScripts: true,            // 内联交互脚本（Tooltip/Tabs/Columns/ECharts等）
+    includeScripts: true,            // 内联交互脚本（Tooltip/Tabs/Columns/ECharts 等）
     externalStyles: ["https://cdn.example.com/theme.css"],  // 外部样式表
     externalScripts: ["https://cdn.example.com/app.js"],   // 外部脚本
     customMeta: {"viewport": "width=device-width"},  // 自定义 meta 标签
     lang: "zh-CN",                   // HTML lang 属性
     charset: "UTF-8",                // 字符编码
+    theme: "dark",                   // 输出暗色主题（dark/slate，空字符串为亮色）
+    toc: false,                      // 无预览内容时 fallback 渲染是否包含 TOC
     minify: false                    // 是否压缩输出
 });
 ```
