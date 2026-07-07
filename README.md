@@ -613,7 +613,7 @@ editor.setValue("新内容");           // 设置内容
 editor.insertValue("Hello");        // 光标处插入
 editor.insertValue("追加", true);   // 追加到末尾
 editor.clear();                     // 清空
-editor.getHTML();                   // 获取完整独立 HTML（含样式和脚本）
+editor.getHTML();                   // 获取片段或完整独立 HTML（含样式和脚本）
 editor.getPreviewedHTML();          // 获取预览区 HTML 片段
 editor.getCursorPosition();         // {line, ch}
 editor.setCursor({line:5,ch:10});  // 设置光标
@@ -747,7 +747,7 @@ editor.exportFile("文档", "markdown"); // 导出文件
 | `appendMarkdown(md)` | 追加内容 |
 | `insertValue(v, [append])` | 插入/追加 |
 | `clear()` | 清空 |
-| `getHTML([minify\|opts])` | 完整独立 HTML（含样式+脚本）；支持布尔简写 `getHTML(true/false)` |
+| `getHTML([opts])` | 完整独立 HTML 或片段（含样式+脚本）；支持 `wrap` 生成 DOCTYPE 文档、`theme` 暗色主题、SEO/外部资源等选项；支持布尔简写 `getHTML(true/false)` |
 | `getPreviewedHTML([opts])` | 预览区 HTML 片段 |
 | `getTextareaSavedHTML()` | getHTML() 别名 |
 

@@ -952,7 +952,7 @@ htmlDecode: <span class="str">"script,iframe|*"</span></pre>
         <tr><td>getValue()</td><td class="type">String</td><td>无</td><td>同 getMarkdown()，CodeMirror 别名</td></tr>
         <tr><td>getUseTypes()</td><td class="type">Object</td><td>无</td><td>⭐ 检测编辑区内容使用了哪些语法特性，返回 {名称:bool} 键值对（如 {echarts:true, katex:false}），详见 <a href="#method-getusetypes">getUseTypes 详解</a></td></tr>
         <tr><td>setValue(val)</td><td class="type">xfEditor</td><td>val: String</td><td>设置 Markdown 源码</td></tr>
-        <tr><td>getHTML([minify])</td><td class="type">String</td><td>minify: Boolean — 是否压缩输出（默认 true）</td><td>获取完整 HTML 文档（含内联样式+脚本）；支持 <code>getHTML(true)</code> 布尔简写或 <code>getHTML({minify:false})</code> 对象形式</td></tr>
+        <tr><td>getHTML(options)</td><td class="type">String</td><td>options: Object — 可选，包含 wrap/title/description/author/keywords/lang/charset/externalStyles/externalScripts/customMeta/theme/toc/includeStyles/includeScripts/minify</td><td>获取片段或完整 HTML 文档（含内联样式+脚本）；支持 <code>getHTML(true)</code> 布尔简写或 <code>getHTML({minify:false})</code> 对象形式</td></tr>
         <tr><td>getPreviewedHTML()</td><td class="type">String</td><td>无</td><td>获取预览区当前 HTML（不含外套）</td></tr>
         <tr><td>watch()</td><td class="type">xfEditor</td><td>无</td><td>开启实时预览</td></tr>
         <tr><td>unwatch()</td><td class="type">xfEditor</td><td>无</td><td>关闭实时预览</td></tr>

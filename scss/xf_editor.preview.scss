@@ -1193,7 +1193,7 @@ hr.xf_editor-page-break {
     }
 }
 
-#{$prefix}preview-close-btn {
+#{$prefix}preview-close-btn#{$prefix}preview-close-btn {
     color: #fff;
     padding: 4px 6px;
     font-size: 24px;
@@ -1208,6 +1208,7 @@ hr.xf_editor-page-break {
         color: #ccc;
     }
 }
+
 
 .xf_editor-preview-active {
     width: 100%;

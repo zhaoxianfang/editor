@@ -1164,7 +1164,7 @@ xfEditor 是一款功能强大的开源 Markdown 在线编辑器，基于 CodeMi
 
 ## 二十一、@ 链接
 
-@pandao — 作者主页 | @xfeditor — 项目维护者 | @contributor — 开源贡献者
+@zhaoxianfang — 作者主页 | @contributor — 开源贡献者
 
 ---
 

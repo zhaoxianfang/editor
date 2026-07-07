@@ -5438,7 +5438,7 @@ hr.xf_editor-page-break {
   height: 0;
 }
 
-.xf_editor-preview-close-btn {
+.xf_editor-preview-close-btn.xf_editor-preview-close-btn {
   color: #fff;
   padding: 4px 6px;
   font-size: 24px;
@@ -5451,7 +5451,7 @@ hr.xf_editor-page-break {
   -moz-transition: color 300ms ease-out; /* Firefox 4.0~16.0 */
   transition: color 300ms ease-out; /* IE >9, FF >15, Opera >12.0 */
 }
-.xf_editor-preview-close-btn:hover {
+.xf_editor-preview-close-btn.xf_editor-preview-close-btn:hover {
   color: #ccc;
 }
 
