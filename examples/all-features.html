@@ -1643,7 +1643,7 @@ xfEditor 持续迭代，致力于为开发者和内容创作者提供最优秀�
                 }
                 console.log("=== 左侧编辑区使用到的语法类型汇总 ===\n" , types);
                 // var html = testEditor.getPreviewedHTML();
-                var html = testEditor.getHTML();
+                var html = testEditor.getHTML({to_browser:true,fileName:'test.html'});
                 console.log("=== 预览 HTML ===\n" + html);
                 alert("预览 HTML 已输出到控制台（" + html.length + " 字符）");
             });

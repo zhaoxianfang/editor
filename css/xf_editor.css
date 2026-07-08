@@ -4522,6 +4522,10 @@
   max-width: 100%;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
+  white-space: pre;
+}
+.markdown-body.xf_editor-preview-container pre > ol.linenums > li, .markdown-body.xf_editor-html-preview pre > ol.linenums > li {
+  white-space: pre;
 }
 .markdown-body.xf_editor-preview-container pre .xf_editor-code-lang, .markdown-body.xf_editor-html-preview pre .xf_editor-code-lang {
   position: absolute;
@@ -5066,7 +5070,7 @@ hr.xf_editor-page-break {
   border-bottom: 1px solid #eaecef;
   padding-bottom: 0.25em;
 }
-.xf_editor-page-content img, .xf_editor-page-content video, .xf_editor-page-content table, .xf_editor-page-content pre, .xf_editor-page-content iframe, .xf_editor-page-content svg {
+.xf_editor-page-content img, .xf_editor-page-content video, .xf_editor-page-content table, .xf_editor-page-content pre, .xf_editor-page-content iframe, .xf_editor-page-content svg:not(.xf_editor-copybook-svg) {
   max-width: 100%;
   height: auto;
   -webkit-box-sizing: border-box;
@@ -5700,7 +5704,9 @@ hr.xf_editor-page-break {
 .xf_editor-copybook-svg {
   position: absolute;
   top: 0;
+  bottom: 0;
   left: 0;
+  right: 0;
   width: 100%;
   height: 100%;
   pointer-events: none;
@@ -5743,7 +5749,7 @@ hr.xf_editor-page-break {
   top: 0;
   left: 0;
   width: 100%;
-  height: 100%;
+  height: 28px;
   pointer-events: none;
   z-index: 1;
 }
@@ -5777,7 +5783,9 @@ hr.xf_editor-page-break {
 .xf_editor-copybook-pinyin-bottom .xf_editor-copybook-svg {
   position: absolute;
   top: 0;
+  bottom: 0;
   left: 0;
+  right: 0;
   width: 100%;
   height: 100%;
   pointer-events: none;
@@ -5918,6 +5926,9 @@ hr.xf_editor-page-break {
     font-size: 0.65rem;
   }
   .xf_editor-copybook-pinyin-top {
+    height: 24px;
+  }
+  .xf_editor-copybook-pinyin-top .xf_editor-copybook-svg {
     height: 24px;
   }
   .xf_editor-copybook-group-pinyin > .xf_editor-copybook-pinyin-cell {
@@ -6325,66 +6336,69 @@ hr.xf_editor-page-break {
 }
 .xf_editor-preview-theme-dark {
   /* ── TOC 内嵌目录 & 下拉菜单 ── */
+  /* ★ 使用 !important 提升优先级：亮色规则 .markdown-body.xf_editor-preview-container
+     .xf_editor-toc-menu>.markdown-toc>ul 特异性为 (0,4,1)，会盖过本块 (0,3,1)，
+     故此处关键属性加 !important 确保暗色主题生效 */
 }
 .xf_editor-preview-theme-dark .xf_editor-toc-menu > .markdown-toc {
-  background: #1e293b;
-  border: 1px solid #2d3a52;
+  background: #1e293b !important;
+  border: 1px solid #2d3a52 !important;
   border-radius: 6px;
 }
 .xf_editor-preview-theme-dark .xf_editor-toc-menu > .markdown-toc > ul {
-  background: #1e293b;
-  border-color: #2d3a52;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  background: #1e293b !important;
+  border-color: #2d3a52 !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4) !important;
 }
 .xf_editor-preview-theme-dark .xf_editor-toc-menu > .markdown-toc > ul > li a {
-  color: #cbd5e1;
+  color: #cbd5e1 !important;
 }
 .xf_editor-preview-theme-dark .xf_editor-toc-menu > .markdown-toc > ul > li a:hover {
-  background: #2a3852;
-  color: #60a5fa;
+  background: #2a3852 !important;
+  color: #60a5fa !important;
 }
 .xf_editor-preview-theme-dark .xf_editor-toc-menu > .markdown-toc h1 {
-  color: #cbd5e1;
-  border-bottom-color: #2d3a52;
+  color: #cbd5e1 !important;
+  border-bottom-color: #2d3a52 !important;
 }
 .xf_editor-preview-theme-dark .xf_editor-toc-menu .toc-menu-btn {
-  color: #cbd5e1;
-  background: #1e293b;
-  border-color: #2d3a52;
+  color: #cbd5e1 !important;
+  background: #1e293b !important;
+  border-color: #2d3a52 !important;
 }
 .xf_editor-preview-theme-dark .xf_editor-toc-menu .toc-menu-btn:hover {
-  background: #2a3852;
-  border-color: #60a5fa;
+  background: #2a3852 !important;
+  border-color: #60a5fa !important;
 }
 .xf_editor-preview-theme-dark {
   /* TOC 内嵌列表（[TOC] 语法渲染） */
 }
 .xf_editor-preview-theme-dark .markdown-toc {
-  background: #1e293b;
-  border-color: #2d3a52;
-  border-left-color: #60a5fa;
+  background: #1e293b !important;
+  border-color: #2d3a52 !important;
+  border-left-color: #60a5fa !important;
 }
 .xf_editor-preview-theme-dark .markdown-toc-list ul {
-  border-left-color: #2d3a52;
+  border-left-color: #2d3a52 !important;
 }
 .xf_editor-preview-theme-dark .markdown-toc-list a {
-  color: #93c5fd;
+  color: #93c5fd !important;
 }
 .xf_editor-preview-theme-dark .markdown-toc-list a:hover {
-  color: #60a5fa;
-  background: #1a2a4a;
+  color: #60a5fa !important;
+  background: #1a2a4a !important;
 }
 .xf_editor-preview-theme-dark .markdown-toc-list a.toc-level-1 {
-  color: #f1f5f9;
+  color: #f1f5f9 !important;
 }
 .xf_editor-preview-theme-dark .markdown-toc-list a.toc-level-2 {
-  color: #e2e8f0;
+  color: #e2e8f0 !important;
 }
 .xf_editor-preview-theme-dark .markdown-toc-list a.toc-level-3 {
-  color: #94a3b8;
+  color: #cbd5e1 !important;
 }
 .xf_editor-preview-theme-dark .markdown-toc-list a.toc-level-4, .xf_editor-preview-theme-dark .markdown-toc-list a.toc-level-5, .xf_editor-preview-theme-dark .markdown-toc-list a.toc-level-6 {
-  color: #64748b;
+  color: #94a3b8 !important;
 }
 .xf_editor-preview-theme-dark .markdown-body h1, .xf_editor-preview-theme-dark .markdown-body h2, .xf_editor-preview-theme-dark .markdown-body hr {
   border-color: #2d3a52;

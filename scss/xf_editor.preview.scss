@@ -362,6 +362,12 @@
             max-width: 100%;
             overflow-x: auto;
             -webkit-overflow-scrolling: touch;
+            // ★ 长行不换行：整块（行号 + 代码）作为整体横向滚动，而非逐行单独滚动
+            white-space: pre;
+        }
+        // ★ 行号列表项同样禁止换行，确保整块一起横向滚动
+        > ol.linenums > li {
+            white-space: pre;
         }
 
         // ★ 语言标签 — 显示在标题栏右上角
@@ -801,7 +807,7 @@ hr.xf_editor-page-break {
     h2 { border-bottom: 1px solid #eaecef; padding-bottom: 0.25em; }
 
     // Ensure all content fits within the paper width
-    img, video, table, pre, iframe, svg {
+    img, video, table, pre, iframe, svg:not(.xf_editor-copybook-svg) {
         max-width: 100%;
         height: auto;
         @include box-sizing(border-box);
@@ -1433,7 +1439,9 @@ hr.xf_editor-page-break {
 .xf_editor-copybook-svg {
     position: absolute;
     top: 0;
+    bottom: 0;
     left: 0;
+    right: 0;
     width: 100%;
     height: 100%;
     pointer-events: none;
@@ -1462,13 +1470,16 @@ hr.xf_editor-page-break {
 .xf_editor-copybook-pinyin-top {
     position: relative;
     width: 100%;
+    // ★ 显式像素高度（不再依赖 CSS 变量，避免部分渲染引擎不解析变量而回退）
     height: 28px;
     background: #fffef8;
     border: none;
     .xf_editor-copybook-svg {
         position: absolute;
         top: 0; left: 0;
-        width: 100%; height: 100%;
+        width: 100%;
+        // ★ 显式 28px：与上方文字框高度一致；SVG 自身也带 height="28" 属性兜底
+        height: 28px;
         pointer-events: none;
         z-index: 1;
     }
@@ -1499,7 +1510,7 @@ hr.xf_editor-page-break {
     margin-top: 2px;
     .xf_editor-copybook-svg {
         position: absolute;
-        top: 0; left: 0;
+        top: 0; bottom: 0; left: 0; right: 0;
         width: 100%; height: 100%;
         pointer-events: none;
         z-index: 2;
@@ -1639,6 +1650,9 @@ hr.xf_editor-page-break {
     }
     .xf_editor-copybook-pinyin-top {
         height: 24px;
+        .xf_editor-copybook-svg {
+            height: 24px;
+        }
     }
     // ★ v1.17.26: 移动端拼音组限制每格宽度
     .xf_editor-copybook-group-pinyin > .xf_editor-copybook-pinyin-cell {

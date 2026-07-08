@@ -952,7 +952,7 @@ htmlDecode: <span class="str">"script,iframe|*"</span></pre>
         <tr><td>getValue()</td><td class="type">String</td><td>无</td><td>同 getMarkdown()，CodeMirror 别名</td></tr>
         <tr><td>getUseTypes()</td><td class="type">Object</td><td>无</td><td>⭐ 检测编辑区内容使用了哪些语法特性，返回 {名称:bool} 键值对（如 {echarts:true, katex:false}），详见 <a href="#method-getusetypes">getUseTypes 详解</a></td></tr>
         <tr><td>setValue(val)</td><td class="type">xfEditor</td><td>val: String</td><td>设置 Markdown 源码</td></tr>
-        <tr><td>getHTML(options)</td><td class="type">String</td><td>options: Object — 可选，包含 wrap/title/description/author/keywords/lang/charset/externalStyles/externalScripts/customMeta/theme/toc/includeStyles/includeScripts/minify</td><td>获取片段或完整 HTML 文档（含内联样式+脚本）；支持 <code>getHTML(true)</code> 布尔简写或 <code>getHTML({minify:false})</code> 对象形式</td></tr>
+        <tr><td>getHTML(options)</td><td class="type">String</td><td>options: Object — 可选，<a href="#method-gethtml">详见下方 getHTML(options) 详解</a>（含 wrap/title/theme/toc/includeStyles/includeScripts/minify 等 15 项配置）</td><td>获取片段或完整 HTML 文档（含内联样式+脚本）；支持 <code>getHTML(true)</code> 布尔简写（= <code>{minify:true}</code>）或 <code>getHTML({minify:false})</code> 对象形式</td></tr>
         <tr><td>getPreviewedHTML()</td><td class="type">String</td><td>无</td><td>获取预览区当前 HTML（不含外套）</td></tr>
         <tr><td>watch()</td><td class="type">xfEditor</td><td>无</td><td>开启实时预览</td></tr>
         <tr><td>unwatch()</td><td class="type">xfEditor</td><td>无</td><td>关闭实时预览</td></tr>
@@ -982,6 +982,33 @@ htmlDecode: <span class="str">"script,iframe|*"</span></pre>
         <tr><td>showDraftRecovery()</td><td class="type">xfEditor</td><td>无</td><td>显示草稿恢复对话框</td></tr>
         <tr><td>destroy()</td><td class="type">xfEditor</td><td>无</td><td>销毁实例，释放所有资源</td></tr>
     </table></div>
+
+    <h3 id="method-gethtml">getHTML(options) — 独立 HTML 导出详解</h3>
+    <p><code>getHTML(options)</code> 将当前预览区内容导出为「可独立运行的 HTML」——自动内联仅当前文档用到的组件样式与初始化脚本（按需特性检测），无需依赖 xfEditor 运行时即可在任意页面打开、交互（悬浮提示、ECharts、流程图、目录滚动高亮等）。</p>
+    <div class="notice">💡 <strong>两种调用形态：</strong><code>getHTML(true)</code> / <code>getHTML(false)</code> 为布尔简写，等价于 <code>{minify:true}</code> / <code>{minify:false}</code>；也可传入完整 options 对象进行精细化控制。</div>
+
+    <h4>options 配置项一览（默认值见下表）</h4>
+    <div class="table-wrap"><table class="api-table">
+        <tr><th style="width:20%">配置项</th><th style="width:12%">类型</th><th style="width:16%">默认值</th><th>说明</th></tr>
+        <tr><td><code>wrap</code></td><td class="type">Boolean</td><td><code>false</code></td><td>是否包裹为<strong>完整 HTML 文档</strong>。为 <code>true</code> 时<strong>不剥离</strong>文档级标签，输出含 <code>&lt;!DOCTYPE&gt;</code>/<code>&lt;html&gt;</code>/<code>&lt;head&gt;</code>/<code>&lt;body&gt;</code> 的整页；为 <code>false</code>（<strong>默认</strong>）时<strong>强制剥离</strong>这些文档级标签，仅返回 <code>&lt;div class="xf_editor-html-preview"&gt;…&lt;/div&gt;</code> 干净片段，便于嵌入现有页面。</td></tr>
+        <tr><td><code>includeStyles</code></td><td class="type">Boolean</td><td><code>true</code></td><td>是否内联<strong>核心样式</strong>。基于特性检测仅注入当前文档实际用到的组件 CSS（如字帖、ECharts、TOC、Tooltip 等），不加载无用样式。</td></tr>
+        <tr><td><code>includeScripts</code></td><td class="type">Boolean</td><td><code>true</code></td><td>是否内联<strong>初始化脚本</strong>。注入使 Tooltip、ECharts、流程图、时序图、Tabs、目录滚动高亮等交互在新页面中自动初始化的纯 JS（已做 XSS 防护与压缩安全处理）。</td></tr>
+        <tr><td><code>minify</code></td><td class="type">Boolean</td><td><code>true</code></td><td>是否对输出的 HTML / 内联 CSS / 内联 JS 进行<strong>压缩</strong>（去除空白与注释，字符串/正则安全转义）。设为 <code>false</code> 可输出便于调试的可读格式。</td></tr>
+        <tr><td><code>title</code></td><td class="type">String</td><td><code>'xfEditor Preview'</code></td><td>文档标题（仅 <code>wrap:true</code> 时写入 <code>&lt;title&gt;</code>）。</td></tr>
+        <tr><td><code>description</code></td><td class="type">String</td><td><code>''</code></td><td>文档描述（写入 <code>&lt;meta name="description"&gt;</code>，仅 wrap 时生效）。</td></tr>
+        <tr><td><code>author</code></td><td class="type">String</td><td><code>''</code></td><td>作者信息（写入 <code>&lt;meta name="author"&gt;</code>，仅 wrap 时生效）。</td></tr>
+        <tr><td><code>keywords</code></td><td class="type">String</td><td><code>''</code></td><td>关键词（写入 <code>&lt;meta name="keywords"&gt;</code>，仅 wrap 时生效）。</td></tr>
+        <tr><td><code>lang</code></td><td class="type">String</td><td><code>'zh-CN'</code></td><td>根元素语言属性（写入 <code>&lt;html lang&gt;</code>）。</td></tr>
+        <tr><td><code>charset</code></td><td class="type">String</td><td><code>'UTF-8'</code></td><td>字符编码（写入 <code>&lt;meta charset&gt;</code>）。</td></tr>
+        <tr><td><code>theme</code></td><td class="type">String</td><td><code>''</code></td><td>预览主题：<code>''</code>（跟随编辑器）/ <code>'dark'</code> / <code>'slate'</code>。设为暗色时自动为容器加 <code>xf_editor-preview-theme-dark</code> 类并写入 <code>data-theme="dark"</code>，使全部组件（含 TOC 目录）适配暗色。</td></tr>
+        <tr><td><code>toc</code></td><td class="type">Boolean</td><td><code>false</code></td><td>是否根据文档标题自动生成 [TOC] 目录（仅当正文中未手动书写 <code>[TOC]</code> 时生效）。</td></tr>
+        <tr><td><code>externalStyles</code></td><td class="type">String | Array</td><td><code>[]</code></td><td>额外外部样式表 URL（字符串或数组），将作为 <code>&lt;link rel="stylesheet"&gt;</code> 注入 <code>&lt;head&gt;</code>。</td></tr>
+        <tr><td><code>externalScripts</code></td><td class="type">String | Array</td><td><code>[]</code></td><td>额外外部脚本 URL（字符串或数组），将作为 <code>&lt;script src&gt;</code> 注入 <code>&lt;head&gt;</code>。</td></tr>
+        <tr><td><code>customMeta</code></td><td class="type">Object</td><td><code>{}</code></td><td>自定义 meta 标签集合，格式 <code>{ name: content }</code>，每项生成一条 <code>&lt;meta name="…" content="…"&gt;</code>。</td></tr>
+        <tr><td><code>to_browser</code></td><td class="type">Boolean</td><td><code>false</code></td><td>是否直接<strong>触发浏览器下载</strong>。为 <code>true</code> 时会<strong>强制将 wrap 设为 true</strong>，导出完整文档并通过 <code>Blob</code> + <code>&lt;a download&gt;</code> 下载到本地（需浏览器环境，Node/SSR 下安全跳过，不影响返回值）。</td></tr>
+        <tr><td><code>fileName</code></td><td class="type">String</td><td><code>'xfEditor-export.html'</code></td><td>下载文件名（仅 <code>to_browser:true</code> 时有效），若未以 <code>.html</code>/<code>.htm</code> 结尾则自动补 <code>.html</code> 后缀。</td></tr>
+    </table></div>
+    <div class="notice">⚠️ <strong>注意：</strong><code>getHTML</code> 仅在 <code>wrap:false</code>（默认）时强制剥离内部残留的 <code>&lt;html&gt;</code>/<code>&lt;head&gt;</code>/<code>&lt;body&gt;</code> 等文档级标签，确保片段干净、可直接嵌入；当 <code>wrap:true</code> 时则保留完整文档结构。无论何种模式都会清除 jQuery <code>.data()</code> 留下的初始化标记，使独立页面中的脚本可重新初始化所有组件。<br>📦 <strong>外部资源策略：</strong>除通过 <code>getUseTypes()</code> 检测到 ECharts 语法时会自动注入<strong>当前域名下</strong>的 <code>@lib/echarts.min.js</code> 外链外，其余所有样式与脚本均以内联方式写入，<strong>不引入任何其它外部依赖</strong>。</div>
 
     <h3 id="method-getusetypes">getUseTypes() — 语法特性检测详解</h3>
     <p>基于编辑器左侧 Markdown 源码，实时检测当前文档使用了哪些扩展语法。返回一个键值对对象，键为特性名称，值为 <code>true</code> / <code>false</code>。</p>
