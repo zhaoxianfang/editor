@@ -1281,6 +1281,12 @@ hr.xf_editor-page-break {
     margin: 15px 0;
     border: 1px solid #eee;
     border-radius: 4px;
+    overflow: hidden;
+}
+
+/* ECharts 画布：随容器宽度收缩，绝不超出可视区域（响应式） */
+#{$prefix}echarts canvas {
+    max-width: 100% !important;
 }
 
 /* Tabs in preview */
@@ -1491,8 +1497,8 @@ hr.xf_editor-page-break {
     display: flex;
     align-items: center;
     justify-content: center;
-    // ★ 拼音文字字号统一调整为 1.25rem
-    font-size: 1.25rem;
+    // ★ 拼音文字字号：编辑器预览区 / markdown转html 预览页统一 1.05rem（getHtml 导出页保持 1.25rem）
+    font-size: 1.05rem;
     font-family: 'Segoe UI','Lucida Grande','Arial','Noto Sans',sans-serif;
     color: #2a6b3c;
     font-weight: 500;
@@ -1647,8 +1653,8 @@ hr.xf_editor-page-break {
         font-size: 1.3rem;
     }
     .xf_editor-copybook-pinyin-text {
-        // ★ 移动端与桌面端保持一致：1.25rem（窄屏字帖格更紧凑，但拼音字号要求统一）
-        font-size: 1.25rem;
+        // ★ 移动端与桌面端保持一致：1.05rem
+        font-size: 1.05rem;
     }
     .xf_editor-copybook-pinyin-top {
         height: 24px;
@@ -1787,6 +1793,9 @@ hr.xf_editor-page-break {
             border-radius: 4px;
             border: 1px solid #e5e7eb;
             transition: background-color 0.25s ease, border-color 0.25s ease;
+            // ★ 脚注项使用 flex 布局：使返回链接显示在内容之后，二者位于同一行
+            display: flex;
+            align-items: flex-start;
             
             // ★ v1.17.32: 显式删除 ::marker 默认列表编号
             &::marker {
@@ -1819,6 +1828,8 @@ hr.xf_editor-page-break {
             
             #{$prefix}footnote-content {
                 display: block;
+                flex: 0 1 auto;
+                min-width: 0;
                 
                 // 脚注内容支持各种语法
                 p {
@@ -1893,9 +1904,20 @@ hr.xf_editor-page-break {
                 }
             }
             
-            // 删除返回链接显示
+            // ★ 返回链接：显示在脚注内容之后，与内容位于同一行
             #{$prefix}footnote-backref {
-                display: none;
+                display: inline-flex;
+                align-items: center;
+                flex: 0 0 auto;
+                margin-left: 6px;
+                color: #2563eb;
+                text-decoration: none;
+                font-size: 13px;
+
+                &:hover {
+                    color: #1d4ed8;
+                    text-decoration: underline;
+                }
             }
         }
     }

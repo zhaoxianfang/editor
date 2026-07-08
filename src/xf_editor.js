@@ -4512,7 +4512,9 @@
             }
             // --- echarts 图表容器 ---
             if (f.echarts) {
-                c.push('.xf_editor-echarts{margin:15px 0;border:1px solid #eee;border-radius:4px;min-height:400px;}');
+                c.push('.xf_editor-echarts{margin:15px 0;border:1px solid #eee;border-radius:4px;min-height:400px;width:100%!important;max-width:100%;box-sizing:border-box;overflow:hidden;}');
+                // ★ 响应式：画布随容器宽度收缩，绝不超出可视区域（中小屏不再出现固定宽度的溢出画布）
+                c.push('.xf_editor-echarts canvas{max-width:100%!important;}');
             }
             // === 基础排版样式（始终输出）===
             c.push('.xf_editor-html-preview{text-align:left;font-size:16px;line-height:1.6;padding:20px;overflow:auto;width:100%;background-color:#fff;color:#333;word-wrap:break-word;overflow-wrap:break-word;position:relative;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji";}.xf_editor-html-preview *{box-sizing:border-box;}.xf_editor-html-preview p{margin-top:0;margin-bottom:10px;}.xf_editor-html-preview strong{font-weight:600;}.xf_editor-html-preview em{font-style:italic;}.xf_editor-html-preview del{text-decoration:line-through;}');
@@ -4570,14 +4572,14 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             // --- 脚注样式 ---
             if (f.footnotes) {
                 c.push('.xf_editor-footnotes-section{margin-top:24px;padding-top:12px;border-top:1px solid #d1d5db;}.xf_editor-footnote-sep{display:none;}.xf_editor-footnote-title{font-size:14px;font-weight:700;color:#1f2937;margin:0 0 8px;padding-bottom:4px;border-bottom:1px solid #e5e7eb;}.xf_editor-footnote-list{padding:0;margin:0;list-style:none;counter-reset:xf_editor-fn-counter;}');
-                c.push('.xf_editor-footnote-item{position:relative;margin-bottom:6px;padding:8px 10px 8px 32px;font-size:13px;line-height:1.5;color:#4b5563;background:#f9fafb;border:1px solid #e5e7eb;border-radius:6px;transition:all 0.25s ease;}.xf_editor-footnote-item::before{counter-increment:xf_editor-fn-counter;content:counter(xf_editor-fn-counter);position:absolute;left:8px;top:8px;font-size:11px;font-weight:700;color:#6b7280;min-width:18px;text-align:center;}.xf_editor-footnote-content{display:block;}.xf_editor-footnote-content p{margin:0 0 6px;}.xf_editor-footnote-backref{display:none;}');
+                c.push('.xf_editor-footnote-item{position:relative;margin-bottom:6px;padding:8px 10px 8px 32px;font-size:13px;line-height:1.5;color:#4b5563;background:#f9fafb;border:1px solid #e5e7eb;border-radius:6px;transition:all 0.25s ease;display:flex;align-items:flex-start;}.xf_editor-footnote-item::before{counter-increment:xf_editor-fn-counter;content:counter(xf_editor-fn-counter);position:absolute;left:8px;top:8px;font-size:11px;font-weight:700;color:#6b7280;min-width:18px;text-align:center;}.xf_editor-footnote-content{display:block;flex:0 1 auto;min-width:0;}.xf_editor-footnote-content p{margin:0 0 6px;}.xf_editor-footnote-backref{display:inline-flex;align-items:center;flex:0 0 auto;margin-left:6px;color:#2563eb;text-decoration:none;font-size:13px;}');
                 c.push('.xf_editor-footnote-ref-wrapper{display:inline;margin:0 1px;font-size:75%;line-height:0;position:relative;bottom:0.5em;}.xf_editor-footnote-ref-wrapper a{text-decoration:none;color:#2563eb;font-weight:600;}.xf_editor-footnote-ref-wrapper a:hover{color:#1d4ed8;text-decoration:underline;}.xf_editor-footnote-highlight{background:#fef3c7 !important;border-color:#f59e0b !important;box-shadow:0 0 12px rgba(245,158,11,0.3) !important;transition:all 0.3s ease;animation:xf_editor-footnote-pulse 0.6s ease-in-out;}@keyframes xf_editor-footnote-pulse{0%,100%{box-shadow:0 0 8px rgba(245,158,11,0.2);}50%{box-shadow:0 0 20px rgba(245,158,11,0.5);}}');
             }
             // ═══ 代码语法高亮（prettify token 配色，确保与编辑器预览区一致）═══
             // ★ 浅色模式：编辑器预览区使用 lib/prettify 对代码着色；独立页面需内联这些配色
             //   否则独立页面中的代码块将失去语法高亮，与预览区展示效果不一致。
             if (f.codeBlock) {
-                c.push('.xf_editor-html-preview .str{color:#0a8043;}.xf_editor-html-preview .kwd{color:#0033b3;}.xf_editor-html-preview .com{color:#8c8c8c;font-style:italic;}.xf_editor-html-preview .typ{color:#16718e;}.xf_editor-html-preview .lit{color:#1750eb;}.xf_editor-html-preview .pun,.xf_editor-html-preview .opn,.xf_editor-html-preview .clo{color:#525252;}.xf_editor-html-preview .atn{color:#16718e;}.xf_editor-html-preview .atv{color:#0a8043;}.xf_editor-html-preview .dec,.xf_editor-html-preview .var{color:#e60000;}.xf_editor-html-preview .fun{color:#ff8c00;}');
+                c.push('.xf_editor-html-preview .pln{color:#e6edf3}.xf_editor-html-preview .str,.xf_editor-html-preview .atv{color:#ce9178}.xf_editor-html-preview .kwd,.xf_editor-html-preview .tag{color:#569cd6}.xf_editor-html-preview .com{color:#6a9955;font-style:italic}.xf_editor-html-preview .typ{color:#4ec9b0}.xf_editor-html-preview .lit{color:#b5cea8}.xf_editor-html-preview .pun,.xf_editor-html-preview .opn,.xf_editor-html-preview .clo{color:#d4d4d4}.xf_editor-html-preview .atn{color:#9cdcfe}.xf_editor-html-preview .dec,.xf_editor-html-preview .var{color:#9cdcfe}.xf_editor-html-preview .fun{color:#dcdcaa}');
             }
             // ═══ [data-theme="dark"] 暗色主题支持 ═══
             // ★ v1.17.30: 独立 HTML 预览暗色主题 — 当父元素设置 data-theme="dark" 时自动适用
@@ -4613,7 +4615,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             c.push('[data-theme="dark"] .xf_editor-footnotes-section .xf_editor-footnote-list .xf_editor-footnote-item .xf_editor-footnote-content table th,[data-theme="dark"] .xf_editor-footnotes-section .xf_editor-footnote-list .xf_editor-footnote-item .xf_editor-footnote-content table td{border-color:#2d3a52;}');
             c.push('[data-theme="dark"] .xf_editor-footnotes-section .xf_editor-footnote-list .xf_editor-footnote-item .xf_editor-footnote-content table th{background:#1e293b;color:#f1f5f9;}');
             // ★ backref 返回链接 — 覆盖 base 的 display:none，使其可见
-            c.push('[data-theme="dark"] .xf_editor-footnotes-section .xf_editor-footnote-list .xf_editor-footnote-item .xf_editor-footnote-backref{display:inline;color:#60a5fa;text-decoration:none;margin-left:6px;font-size:13px;}');
+            c.push('[data-theme="dark"] .xf_editor-footnotes-section .xf_editor-footnote-list .xf_editor-footnote-item .xf_editor-footnote-backref{display:inline-flex;align-items:center;flex:0 0 auto;margin-left:6px;color:#60a5fa;text-decoration:none;font-size:13px;}');
             c.push('[data-theme="dark"] .xf_editor-footnotes-section .xf_editor-footnote-list .xf_editor-footnote-item .xf_editor-footnote-backref:hover{color:#fff;background:#2a3852;border-radius:3px;padding:1px 4px;}');
             // ★ 正文中的脚注引用链接
             c.push('[data-theme="dark"] .xf_editor-footnote-ref-wrapper a{color:#60a5fa;}[data-theme="dark"] .xf_editor-footnote-ref-wrapper a:hover{color:#fff;background:#60a5fa;}[data-theme="dark"] .xf_editor-footnote-ref-wrapper a:visited{color:#c4b5fd;}');
@@ -4678,7 +4680,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             // --- 字帖（copybook）---
             if (f.copybook) {
                 c.push('.xf_editor-copybook{display:block;margin:1em 0;padding:12px 8px;background:#fef7e9;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.06);overflow-x:auto;}.xf_editor-copybook-row{display:flex;justify-content:center;gap:4px;margin-bottom:6px;flex-wrap:wrap;}.xf_editor-copybook-row:last-child{margin-bottom:0;}.xf_editor-copybook-cell{position:relative;flex-shrink:0;}.xf_editor-copybook-grid-cell{width:52px;height:52px;background:#fff;border:1px solid #d4c296;box-shadow:0 1px 2px rgba(0,0,0,0.02);}.xf_editor-copybook-svg{position:absolute;top:0;bottom:0;left:0;right:0;width:100%;height:100%;pointer-events:none;z-index:2;}.xf_editor-copybook-hanzi-text{position:absolute;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:1.6rem;font-family:"KaiTi","楷体","华文楷书",serif;color:#3e2a1a;line-height:1;z-index:3;}');
-                c.push('.xf_editor-copybook-pinyin-cell{display:flex;flex-direction:column;align-items:center;width:52px;}.xf_editor-copybook-pinyin-top{position:relative;width:100%;height:28px;background:#fffef8;border:none;}.xf_editor-copybook-pinyin-top .xf_editor-copybook-svg{position:absolute;top:0;left:0;width:100%;height:28px;pointer-events:none;z-index:1;}.xf_editor-copybook-pinyin-text{position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:0.75rem;color:#3a7d44;font-family:"KaiTi","楷体",serif;z-index:3;}.xf_editor-copybook-pinyin-bottom{position:relative;width:100%;height:52px;background:#fff;border:1px solid #d4c296;border-top:none;margin-top:2px;}');
+                c.push('.xf_editor-copybook-pinyin-cell{display:flex;flex-direction:column;align-items:center;width:52px;}.xf_editor-copybook-pinyin-top{position:relative;width:100%;height:28px;background:#fffef8;border:none;}.xf_editor-copybook-pinyin-top .xf_editor-copybook-svg{position:absolute;top:0;left:0;width:100%;height:28px;pointer-events:none;z-index:1;}.xf_editor-copybook-pinyin-text{position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:1.25rem;color:#3a7d44;font-family:"KaiTi","楷体",serif;z-index:3;}.xf_editor-copybook-pinyin-bottom{position:relative;width:100%;height:52px;background:#fff;border:1px solid #d4c296;border-top:none;margin-top:2px;}');
                 c.push('.xf_editor-copybook-pinyin-bottom .xf_editor-copybook-svg{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:2;}.xf_editor-copybook-pinyin-bottom .xf_editor-copybook-hanzi-text{position:absolute;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:1.6rem;font-family:"KaiTi","楷体",serif;color:#3e2a1a;line-height:1;z-index:3;}');
                 c.push('.xf_editor-copybook-footnote{position:absolute;top:-2px;right:0;font-size:55%;line-height:1;z-index:10;}.xf_editor-copybook-footnote a{display:inline-block;text-decoration:none;color:#2563eb;font-weight:700;padding:1px 3px;background:rgba(255,255,255,0.85);border-radius:2px;}.xf_editor-copybook-footnote a:hover{color:#1d4ed8;text-decoration:underline;}');
                 c.push('.xf_editor-copybook-row-justified{justify-content:space-between !important;gap:0 !important;}.xf_editor-copybook-row-justified .xf_editor-copybook-pinyin-cell{flex:1 1 0;min-width:36px;max-width:80px;}.xf_editor-copybook-row-justified .xf_editor-copybook-pinyin-cell:not(:last-child){margin-right:2px;}');
@@ -4763,11 +4765,16 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             s.push('      if(config.dataZoom!==undefined)opt.dataZoom=config.dataZoom;');
             s.push('      if(config.visualMap!==undefined)opt.visualMap=config.visualMap;');
             s.push('      if(config.toolbox!==undefined)opt.toolbox=config.toolbox;');
-            s.push('      ch.setOption(opt);ch.resize();');
+            s.push('      ch.setOption(opt);');
             s.push('      setAttr(c,"data-initialized","true");');
             s.push('      var ecId=getAttr(c,"id")||("ec"+Math.random().toString(36).slice(2,9));');
-            s.push('      c._chartInstance=ch;c._resizeHandler=function(){ch.resize();};');
-            s.push('      addEvt(_win,"resize",c._resizeHandler);');
+            s.push('      c._chartInstance=ch;');
+            s.push('      var _doResize=function(){try{ch.resize();}catch(e){}};');
+            s.push('      c._resizeHandler=_doResize;');
+            s.push('      addEvt(_win,"resize",_doResize);');
+            s.push('      // ★ 响应式：容器尺寸变化即重绘，确保画布始终贴合可用宽度（中小屏不再出现固定宽度的溢出画布）');
+            s.push('      if(typeof ResizeObserver!=="undefined"){try{if(!c._ro){c._ro=new ResizeObserver(function(){_doResize();});c._ro.observe(c);}}catch(e2){_win.setTimeout(_doResize,200);}}else{_win.setTimeout(_doResize,200);}');
+            s.push('      if(_win.requestAnimationFrame){_win.requestAnimationFrame(function(){_doResize();});}else{_win.setTimeout(_doResize,200);}');
             s.push('    }catch(e){if(typeof console!=="undefined")console.warn("[xfEditor] ECharts init:",e.message);}');
             s.push('  }');
             s.push('}');
@@ -4955,7 +4962,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             s.push('    })(refs[i]);');
             s.push('  }');
             s.push('  // 脚注返回链接（backref）');
-            s.push('  var backRefs=container.querySelectorAll(".xf_editor-footnote-backref a[href^=\\x27#\\x27]");');
+            s.push('  var backRefs=container.querySelectorAll(".xf_editor-footnote-backref[href^=\\x27#\\x27]");');
             s.push('  for(var j=0;j<backRefs.length;j++){');
             s.push('    (function(link){');
             s.push('      addEvt(link,"click",function(e){');
