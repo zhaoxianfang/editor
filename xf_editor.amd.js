@@ -3964,47 +3964,44 @@
         },
 
         /**
-         * 获取完整的独立可展示 HTML 代码（可直接脱离编辑器在任何页面渲染最终效果）
-         * 
-         * 返回包含完整 CSS 样式、脚本和渲染后 HTML 内容的完整页面代码。
-         * 该 HTML 可直接保存为 .html 文件或嵌入到其他页面中独立展示。
-         * 
-         * 返回结构：
-         *   1. 必要的 CSS 样式（内联，从 xfEditor.css / xfEditor.preview.css 中提取）
-         *   2. 渲染后的 Markdown HTML 内容
-         *   3. 必要的 JavaScript 初始化脚本（tooltip / tabs / columns 交互等）
-         * 
-         * @param {Object}  [options={}]         可选配置
-         * @param {Boolean} [options.wrap=false] 是否包裹完整 HTML 文档结构（<html><head>...</head><body>...</body></html>）
-         * @param {Boolean} [options.includeStyles=true]  是否包含内联 CSS 样式
-         * @param {Boolean} [options.includeScripts=true] 是否包含交互脚本
-         * @param {String}  [options.title="xfEditor Preview"]   HTML 页面标题（仅在 wrap=true 时有效）
-         * @param {String}  [options.lang="zh-CN"]  HTML 语言属性
-         * @returns {String}                      完整的 HTML 代码字符串
-         */
-
-        /**
-         * 获取完整的独立 HTML 文档（含 DOCTYPE、head、body）
-         * 与 getPreviewedHTML() 不同，此方法生成可直接独立打开的完整 HTML 页面，
-         * 包含 HTML 骨架、DOCTYPE 声明、meta 标签、title、样式和脚本。
+         * 获取完整的独立可展示 HTML（可直接脱离编辑器在任何页面渲染最终效果）。
          *
-         * @param {Boolean|Object} [options] 可以传入布尔值控制压缩 (getHTML(true))，或传入配置对象
-         * @param {Boolean} [options.includeStyles=true] 是否包含内联样式
-         * @param {Boolean} [options.includeScripts=true] 是否包含交互脚本
-         * @param {String}  [options.title="xfEditor Preview"] 页面标题
-         * @param {String}  [options.description=""] 页面描述（meta description）
-         * @param {String}  [options.author=""] 页面作者（meta author）
-         * @param {String}  [options.keywords=""] 页面关键词（meta keywords）
-         * @param {Array}   [options.externalStyles=[]] 外部样式表链接数组
-         * @param {Array}   [options.externalScripts=[]] 外部脚本链接数组
-         * @param {Object}  [options.customMeta={}] 自定义 meta 标签
-         * @param {String}  [options.lang="zh-CN"] HTML lang 属性
-         * @param {String}  [options.charset="UTF-8"] 字符编码
-         * @param {Boolean} [options.minify=true]  是否压缩输出
-         * @param {Boolean} [options.wrap=false]    是否包裹完整 HTML 文档结构（<html>…</html>）。默认 false：剥离文档级标签返回干净片段；仅手动传 true 时不剥离并重建完整文档。
-         * @param {Boolean} [options.to_browser=false] 是否直接触发浏览器下载（为 true 时强制 wrap=true，导出完整文档并下载到本地）
-         * @param {String}  [options.fileName="xfEditor-export.html"] 下载文件名（to_browser=true 时有效，自动补 .html 后缀）
-         * @returns {String} 完整 HTML 代码字符串（片段或文档，取决于 wrap；to_browser=true 时同时触发下载）
+         * 返回的 HTML 包含三类内容：(1) 内联 CSS 样式（与编辑器预览区保持一致的视觉效果）；
+         * (2) 渲染后的 Markdown HTML 内容；(3) 内联 JavaScript 初始化脚本（tooltip / tabs /
+         * columns / 代码复制 / ECharts 等交互，全部为原生 DOM 实现，不依赖 jQuery 等外部库）。
+         *
+         * 输出形态由 options.wrap 控制：
+         *   - wrap = false（默认）：返回干净的 HTML 片段（含一个根容器 div），会自动剥离任何残留的
+         *     <html>/<head>/<body>/<meta> 等文档级标签，可直接安全嵌入其它页面；
+         *   - wrap = true：返回完整的 HTML 文档（含 DOCTYPE / <html><head><body> / meta 等），
+         *     【不剥离】文档级标签，由本方法显式重建完整结构。
+         *
+         * 资源策略（重要）：导出内容除「内联样式 + 内联脚本」外，默认不引用任何外部 css/js。
+         * 唯一例外是 ECharts——仅当 Markdown 中使用了 ```echarts 语法时，才会自动注入一个
+         * 指向「当前域名下 @lib/echarts.min.js」的 <script src>，以确保图表在独立页面中仍可渲染；
+         * 其它重型依赖（KaTeX / FlowChart / Sequence 等）一律不内联、也不外链。
+         *
+         * 注：布尔简写 getHTML(true/false) 仅控制 minify（压缩），不影响 wrap；
+         * 如需完整文档请传对象形式 getHTML({wrap:true})。
+         *
+         * @param {Boolean|Object} [options] 可传入布尔值控制压缩（getHTML(true/false)），或传入配置对象
+         * @param {Boolean} [options.wrap=false]             是否包裹完整 HTML 文档结构（<html>…</html>）
+         * @param {Boolean} [options.includeStyles=true]    是否包含内联 CSS 样式
+         * @param {Boolean} [options.includeScripts=true]   是否包含交互脚本
+         * @param {Boolean} [options.minify=true]           是否压缩输出
+         * @param {String}  [options.toBrowser=""]           浏览器下载文件名：为非空字符串时，将完整网页内容（强制 wrap=true）下载到浏览器，文件名即该字符串值（可带或不带 .html 后缀，缺省自动补 .html）；为空/未定义则不下载
+         * @param {String}  [options.title="xfEditor Preview"]   页面标题（仅 wrap=true 时有效）
+         * @param {String}  [options.description=""]         页面描述（meta description）
+         * @param {String}  [options.author=""]              页面作者（meta author）
+         * @param {String}  [options.keywords=""]            页面关键词（meta keywords）
+         * @param {String}  [options.lang="zh-CN"]           HTML lang 属性
+         * @param {String}  [options.charset="UTF-8"]       字符编码
+         * @param {String}  [options.theme=""]              主题（"dark" / "slate" 时启用暗色主题）
+         * @param {Boolean} [options.toc=false]              是否包含目录（TOC）
+         * @param {Array}   [options.externalStyles=[]]     额外外部样式表链接（按需，默认空）
+         * @param {Array}   [options.externalScripts=[]]     额外外部脚本链接（按需，默认空）
+         * @param {Object}  [options.customMeta={}]          自定义 meta 标签
+         * @returns {String} 完整的 HTML 代码字符串（片段或文档，取决于 wrap；to_browser=true 时同时触发下载）
          */
         getHTML : function(options) {
             // ★ 支持 getHTML(true/false) 布尔值简写
@@ -4029,19 +4026,19 @@
                 customMeta       : {},
                 theme            : '',
                 toc              : false,
-                to_browser       : false,
-                fileName         : ''
+                toBrowser        : ''
             }, options);
 
-            // 规范化外部资源数组
+            // ★ 规范化外部资源数组
             if (typeof opts.externalStyles === 'string') { opts.externalStyles = [opts.externalStyles]; }
             if (!$.isArray(opts.externalStyles)) { opts.externalStyles = []; }
             if (typeof opts.externalScripts === 'string') { opts.externalScripts = [opts.externalScripts]; }
             if (!$.isArray(opts.externalScripts)) { opts.externalScripts = []; }
             if (typeof opts.customMeta !== 'object' || opts.customMeta === null) { opts.customMeta = {}; }
 
-            // ★ to_browser（浏览器直接下载）：为 true 时强制 wrap=true，确保导出的是「完整可保存文档」。
-            if (opts.to_browser) {
+            // ★ toBrowser（浏览器下载文件名）：为非空字符串时强制 wrap=true，确保导出的是「完整可保存文档」。
+            //   （注意：布尔简写 getHTML(true/false) 仅控制 minify，不影响 wrap；如需完整文档请传对象 getHTML({wrap:true})）
+            if (opts.toBrowser && String(opts.toBrowser).trim() !== '') {
                 opts.wrap = true;
             }
             
@@ -4074,6 +4071,20 @@
                 .replace(/\sdata-sd-initialized="true"/g, '')
                 .replace(/\sdata-xfe-initialized="true"/g, '');
             
+            // ★ 文档级结构标签处理（关键：区分 wrap 两种形态）
+            //   - wrap=false（默认，片段模式）：强制剥离 <html>/<head>/<body>/<meta> 等文档级标签，
+            //     返回干净的、可直接嵌入现有页面的片段；
+            //   - wrap=true（完整文档模式）：【不剥离】这些标签——完整文档结构由下文显式重建，
+            //     此处分支跳过，避免对预览内容中任何残留的文档级标签误伤。
+            if (!opts.wrap) {
+                rawHTML = rawHTML
+                    .replace(/<html\b[^>]*>/gi, '')
+                    .replace(/<\/html>/gi, '')
+                    .replace(/<head\b[^>]*>[\s\S]*?<\/head>/gi, '')
+                    .replace(/<body\b[^>]*>/gi, '')
+                    .replace(/<\/body>/gi, '');
+            }
+            
             // 移除旧版代码复制按钮（仅简单 span，避免破坏嵌套结构）
             rawHTML = rawHTML.replace(/<span\b[^>]*?\bxf_editor-code-copy-btn\b[^>]*>[^]*?<\/span>/gi, '');
             
@@ -4083,23 +4094,13 @@
                 .replace(/\sdata-_originalCode="[^"]*"/g, '')
                 .replace(/<\!--\s*\[xf_editor:protected\]\s*-->/g, '')
                 .replace(/<\!--\s*\[\/xf_editor:protected\]\s*-->/g, '');
-
-            // ★ v1.17.x: wrap=false（默认片段模式）时强制剥离 <html>/<head>/<body>/<meta> 等文档级标签，
-            //   返回干净的、可直接嵌入现有页面的片段；wrap=true（完整文档模式）时【不剥离】，由下文显式重建。
-            if (!opts.wrap) {
-                rawHTML = rawHTML
-                    .replace(/<html\b[^>]*>/gi, '')
-                    .replace(/<\/html>/gi, '')
-                    .replace(/<head\b[^>]*>[\s\S]*?<\/head>/gi, '')
-                    .replace(/<body\b[^>]*>/gi, '')
-                    .replace(/<\/body>/gi, '');
-            }
-
+            
             // 统一检测一次功能特性，避免 _getCoreStyles 和 _getInitScripts 重复扫描
             var featureFlags = opts.includeStyles || opts.includeScripts ? this._detectFeatures(rawHTML) : {};
             this._lastFeatureFlags = featureFlags;
 
             // ★ 资源 URL 绝对化：将相对路径解析为「带当前域名」的完整可访问地址。
+            //   优先使用 <a> 锚点（自动基于当前文档地址解析），失败时回退手动拼接。
             var _resolveAssetUrl = function(rel) {
                 try {
                     if (typeof document !== 'undefined' && document.createElement) {
@@ -4127,6 +4128,10 @@
             };
 
             // ★ ECharts 外部脚本注入（getHTML 专属增强，唯一允许外链的资源）
+            //   规则：仅当 Markdown 中使用了 ```echarts 语法（由 getUseTypes() 判定）时，
+            //   才在导出内容中插入「当前域名下 @lib/echarts.min.js」的 <script src>；
+            //   其余重型依赖（KaTeX / FlowChart / Sequence 等）一律不内联、也不外链，
+            //   以保证独立页面不依赖任何多余资源，同时让 ECharts 图表功能保持可用。
             var echartsSrc = '';
             try {
                 var _useTypes = (typeof this.getUseTypes === 'function') ? this.getUseTypes() : {};
@@ -4184,25 +4189,34 @@
                 return css;
             };
             
-                        // ★ 健壮的 JS 压缩（ASI 安全）：保留换行，仅压缩行内空白、去缩进、删空行。
-            // 旧版直接删除所有换行会破坏自动分号插入（如 “returnelse”），导致 “Unexpected token 'else'”。
+            // ★ 健壮的 JS 压缩（ASI 安全）：
+            //   - 先保护字符串/正则（占位符），再移除注释；
+            //   - ⚠️ 关键点：必须【保留换行】。换行即语句分隔符，若像旧版那样把所有 \n
+            //     直接删掉，会让上一行的 "return / ) / }" 与下一行的 "else / (" 等合并成非法
+            //     token（例如 "returnelse"），从而报 “Unexpected token 'else'” 语法错误。
+            //     因此这里仅做：逐行去缩进、删空行、压缩行内多余空白，语义与原始脚本完全一致。
+            //   - 通过“手动循环”还原占位符，规避一次性 replace 回调偶发的还原遗漏。
             var minifyJS = function(js) {
                 var parts = [];
                 var stash = function(m) {
                     parts.push(m);
                     return '\u0001XF' + (parts.length - 1) + '\u0001';
                 };
+                // 1) 保护字符串与正则，防止压缩时误伤
                 js = js
                     .replace(/`(?:\\.|[^`\\])*`/g, stash)
                     .replace(/"(?:\\.|[^"\\])*"/g, stash)
                     .replace(/'(?:\\.|[^'\\])*'/g, stash)
                     .replace(/\/(?![*\/])(?:\\.|[^\n\/\\])+\/[gimuy]*/g, stash);
+                // 2) 移除注释（字符串/正则已保护；// 前排除冒号，避免误伤 http:// 协议）
                 js = js.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
+                // 3) ★ ASI 安全：保留换行，仅压缩行内空白、去缩进、删空行
                 js = js.split('\n').map(function(line) {
                     return line.replace(/^\s+/, '').replace(/\s+$/, '').replace(/\s+/g, ' ');
                 }).filter(function(line) {
                     return line.length > 0;
                 }).join('\n');
+                // 4) 手动循环还原占位符（避免一次性 replace 回调还原遗漏）
                 var re = /\u0001XF(\d+)\u0001/g, m;
                 while ((m = re.exec(js)) !== null) {
                     var rep = parts[parseInt(m[1], 10)];
@@ -4256,14 +4270,14 @@
                 var jsOutput = opts.minify ? minifyJS(inlineScripts) : inlineScripts;
                 body += '<script>' + nl + jsOutput + nl + '<\/script>' + nl;
             }
-            
+
             // ★ ECharts：仅在检测到 echarts 语法时，于片段最前方注入带域名的 echarts.min.js 引用
             //   （先于内联初始化脚本，确保全局 echarts 可用；其余依赖一律不外链）
             if (echartsSrc && !opts.wrap) {
                 body = '<script src="' + escapeAttr(echartsSrc) + '"><\/script>' + nl + body;
             }
 
-            // ★ 组装最终输出（统一收口到 finalHTML，便于 to_browser 在返回前触发下载）
+            // ★ 组装最终输出（统一收口到 finalHTML，便于 toBrowser 在返回前触发下载）
             var finalHTML;
             if (!opts.wrap) {
                 // 片段模式：返回 <div class="xf_editor-html-preview">…</div> 干净片段（默认）
@@ -4279,11 +4293,6 @@
                     + '<head>' + nl
                     + sp + '<meta charset="' + escapeAttr(opts.charset) + '">' + nl
                     + sp + '<meta name="viewport" content="width=device-width, initial-scale=1.0">' + nl;
-
-                // ★ 完整文档模式下，ECharts 脚本注入 <head>
-                if (echartsSrc) {
-                    html += sp + '<script src="' + escapeAttr(echartsSrc) + '"><\/script>' + nl;
-                }
 
                 if (opts.title) {
                     html += sp + '<title>' + escapeHtml(opts.title) + '</title>' + nl;
@@ -4310,6 +4319,11 @@
                     html += sp + '<link rel="stylesheet" href="' + escapeAttr(opts.externalStyles[i]) + '">' + nl;
                 }
 
+                // ★ ECharts：在 <head> 中注入带域名的 echarts.min.js（经典脚本，先于内联初始化脚本加载）
+                if (echartsSrc) {
+                    html += sp + '<script src="' + escapeAttr(echartsSrc) + '"><\/script>' + nl;
+                }
+
                 html += '</head>' + nl + '<body>' + nl;
                 html += body;
 
@@ -4321,12 +4335,14 @@
                 finalHTML = html;
             }
 
-            // ★ to_browser：浏览器直接下载完整 HTML 到本地
+            // ★ toBrowser：传入非空字符串时，将完整 HTML 文档下载到浏览器。
+            //   文件名即该字符串值（可带或不带 .html 后缀，缺省自动补 .html）。
             //   仅当运行环境具备 DOM（浏览器）时生效；非浏览器环境（如 Node/SSR）安全跳过，不影响返回值。
-            if (opts.to_browser) {
+            if (opts.toBrowser && String(opts.toBrowser).trim() !== '') {
                 try {
                     if (typeof document !== 'undefined' && document.createElement && typeof Blob !== 'undefined' && typeof URL !== 'undefined') {
-                        var _dlName = (opts.fileName && String(opts.fileName).trim()) ? String(opts.fileName).trim() : 'xfEditor-export.html';
+                        var _rawName = String(opts.toBrowser).trim();
+                        var _dlName = _rawName;
                         if (_dlName.toLowerCase().indexOf('.html') < 0 && _dlName.toLowerCase().indexOf('.htm') < 0) {
                             _dlName += '.html';
                         }
@@ -4339,7 +4355,7 @@
                         (document.body || document.documentElement).appendChild(_a);
                         _a.click();
                         (document.body || document.documentElement).removeChild(_a);
-                        setTimeout(function () { try { URL.revokeObjectURL(_url); } catch (_e2) {} }, 1000);
+                        setTimeout(function() { URL.revokeObjectURL(_url); }, 1000);
                     }
                 } catch (_de) { /* 下载失败不影响返回完整 HTML 字符串 */ }
             }
@@ -4451,7 +4467,7 @@
             // ═══════════════════════════════════════════════
             c.push('.markdown-body{text-align:left;font-size:14px;line-height:1.6;color:#24292e;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",Helvetica,Arial,sans-serif;}');
             c.push('.markdown-body>*:first-child{margin-top:0!important;}.markdown-body>*:last-child{margin-bottom:0!important;}');
-            c.push('.markdown-body img,.markdown-body video,.markdown-body iframe,.markdown-body svg{max-width:100%!important;height:auto;box-sizing:border-box;}');
+            c.push('.markdown-body img,.markdown-body video,.markdown-body iframe,.markdown-body svg:not(.xf_editor-copybook-svg){max-width:100%!important;height:auto;box-sizing:border-box;}');
             c.push('.markdown-body table{display:block;max-width:100%;overflow-x:auto;word-break:normal;-webkit-overflow-scrolling:touch;}');
             c.push('.markdown-body a{color:#0366d6;text-decoration:none;border-bottom:1px solid transparent;transition:color 0.15s ease,border-color 0.15s ease,background-color 0.15s ease;}.markdown-body a:hover{color:#005cc5;border-bottom-color:#005cc5;text-decoration:none;}.markdown-body a:visited{color:#8250df;}.markdown-body a:visited:hover{color:#5a32a3;border-bottom-color:#5a32a3;}.markdown-body a:focus{outline:2px solid #2C7EEA;outline-offset:2px;border-radius:2px;}.markdown-body a:active{color:#0246a2;}.markdown-body a[href^="http"]:not([href*="javascript:"])::after,.markdown-body a[target="_blank"]::after{content:"↗";display:inline-block;margin-left:2px;font-size:0.75em;line-height:1;opacity:0.6;vertical-align:top;}');
             c.push('.markdown-body strong{font-weight:600;}.markdown-body em{font-style:italic;}');
@@ -4479,8 +4495,12 @@
             c.push('.markdown-body pre::after{content:"";position:absolute;top:12px;left:16px;width:10px;height:10px;border-radius:50%;background:#ff5f57;box-shadow:18px 0 0 #febc2e,36px 0 0 #28c840;z-index:2;}');
             c.push('.markdown-body pre code{display:block;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;padding:0;background:transparent;border:none;font-size:13.5px;line-height:1.65;color:#e6edf3;white-space:pre;word-break:normal;font-family:inherit;}');
             c.push('.markdown-body pre::-webkit-scrollbar{height:6px;width:6px;}.markdown-body pre::-webkit-scrollbar-track{background:#161b22;border-radius:3px;}.markdown-body pre::-webkit-scrollbar-thumb{background:#444c56;border-radius:3px;}.markdown-body pre::-webkit-scrollbar-thumb:hover{background:#6e7681;}');
-            // ★ 代码块整体横向滚动：存在行号（ol.linenums）时，让「行号 + 代码」作为整体横向滚动，mac 标题栏与复制按钮为绝对定位不随内容滚动。
-            c.push('.markdown-body pre ol.linenums{display:block;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0;}');
+            // ★ 代码块整体横向滚动：当存在行号（ol.linenums）时，让「行号 + 代码」作为整体横向滚动，
+            //   而非逐行滚动。mac 风格标题栏（pre::before）与复制按钮（.xf_editor-code-copy-btn）为绝对定位，
+            //   位于不滚动的 pre 内，因此横向滚动时始终固定不动。
+            c.push('.markdown-body pre ol.linenums{display:block;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0;white-space:pre;}');
+            // ★ 保证「行号 + 代码」作为整体横向滚动：每个 li 不单独产生滚动容器，整体随 ol 一起滚动
+            c.push('.markdown-body pre ol.linenums li{white-space:pre;}');
             c.push('.markdown-body pre ol.linenums::-webkit-scrollbar{height:6px;width:6px;}.markdown-body pre ol.linenums::-webkit-scrollbar-track{background:#161b22;border-radius:3px;}.markdown-body pre ol.linenums::-webkit-scrollbar-thumb{background:#444c56;border-radius:3px;}.markdown-body pre ol.linenums::-webkit-scrollbar-thumb:hover{background:#6e7681;}');
             // ★ Copy button — 亮色主题、始终可见，适配暗色 pre 背景
             c.push('.xf_editor-code-copy-btn{position:absolute;top:6px;right:12px;z-index:10;display:inline-flex;align-items:center;gap:4px;padding:4px 10px;font-size:11px;line-height:1.3;color:#c9d1d9;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);border-radius:4px;cursor:pointer;user-select:none;-webkit-user-select:none;transition:all 0.15s ease;opacity:1;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;}');
@@ -4601,7 +4621,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             // --- 代码高亮（prettyprint）— 统一暗色主题，无交替背景
             if (f.prettyprint) {
                 c.push('.pln{color:#e6edf3}.str,.atv{color:#ce9178}.kwd,.tag{color:#569cd6}.com{color:#6a9955;font-style:italic}.typ{color:#4ec9b0}.lit{color:#b5cea8}.pun,.opn,.clo{color:#d4d4d4}.atn{color:#9cdcfe}.dec{color:#4ec9b0}.var{color:#9cdcfe}.fun{color:#dcdcaa}');
-                c.push('ol.linenums{margin:0!important;padding:0 0 0 3em!important;color:#484f58}ol.linenums li{list-style-type:decimal!important;padding-left:6px;min-height:1.5em;line-height:1.6;color:#e6edf3}ol.linenums li.L0,ol.linenums li.L1,ol.linenums li.L2,ol.linenums li.L3,ol.linenums li.L4,ol.linenums li.L5,ol.linenums li.L6,ol.linenums li.L7,ol.linenums li.L8,ol.linenums li.L9{list-style-type:decimal!important}ol.linenums li code{border:none!important;background:none!important;padding:0!important;color:#e6edf3}');
+                c.push('ol.linenums{margin:0!important;padding:0 0 0 3em!important;color:#484f58}ol.linenums li{list-style-type:decimal!important;padding-left:6px;min-height:1.5em;line-height:1.6;color:#e6edf3;white-space:pre!important}ol.linenums li.L0,ol.linenums li.L1,ol.linenums li.L2,ol.linenums li.L3,ol.linenums li.L4,ol.linenums li.L5,ol.linenums li.L6,ol.linenums li.L7,ol.linenums li.L8,ol.linenums li.L9{list-style-type:decimal!important}ol.linenums li code{display:inline!important;overflow:visible!important;white-space:pre!important;max-width:none!important;border:none!important;background:none!important;padding:0!important;color:#e6edf3}');
             }
             // --- 字帖图标（SVG inline icons）---
             if (f.copybookIcons) {
@@ -4622,6 +4642,12 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
                 c.push('.xf_editor-footnotes-section{margin-top:24px;padding-top:12px;border-top:1px solid #d1d5db;}.xf_editor-footnote-sep{display:none;}.xf_editor-footnote-title{font-size:14px;font-weight:700;color:#1f2937;margin:0 0 8px;padding-bottom:4px;border-bottom:1px solid #e5e7eb;}.xf_editor-footnote-list{padding:0;margin:0;list-style:none;counter-reset:xf_editor-fn-counter;}');
                 c.push('.xf_editor-footnote-item{position:relative;margin-bottom:6px;padding:8px 10px 8px 32px;font-size:13px;line-height:1.5;color:#4b5563;background:#f9fafb;border:1px solid #e5e7eb;border-radius:6px;transition:all 0.25s ease;}.xf_editor-footnote-item::before{counter-increment:xf_editor-fn-counter;content:counter(xf_editor-fn-counter);position:absolute;left:8px;top:8px;font-size:11px;font-weight:700;color:#6b7280;min-width:18px;text-align:center;}.xf_editor-footnote-content{display:block;}.xf_editor-footnote-content p{margin:0 0 6px;}.xf_editor-footnote-backref{display:none;}');
                 c.push('.xf_editor-footnote-ref-wrapper{display:inline;margin:0 1px;font-size:75%;line-height:0;position:relative;bottom:0.5em;}.xf_editor-footnote-ref-wrapper a{text-decoration:none;color:#2563eb;font-weight:600;}.xf_editor-footnote-ref-wrapper a:hover{color:#1d4ed8;text-decoration:underline;}.xf_editor-footnote-highlight{background:#fef3c7 !important;border-color:#f59e0b !important;box-shadow:0 0 12px rgba(245,158,11,0.3) !important;transition:all 0.3s ease;animation:xf_editor-footnote-pulse 0.6s ease-in-out;}@keyframes xf_editor-footnote-pulse{0%,100%{box-shadow:0 0 8px rgba(245,158,11,0.2);}50%{box-shadow:0 0 20px rgba(245,158,11,0.5);}}');
+            }
+            // ═══ 代码语法高亮（prettify token 配色，确保与编辑器预览区一致）═══
+            // ★ 浅色模式：编辑器预览区使用 lib/prettify 对代码着色；独立页面需内联这些配色
+            //   否则独立页面中的代码块将失去语法高亮，与预览区展示效果不一致。
+            if (f.codeBlock) {
+                c.push('.xf_editor-html-preview .str{color:#0a8043;}.xf_editor-html-preview .kwd{color:#0033b3;}.xf_editor-html-preview .com{color:#8c8c8c;font-style:italic;}.xf_editor-html-preview .typ{color:#16718e;}.xf_editor-html-preview .lit{color:#1750eb;}.xf_editor-html-preview .pun,.xf_editor-html-preview .opn,.xf_editor-html-preview .clo{color:#525252;}.xf_editor-html-preview .atn{color:#16718e;}.xf_editor-html-preview .atv{color:#0a8043;}.xf_editor-html-preview .dec,.xf_editor-html-preview .var{color:#e60000;}.xf_editor-html-preview .fun{color:#ff8c00;}');
             }
             // ═══ [data-theme="dark"] 暗色主题支持 ═══
             // ★ v1.17.30: 独立 HTML 预览暗色主题 — 当父元素设置 data-theme="dark" 时自动适用
@@ -4694,8 +4720,16 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             c.push('[data-theme="dark"] .xf_editor-page-content pre,[data-theme="dark"] .xf_editor-page-content code{background:#0f172a;border-color:#2d3a52;}');
             c.push('[data-theme="dark"] .xf_editor-page-watermark{color:#334155;}[data-theme="dark"] .xf_editor-page-header{color:#94a3b8;border-bottom-color:#2d3a52;}');
             c.push('[data-theme="dark"] .xf_editor-page-footer{color:#64748b;border-top-color:#2d3a52;}[data-theme="dark"] .xf_editor-page-split::before{color:#475569;}');
-            // ★ TOC
-            c.push('[data-theme="dark"] .xf_editor-html-preview .markdown-toc{background:#1e293b;border-color:#2d3a52;}[data-theme="dark"] .xf_editor-html-preview .markdown-toc-list a{color:#93c5fd;}[data-theme="dark"] .xf_editor-html-preview .markdown-toc-list a:hover{color:#60a5fa;}');
+            // ★ TOC — 暗色主题（完整层级颜色 + 左侧蓝色边框 + hover 背景，覆盖 in-content 与下拉菜单两种形态）
+            c.push('[data-theme="dark"] .xf_editor-html-preview .markdown-toc,[data-theme="dark"] .xf_editor-html-preview .markdown-toc.xf_editor-markdown-toc{background:#1e293b;border-color:#2d3a52;border-left-color:#60a5fa;}');
+            c.push('[data-theme="dark"] .xf_editor-html-preview .markdown-toc-list ul{border-left-color:#2d3a52;}');
+            c.push('[data-theme="dark"] .xf_editor-html-preview .markdown-toc-list a{color:#93c5fd;}[data-theme="dark"] .xf_editor-html-preview .markdown-toc-list a:hover{color:#60a5fa;background:#1a2a4a;}');
+            c.push('[data-theme="dark"] .xf_editor-html-preview .markdown-toc-list a.toc-level-1{color:#f1f5f9;}[data-theme="dark"] .xf_editor-html-preview .markdown-toc-list a.toc-level-2{color:#e2e8f0;}[data-theme="dark"] .xf_editor-html-preview .markdown-toc-list a.toc-level-3{color:#cbd5e1;}[data-theme="dark"] .xf_editor-html-preview .markdown-toc-list a.toc-level-4,[data-theme="dark"] .xf_editor-html-preview .markdown-toc-list a.toc-level-5,[data-theme="dark"] .xf_editor-html-preview .markdown-toc-list a.toc-level-6{color:#94a3b8;}');
+            // ★ 下拉菜单形态（[TOCM] / tocDropdown）
+            c.push('[data-theme="dark"] .xf_editor-html-preview .xf_editor-toc-menu > .markdown-toc{background:#1e293b;border-color:#2d3a52;}');
+            c.push('[data-theme="dark"] .xf_editor-html-preview .xf_editor-toc-menu > .markdown-toc > ul{background:#1e293b;border-color:#2d3a52;box-shadow:0 4px 16px rgba(0,0,0,0.4);}');
+            c.push('[data-theme="dark"] .xf_editor-html-preview .xf_editor-toc-menu .markdown-toc-list a{color:#cbd5e1;}[data-theme="dark"] .xf_editor-html-preview .xf_editor-toc-menu .markdown-toc-list a:hover{background:#2a3852;color:#60a5fa;}');
+            c.push('[data-theme="dark"] .xf_editor-html-preview .xf_editor-toc-menu .toc-menu-btn{color:#cbd5e1;background:#1e293b;border-color:#2d3a52;}[data-theme="dark"] .xf_editor-html-preview .xf_editor-toc-menu .toc-menu-btn:hover{background:#2a3852;border-color:#60a5fa;}');
             // ★ Tabs
             c.push('[data-theme="dark"] .xf_editor-tabs{background:#1e293b;border-color:#2d3a52;}[data-theme="dark"] .xf_editor-tab-nav{background:#0f172a;border-bottom-color:#2d3a52;}[data-theme="dark"] .xf_editor-tab-nav li{border-right-color:#2d3a52;color:#94a3b8;}[data-theme="dark"] .xf_editor-tab-nav li:hover{background:#2a3852;}[data-theme="dark"] .xf_editor-tab-nav li.active{background:#1e293b;border-bottom-color:#60a5fa;color:#60a5fa;}');
             // ★ Badge
@@ -4715,7 +4749,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             if (f.copybook) {
                 c.push('.xf_editor-copybook{display:block;margin:1em 0;padding:12px 8px;background:#fef7e9;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.06);overflow-x:auto;}.xf_editor-copybook-row{display:flex;justify-content:center;gap:4px;margin-bottom:6px;flex-wrap:wrap;}.xf_editor-copybook-row:last-child{margin-bottom:0;}.xf_editor-copybook-cell{position:relative;flex-shrink:0;}.xf_editor-copybook-grid-cell{width:52px;height:52px;background:#fff;border:1px solid #d4c296;box-shadow:0 1px 2px rgba(0,0,0,0.02);}.xf_editor-copybook-svg{position:absolute;top:0;bottom:0;left:0;right:0;width:100%;height:100%;pointer-events:none;z-index:2;}.xf_editor-copybook-hanzi-text{position:absolute;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:1.6rem;font-family:"KaiTi","楷体","华文楷书",serif;color:#3e2a1a;line-height:1;z-index:3;}');
                 c.push('.xf_editor-copybook-pinyin-cell{display:flex;flex-direction:column;align-items:center;width:52px;}.xf_editor-copybook-pinyin-top{position:relative;width:100%;height:28px;background:#fffef8;border:none;}.xf_editor-copybook-pinyin-top .xf_editor-copybook-svg{position:absolute;top:0;left:0;width:100%;height:28px;pointer-events:none;z-index:1;}.xf_editor-copybook-pinyin-text{position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:0.75rem;color:#3a7d44;font-family:"KaiTi","楷体",serif;z-index:3;}.xf_editor-copybook-pinyin-bottom{position:relative;width:100%;height:52px;background:#fff;border:1px solid #d4c296;border-top:none;margin-top:2px;}');
-                c.push('.xf_editor-copybook-pinyin-bottom .xf_editor-copybook-svg{position:absolute;top:0;bottom:0;left:0;right:0;width:100%;height:100%;pointer-events:none;z-index:2;}.xf_editor-copybook-pinyin-bottom .xf_editor-copybook-hanzi-text{position:absolute;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:1.6rem;font-family:"KaiTi","楷体",serif;color:#3e2a1a;line-height:1;z-index:3;}');
+                c.push('.xf_editor-copybook-pinyin-bottom .xf_editor-copybook-svg{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:2;}.xf_editor-copybook-pinyin-bottom .xf_editor-copybook-hanzi-text{position:absolute;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:1.6rem;font-family:"KaiTi","楷体",serif;color:#3e2a1a;line-height:1;z-index:3;}');
                 c.push('.xf_editor-copybook-footnote{position:absolute;top:-2px;right:0;font-size:55%;line-height:1;z-index:10;}.xf_editor-copybook-footnote a{display:inline-block;text-decoration:none;color:#2563eb;font-weight:700;padding:1px 3px;background:rgba(255,255,255,0.85);border-radius:2px;}.xf_editor-copybook-footnote a:hover{color:#1d4ed8;text-decoration:underline;}');
                 c.push('.xf_editor-copybook-row-justified{justify-content:space-between !important;gap:0 !important;}.xf_editor-copybook-row-justified .xf_editor-copybook-pinyin-cell{flex:1 1 0;min-width:36px;max-width:80px;}.xf_editor-copybook-row-justified .xf_editor-copybook-pinyin-cell:not(:last-child){margin-right:2px;}');
                 // ★ 字帖组级宽度容器（花括号/圆括号语法 + (!width:NNN)）
@@ -9941,7 +9975,8 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
                             // ★ viewBox 高度设为 54（≈ 28/52 比例），即使渲染引擎忽略 CSS height 而回退到
                             //   viewBox 比例，高度也 = 宽度 × (54/100) ≈ 28px；同时显式写 height="28" 属性兜底。
                             groupCellHtml += '<svg viewBox="0 0 100 54" preserveAspectRatio="none" width="100%" height="28" class="xf_editor-copybook-svg">';
-                            // ★ 4线3格：四线构成三个书写区；线均匀分布在 0~54 区间，向内缩进 2 单位
+                            // ★ 4线3格：四线（上格线/中格上线/中格下线/下格线）构成三个书写区（上格/中格/下格）
+                            //   线向内缩进 2 单位，避免被 SVG 默认 overflow:hidden 裁掉；四线均匀分布在 0~54 区间
                             groupCellHtml += '<line x1="2" y1="4" x2="98" y2="4" stroke="#2f7d4a" stroke-width="2" opacity="0.95"/>';
                             groupCellHtml += '<line x1="2" y1="20" x2="98" y2="20" stroke="#2f7d4a" stroke-width="1.6" opacity="0.9"/>';
                             groupCellHtml += '<line x1="2" y1="36" x2="98" y2="36" stroke="#2f7d4a" stroke-width="1.6" opacity="0.9"/>';

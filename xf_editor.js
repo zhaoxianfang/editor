@@ -3919,8 +3919,7 @@
          * @param {Boolean} [options.includeStyles=true]    是否包含内联 CSS 样式
          * @param {Boolean} [options.includeScripts=true]   是否包含交互脚本
          * @param {Boolean} [options.minify=true]           是否压缩输出
-         * @param {Boolean} [options.to_browser=false]      是否直接触发浏览器下载（为 true 时强制 wrap=true，导出完整文档并下载到本地）
-         * @param {String}  [options.fileName="xfEditor-export.html"] 下载文件名（to_browser=true 时有效，自动补 .html 后缀）
+         * @param {String}  [options.toBrowser=""]           浏览器下载文件名：为非空字符串时，将完整网页内容（强制 wrap=true）下载到浏览器，文件名即该字符串值（可带或不带 .html 后缀，缺省自动补 .html）；为空/未定义则不下载
          * @param {String}  [options.title="xfEditor Preview"]   页面标题（仅 wrap=true 时有效）
          * @param {String}  [options.description=""]         页面描述（meta description）
          * @param {String}  [options.author=""]              页面作者（meta author）
@@ -3957,8 +3956,7 @@
                 customMeta       : {},
                 theme            : '',
                 toc              : false,
-                to_browser       : false,
-                fileName         : ''
+                toBrowser        : ''
             }, options);
 
             // ★ 规范化外部资源数组
@@ -3968,9 +3966,9 @@
             if (!$.isArray(opts.externalScripts)) { opts.externalScripts = []; }
             if (typeof opts.customMeta !== 'object' || opts.customMeta === null) { opts.customMeta = {}; }
 
-            // ★ to_browser（浏览器直接下载）：为 true 时强制 wrap=true，确保导出的是「完整可保存文档」。
+            // ★ toBrowser（浏览器下载文件名）：为非空字符串时强制 wrap=true，确保导出的是「完整可保存文档」。
             //   （注意：布尔简写 getHTML(true/false) 仅控制 minify，不影响 wrap；如需完整文档请传对象 getHTML({wrap:true})）
-            if (opts.to_browser) {
+            if (opts.toBrowser && String(opts.toBrowser).trim() !== '') {
                 opts.wrap = true;
             }
             
@@ -4209,7 +4207,7 @@
                 body = '<script src="' + escapeAttr(echartsSrc) + '"><\/script>' + nl + body;
             }
 
-            // ★ 组装最终输出（统一收口到 finalHTML，便于 to_browser 在返回前触发下载）
+            // ★ 组装最终输出（统一收口到 finalHTML，便于 toBrowser 在返回前触发下载）
             var finalHTML;
             if (!opts.wrap) {
                 // 片段模式：返回 <div class="xf_editor-html-preview">…</div> 干净片段（默认）
@@ -4267,12 +4265,14 @@
                 finalHTML = html;
             }
 
-            // ★ to_browser：浏览器直接下载完整 HTML 到本地
+            // ★ toBrowser：传入非空字符串时，将完整 HTML 文档下载到浏览器。
+            //   文件名即该字符串值（可带或不带 .html 后缀，缺省自动补 .html）。
             //   仅当运行环境具备 DOM（浏览器）时生效；非浏览器环境（如 Node/SSR）安全跳过，不影响返回值。
-            if (opts.to_browser) {
+            if (opts.toBrowser && String(opts.toBrowser).trim() !== '') {
                 try {
                     if (typeof document !== 'undefined' && document.createElement && typeof Blob !== 'undefined' && typeof URL !== 'undefined') {
-                        var _dlName = (opts.fileName && String(opts.fileName).trim()) ? String(opts.fileName).trim() : 'xfEditor-export.html';
+                        var _rawName = String(opts.toBrowser).trim();
+                        var _dlName = _rawName;
                         if (_dlName.toLowerCase().indexOf('.html') < 0 && _dlName.toLowerCase().indexOf('.htm') < 0) {
                             _dlName += '.html';
                         }
@@ -4551,7 +4551,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             // --- 代码高亮（prettyprint）— 统一暗色主题，无交替背景
             if (f.prettyprint) {
                 c.push('.pln{color:#e6edf3}.str,.atv{color:#ce9178}.kwd,.tag{color:#569cd6}.com{color:#6a9955;font-style:italic}.typ{color:#4ec9b0}.lit{color:#b5cea8}.pun,.opn,.clo{color:#d4d4d4}.atn{color:#9cdcfe}.dec{color:#4ec9b0}.var{color:#9cdcfe}.fun{color:#dcdcaa}');
-                c.push('ol.linenums{margin:0!important;padding:0 0 0 3em!important;color:#484f58}ol.linenums li{list-style-type:decimal!important;padding-left:6px;min-height:1.5em;line-height:1.6;color:#e6edf3}ol.linenums li.L0,ol.linenums li.L1,ol.linenums li.L2,ol.linenums li.L3,ol.linenums li.L4,ol.linenums li.L5,ol.linenums li.L6,ol.linenums li.L7,ol.linenums li.L8,ol.linenums li.L9{list-style-type:decimal!important}ol.linenums li code{border:none!important;background:none!important;padding:0!important;color:#e6edf3}');
+                c.push('ol.linenums{margin:0!important;padding:0 0 0 3em!important;color:#484f58}ol.linenums li{list-style-type:decimal!important;padding-left:6px;min-height:1.5em;line-height:1.6;color:#e6edf3;white-space:pre!important}ol.linenums li.L0,ol.linenums li.L1,ol.linenums li.L2,ol.linenums li.L3,ol.linenums li.L4,ol.linenums li.L5,ol.linenums li.L6,ol.linenums li.L7,ol.linenums li.L8,ol.linenums li.L9{list-style-type:decimal!important}ol.linenums li code{display:inline!important;overflow:visible!important;white-space:pre!important;max-width:none!important;border:none!important;background:none!important;padding:0!important;color:#e6edf3}');
             }
             // --- 字帖图标（SVG inline icons）---
             if (f.copybookIcons) {

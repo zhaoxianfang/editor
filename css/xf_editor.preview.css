@@ -4032,7 +4032,7 @@ hr.xf_editor-page-break {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.78rem;
+  font-size: 1.25rem;
   font-family: "Segoe UI", "Lucida Grande", "Arial", "Noto Sans", sans-serif;
   color: #2a6b3c;
   font-weight: 500;
@@ -4194,7 +4194,7 @@ hr.xf_editor-page-break {
     font-size: 1.3rem;
   }
   .xf_editor-copybook-pinyin-text {
-    font-size: 0.65rem;
+    font-size: 1.25rem;
   }
   .xf_editor-copybook-pinyin-top {
     height: 24px;

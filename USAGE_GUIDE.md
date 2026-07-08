@@ -896,8 +896,11 @@ var html = editor.getHTML({
     charset: "UTF-8",                // 字符编码
     theme: "dark",                   // 输出暗色主题（dark/slate，空字符串为亮色）
     toc: false,                      // 无预览内容时 fallback 渲染是否包含 TOC
-    minify: false                    // 是否压缩输出
+    minify: false,                   // 是否压缩输出
+    toBrowser: "my-article.html"     // ⭐ 非空字符串时：强制 wrap=true 并把完整网页下载到浏览器，文件名即该值（可带或不带 .html 后缀，缺省自动补 .html）；为空/未定义则不下载
 });
+// 进阶：不带后缀写法，效果同上（自动补 .html）
+// var html = editor.getHTML({ toBrowser: "my-article" });
 ```
 
 **获取预览区 HTML**：`getPreviewedHTML(options)` — ⭐v1.12.1加强：

@@ -1481,8 +1481,11 @@ xfEditor 持续迭代，致力于为开发者和内容创作者提供最优秀�
                 path                : "../lib/",        // 依赖模块文件目录，默认 "./lib/"
                 pluginPath          : "../plugins/",    // 插件目录路径，默认 "../plugins/"，确保工具栏弹窗功能正常
                 mode                : "gfm",            // 编辑器解析模式，默认 "gfm"，可选 "gfm" | "markdown" | "text/x-markdown"
-                markdown            : "",               // 初始 Markdown 源码，默认 ""
-                placeholder         : "写点什么吧~",     // 编辑器占位文本，默认 "写点什么吧~"
+                markdown            : "",               // 【用途】初始化时的 Markdown 源内容（直接作为编辑器初始文本）｜【默认值】""
+                name                : "",               // 【用途】表单字段 name 属性值，配合 saveHTMLToTextarea 便于后端表单提交｜【默认值】""
+                value               : "",               // 【用途】CodeMirror 直接初始值（仅当 mode 不是 gfm/markdown 时生效）｜【默认值】""
+                appendMarkdown      : "",               // 【用途】若初始化时 textarea 已存在内容，则在其后追加此 Markdown｜【默认值】""
+                placeholder         : "写点什么吧~",     // 【用途】编辑区为空时显示的占位提示文本｜【默认值】"写点什么吧~"
                 delay               : 80,               // Markdown 解析延迟（毫秒），默认 80
                 autoLoadModules     : true,             // 是否自动加载依赖模块文件，默认 true
                 readOnly            : false,            // 只读模式，默认 false
@@ -1589,6 +1592,22 @@ xfEditor 持续迭代，致力于为开发者和内容创作者提供最优秀�
                 draftInterval       : 30,               // 草稿自动保存间隔（秒），默认 30
                 draftMaxDays        : 30,               // 草稿最长保留天数（超期自动清理），默认 30
 
+                // ═══ 国际化 / 语言配置 ═══
+                lang                : {                 // 【用途】编辑器界面文案与提示的国际化配置｜【默认值】见下方内置 zh-cn
+                    name        : "zh-cn",              // 【用途】语言标识｜【默认值】"zh-cn"
+                    description : "开源在线Markdown编辑器", // 【用途】编辑器描述（部分 UI 展示用）｜【默认值】"开源在线Markdown编辑器"
+                    tocTitle    : "目录",               // 【用途】[TOC]/[TOCM] 自动生成的目录标题文字｜【默认值】"目录"
+                    placeholder : "写点什么吧~",         // 【用途】编辑区占位提示（可被顶层 placeholder 覆盖）｜【默认值】"写点什么吧~"
+                    toolbar     : {                     // 【用途】工具栏各按钮的中文悬浮提示文案｜【默认值】内置中文映射
+                        undo : "撤销（Ctrl+Z）", redo : "重做（Ctrl+Y）", bold : "粗体",
+                        del : "删除线", italic : "斜体", quote : "引用",
+                        h1 : "标题1", h2 : "标题2", h3 : "标题3", h4 : "标题4", h5 : "标题5", h6 : "标题6",
+                        "list-ul" : "无序列表", "list-ol" : "有序列表", hr : "分割线", link : "链接",
+                        image : "图片", code : "代码", "code-block" : "代码块", table : "表格",
+                        watch : "开启实时预览", preview : "全屏预览", fullscreen : "全屏", search : "搜索", help : "帮助"
+                    }
+                },
+
                 // ═══ 事件回调 ═══
                 onload              : function() {      // 编辑器加载完成回调，默认 function(){}
                     console.log("✅ xfEditor v1.17.27 全部功能完整演示已加载");
@@ -1627,12 +1646,42 @@ xfEditor 持续迭代，致力于为开发者和内容创作者提供最优秀�
                 onPageAllLoad       : function() {}     // 网页所有异步加载完成回调，默认 function(){}
             });
 
+            // ════════════════════════════════════════════════════════════════════════════
+            //  getHTML(options) 完整配置示例 —— 导出「可独立运行的 HTML」/ 触发浏览器下载
+            //  下方每一个选项均标注【用途】与【默认值】，可直接复制使用；
+            //  也支持布尔简写 getHTML(true) / getHTML(false)（等价于 {minify:true} / {minify:false}）。
+            // ════════════════════════════════════════════════════════════════════════════
+            var getHTMLOptions = {
+                wrap            : false,             // 【用途】是否包裹为完整 HTML 文档（含 <!DOCTYPE>/<html>/<head>/<body>）；false 仅返回干净片段｜【默认值】false
+                includeStyles   : true,              // 【用途】是否内联当前文档实际用到的全部 CSS 样式（按需特性检测）｜【默认值】true
+                includeScripts  : true,              // 【用途】是否内联交互脚本（Tooltip / Tabs / Columns / ECharts 等）｜【默认值】true
+                minify          : true,              // 【用途】是否压缩输出（去除多余空格与注释，JS 自动压缩）｜【默认值】true
+                title           : "xfEditor Preview",// 【用途】页面 <title>（仅 wrap:true 时生效）｜【默认值】"xfEditor Preview"
+                description     : "",                // 【用途】<meta name="description"> 页面描述｜【默认值】""
+                author          : "",                // 【用途】<meta name="author"> 作者｜【默认值】""
+                keywords        : "",                // 【用途】<meta name="keywords"> 关键词｜【默认值】""
+                lang            : "zh-CN",           // 【用途】<html lang> 属性｜【默认值】"zh-CN"
+                charset         : "UTF-8",          // 【用途】<meta charset> 字符编码｜【默认值】"UTF-8"
+                theme           : "",                // 【用途】输出主题："dark" / "slate" 启用暗色，"" 为亮色｜【默认值】""
+                toc             : false,             // 【用途】无可用预览内容时 fallback 是否包含 TOC｜【默认值】false
+                externalStyles  : [],                // 【用途】额外外部样式表 URL 数组（以 <link rel="stylesheet"> 注入 <head>）｜【默认值】[]
+                externalScripts : [],                // 【用途】额外外部脚本 URL 数组（以 <script src> 注入 <head>）｜【默认值】[]
+                customMeta      : {},                // 【用途】自定义 meta 标签集合，格式 { name: content }｜【默认值】{}
+                // ★ toBrowser（新增字符串参数，用于浏览器直接下载）：
+                //   为非空字符串时：强制 wrap=true，并把完整网页内容通过 Blob + <a download> 下载到浏览器，
+                //   下载文件名即该字符串值（可带或不带 .html 后缀，缺省自动补 .html）；为空 / 未定义 / false 等假值则不下载。
+                toBrowser       : ""                 // 【用途】浏览器下载文件名（非空字符串触发下载）｜【默认值】""
+            };
+            // —— 调用示例（任选其一）——
+            // var html = testEditor.getHTML(getHTMLOptions);                    // ① 仅返回 HTML 字符串，不下载
+            // var html = testEditor.getHTML({ toBrowser: "xfEditor-export" });  // ② 触发浏览器下载，文件名自动补 .html
+            // var html = testEditor.getHTML({ toBrowser: "xfEditor-export.html" }); // ③ 指定完整文件名下载
+
             // ＝＝ API 交互按钮 ＝＝
 
             $("#get-md-btn").on("click", function() {
                 var md = testEditor.getMarkdown();
-                console.log("=== Markdown 内容 ===\n" + md);
-                alert("Markdown 已输出到控制台（" + md.length + " 字符）");
+                console.log("=== Markdown 内容，共（" + md.length + " 字符） ===\n" + md);
             });
 
             $("#get-html-btn").on("click", function() {
@@ -1643,7 +1692,7 @@ xfEditor 持续迭代，致力于为开发者和内容创作者提供最优秀�
                 }
                 console.log("=== 左侧编辑区使用到的语法类型汇总 ===\n" , types);
                 // var html = testEditor.getPreviewedHTML();
-                var html = testEditor.getHTML({to_browser:true,fileName:'test.html'});
+                var html = testEditor.getHTML({toBrowser:'xfEditor.html'});
                 console.log("=== 预览 HTML ===\n" + html);
                 alert("预览 HTML 已输出到控制台（" + html.length + " 字符）");
             });
