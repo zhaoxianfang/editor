@@ -3,8 +3,7 @@
 /*! prefixes.scss v0.1.0 | Author: zhaoxianfang | https://github.com/zhaoxianfang/prefixes.scss | MIT license | Copyright (c) 2015 */
 @font-face {
   font-family: "xf_editor-logo";
-  src: url("../fonts/xf_editor-logo.eot?-5y8q6h");
-  src: url("../fonts/xf_editor-logo.eot?#iefix-5y8q6h") format("embedded-opentype"), url("../fonts/xf_editor-logo.woff?-5y8q6h") format("woff"), url("../fonts/xf_editor-logo.ttf?-5y8q6h") format("truetype"), url("../fonts/xf_editor-logo.svg?-5y8q6h#icomoon") format("svg");
+  src: url("../fonts/xf_editor-logo.woff?-5y8q6h") format("woff");
   font-weight: normal;
   font-style: normal;
 }
@@ -97,8 +96,7 @@
 }
 @font-face {
   font-family: "FontAwesome";
-  src: url("../fonts/fontawesome-webfont.eot?v=4.3.0");
-  src: url("../fonts/fontawesome-webfont.eot?#iefix&v=4.3.0") format("embedded-opentype"), url("../fonts/fontawesome-webfont.woff2?v=4.3.0") format("woff2"), url("../fonts/fontawesome-webfont.woff?v=4.3.0") format("woff"), url("../fonts/fontawesome-webfont.ttf?v=4.3.0") format("truetype"), url("../fonts/fontawesome-webfont.svg?v=4.3.0#fontawesomeregular") format("svg");
+  src: url("../fonts/fontawesome-webfont.woff2?v=4.3.0") format("woff2"), url("../fonts/fontawesome-webfont.woff?v=4.3.0") format("woff");
   font-weight: normal;
   font-style: normal;
 }
@@ -3005,6 +3003,38 @@
   stroke-width: 1.5px !important;
   stroke: #555 !important;
 }
+.markdown-body.xf_editor-preview-container .xfeditor-canvas-graffiti-wrap, .markdown-body.xf_editor-html-preview .xfeditor-canvas-graffiti-wrap {
+  margin: 16px 0;
+  text-align: left;
+}
+.markdown-body.xf_editor-preview-container .xfeditor-canvas-graffiti-wrap .xfeditor-canvas-graffiti-inner, .markdown-body.xf_editor-html-preview .xfeditor-canvas-graffiti-wrap .xfeditor-canvas-graffiti-inner {
+  display: inline-block;
+  max-width: 100%;
+  vertical-align: top;
+}
+.markdown-body.xf_editor-preview-container .xfeditor-canvas-graffiti-wrap .xfeditor-canvas-graffiti-img, .markdown-body.xf_editor-html-preview .xfeditor-canvas-graffiti-wrap .xfeditor-canvas-graffiti-img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  cursor: pointer;
+  border: 1px solid #e1e4e8;
+  border-radius: 4px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+.markdown-body.xf_editor-preview-container .xfeditor-canvas-graffiti-wrap .xfeditor-canvas-graffiti-title, .markdown-body.xf_editor-html-preview .xfeditor-canvas-graffiti-wrap .xfeditor-canvas-graffiti-title {
+  display: block;
+  width: 100%;
+  text-align: center;
+  margin-top: 6px;
+  font-size: 13px;
+  color: #555;
+}
+.markdown-body.xf_editor-preview-container .xfeditor-canvas-graffiti-wrap.xfeditor-canvas-graffiti-center, .markdown-body.xf_editor-html-preview .xfeditor-canvas-graffiti-wrap.xfeditor-canvas-graffiti-center {
+  text-align: center;
+}
+.markdown-body.xf_editor-preview-container .xfeditor-canvas-graffiti-wrap.xfeditor-canvas-graffiti-right, .markdown-body.xf_editor-html-preview .xfeditor-canvas-graffiti-wrap.xfeditor-canvas-graffiti-right {
+  text-align: right;
+}
 
 .xf_editor {
   /* Pretty printing styles — Dark theme adapted for #0d1117 pre background */
@@ -3715,19 +3745,23 @@ hr.xf_editor-page-break {
 
 .xf_editor-preview-close-btn.xf_editor-preview-close-btn {
   color: #fff;
-  padding: 4px 6px;
+  background: rgba(0, 0, 0, 0.45);
+  border-radius: 6px;
+  padding: 2px 10px;
   font-size: 24px;
+  line-height: 1.25;
   display: none;
   position: absolute;
   top: 25px;
   right: 35px;
   z-index: 19;
-  -webkit-transition: color 300ms ease-out; /* Safari, Chrome */
-  -moz-transition: color 300ms ease-out; /* Firefox 4.0~16.0 */
-  transition: color 300ms ease-out; /* IE >9, FF >15, Opera >12.0 */
+  -webkit-transition: background-color 300ms ease-out; /* Safari, Chrome */
+  -moz-transition: background-color 300ms ease-out; /* Firefox 4.0~16.0 */
+  transition: background-color 300ms ease-out; /* IE >9, FF >15, Opera >12.0 */
 }
 .xf_editor-preview-close-btn.xf_editor-preview-close-btn:hover {
-  color: #ccc;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.7);
 }
 
 .xf_editor-preview-active {

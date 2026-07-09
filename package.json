@@ -10,7 +10,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "build:scss": "npx sass scss/xf_editor.scss:css/xf_editor.css scss/xf_editor.preview.scss:css/xf_editor.preview.css scss/xf_editor.logo.scss:css/xf_editor.logo.css --style expanded --no-source-map && npm run build:css:min",
     "build:css:min": "cleancss css/xf_editor.css -o css/xf_editor.min.css && cleancss css/xf_editor.preview.css -o css/xf_editor.preview.min.css && cleancss css/xf_editor.logo.css -o css/xf_editor.logo.min.css",
-    "build:js": "cp src/xf_editor.js xf_editor.js && uglifyjs xf_editor.js -o xf_editor.min.js -c -m",
+    "build:js": "uglifyjs xf_editor.js -o xf_editor.min.js -c -m",
     "build:amd": "uglifyjs xf_editor.amd.js -o xf_editor.amd.min.js -c -m",
     "build": "npm run build:scss && npm run build:js && npm run build:amd"
   },
@@ -51,6 +51,7 @@
     "gulp-ruby-sass": "^1.0.1",
     "gulp-uglifyjs": "^0.6.1",
     "gulp-util": "^3.0.1",
+    "playwright": "^1.61.1",
     "sass": "^1.100.0",
     "uglify-js": "^3.19.3"
   },

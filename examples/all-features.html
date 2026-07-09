@@ -74,6 +74,7 @@
                 <li><strong>草稿暂存</strong>：浏览器端自动保存，防止误刷新丢失内容</li>
                 <li><strong>字帖</strong>：田字格/米字格/拼音格三种字帖，SVG 辅助线</li>
                 <li><strong>🔗 链接 target 语法</strong> <span class="badge badge-new">NEW</span>：<code>[文本](url){target=_blank}</code> 支持新窗口/当前窗口跳转，工具栏链接对话框支持 target 选择</li>
+                <li><strong>🖌️ 画布涂鸦 Canvas Graffiti</strong> <span class="badge badge-new">NEW</span>：工具栏「涂鸦」按钮打开画布面板，手绘画作/标注/签名；画笔/橡皮互斥切换、颜色与快捷色板、粗细、橡皮大小、撤销/恢复、缩放（放大/缩小/重置 + 百分比）、对齐与名称；点击已生成图片可重新编辑；弹窗最大宽度 95% 适配小屏</li>
             </ul>
         </div>
 
@@ -91,6 +92,7 @@
             <button id="toc-default-btn">ToC 默认</button>
             <button id="theme-default-btn" style="background:#fff;color:#2196F3;">默认主题</button>
             <button id="theme-dark-btn" style="background:#333;color:#fff;border-color:#555;">暗色主题</button>
+            <button id="canvas-btn">打开涂鸦面板</button>
         </div>
 <form  method="post" id="formTest">
         <div id="test-xfEditor">
@@ -1438,7 +1440,33 @@ xfEditor[^editor-footnote] 是一款强大的开源 Markdown 在线编辑器。
 
 ---
 
-## 二十六、结语
+## 二十六、🖌️ 画布涂鸦 Canvas Graffiti
+
+通过工具栏的「涂鸦（✏️）」按钮（或上方「打开涂鸦面板」）打开画布面板，可手绘画作、标注、签名、思维导图等，保存后以 `data:image/...;base64,...` 形式内嵌于文档，无需任何外部图片文件。
+
+**语法**：
+
+```
+[[canvas:center title="我的涂鸦"]]
+(data:image/png;base64,图片编码内容)
+[[/canvas]]
+```
+
+- `[[canvas]]` 默认左对齐；`[[canvas:center]]` / `[[canvas:right]]` 居中 / 右对齐。
+- 可选 `title="名称"`，名称显示在图片正下方居中。
+- 工具栏提供：画笔/橡皮（**互斥切换**）、颜色选择器 + 8 色快捷色板、粗细、橡皮大小、撤销/恢复、缩放（放大/缩小/重置 + 百分比）、对齐与名称。
+- 使用画笔时画布鼠标为画笔图标；使用橡皮时鼠标变为与橡皮大小一致的圆形，便于感知擦除范围。
+- 渲染后的涂鸦图片可直接点击**重新编辑**；弹窗最大宽度为屏幕可视区 95%，小屏也不会超出导致无法关闭。
+
+下面是默认左对齐、带名称的涂鸦示例：
+
+[[canvas title="示例涂鸦"]]
+(data:image/png;base64,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)
+[[/canvas]]
+
+---
+
+## 二十七、结语
 
 xfEditor 持续迭代，致力于为开发者和内容创作者提供最优秀的 Markdown 编辑体验。
 
@@ -1749,6 +1777,9 @@ xfEditor 持续迭代，致力于为开发者和内容创作者提供最优秀�
             $("#theme-dark-btn").on("click", function() {
                 testEditor.setTheme("dark");
                 console.log("主题已切换为暗色");
+            });
+            $("#canvas-btn").on("click", function() {
+                testEditor.canvasDialog();
             });
         });
     </script>

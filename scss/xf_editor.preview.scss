@@ -597,6 +597,44 @@
             stroke: #555 !important;
         }
     }
+
+    // ★ 画布涂鸦（canvas graffiti）
+    .xfeditor-canvas-graffiti-wrap {
+        margin: 16px 0;
+        text-align: left;
+
+        .xfeditor-canvas-graffiti-inner {
+            display: inline-block;
+            max-width: 100%;
+            vertical-align: top;
+        }
+
+        .xfeditor-canvas-graffiti-img {
+            display: block;
+            max-width: 100%;
+            height: auto;
+            cursor: pointer;
+            border: 1px solid #e1e4e8;
+            border-radius: 4px;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+        }
+
+        .xfeditor-canvas-graffiti-title {
+            display: block;
+            width: 100%;
+            text-align: center;
+            margin-top: 6px;
+            font-size: 13px;
+            color: #555;
+        }
+
+        &.xfeditor-canvas-graffiti-center {
+            text-align: center;
+        }
+        &.xfeditor-canvas-graffiti-right {
+            text-align: right;
+        }
+    }
 }
 
 // Pretty printing styles — Dark theme
@@ -1200,18 +1238,24 @@ hr.xf_editor-page-break {
 }
 
 #{$prefix}preview-close-btn#{$prefix}preview-close-btn {
+    // 关闭按钮：进入预览后由 JS 直接 show() 显示，无需鼠标悬浮。
+    // 使用半透明深色圆角底衬，保证在浅色 / 深色预览背景下始终清晰可见（不再出现“白字白底”看不见、需悬浮才显现的问题）。
     color: #fff;
-    padding: 4px 6px;
+    background: rgba(0, 0, 0, 0.45);
+    border-radius: 6px;
+    padding: 2px 10px;
     font-size: 24px;
+    line-height: 1.25;
     display: none;
     position: absolute;
     top: 25px;
     right: 35px;
     z-index: 19;
-    @include transition(color 300ms ease-out);
+    @include transition(background-color 300ms ease-out);
 
     &:hover {
-        color: #ccc;
+        color: #fff;
+        background: rgba(0, 0, 0, 0.7);
     }
 }
 

@@ -447,7 +447,7 @@
             "echarts-funnel" : "fa-filter",
             "chart"          : "fa-area-chart",
             "tabs"           : "fa-folder-o",
-            "columns"        : "fa-newspaper-o",
+            "columns"        : "fa-columns",
             "grid"           : "fa-th",
             "tooltip"        : "fa-comment-o",
             "color"          : "fa-font",

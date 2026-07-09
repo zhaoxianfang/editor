@@ -2,8 +2,7 @@
 /*! prefixes.scss v0.1.0 | Author: zhaoxianfang | https://github.com/zhaoxianfang/prefixes.scss | MIT license | Copyright (c) 2015 */
 @font-face {
   font-family: "xf_editor-logo";
-  src: url("../fonts/xf_editor-logo.eot?-5y8q6h");
-  src: url("../fonts/xf_editor-logo.eot?#iefix-5y8q6h") format("embedded-opentype"), url("../fonts/xf_editor-logo.woff?-5y8q6h") format("woff"), url("../fonts/xf_editor-logo.ttf?-5y8q6h") format("truetype"), url("../fonts/xf_editor-logo.svg?-5y8q6h#icomoon") format("svg");
+  src: url("../fonts/xf_editor-logo.woff?-5y8q6h") format("woff");
   font-weight: normal;
   font-style: normal;
 }

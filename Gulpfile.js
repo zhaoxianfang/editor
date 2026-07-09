@@ -73,7 +73,7 @@ gulp.task("scss3", function() {
 }); 
 
 gulp.task("js", function() { 
-  return gulp.src("./src/xf_editor.js")
+  return gulp.src("./xf_editor.js")
             .pipe(jshint("./.jshintrc"))
             .pipe(jshint.reporter("default"))
             .pipe(header(headerComment, {pkg : pkg, fileName : function(file) { 
@@ -171,7 +171,7 @@ gulp.task("amd", function() {
         "   }"
     ].join("\r\n");
     
-    gulp.src("src/xf_editor.js")
+    gulp.src("xf_editor.js")
         .pipe(rename({ suffix: ".amd" }))
         .pipe(gulp.dest('./'))
         .pipe(header(headerComment, {pkg : pkg, fileName : function(file) { 
@@ -328,7 +328,7 @@ gulp.task("watch", function() {
 	gulp.watch("scss/xf_editor.scss", ["scss"]);
 	gulp.watch("scss/xf_editor.preview.scss", ["scss", "scss2"]);
 	gulp.watch("scss/xf_editor.logo.scss", ["scss", "scss3"]);
-	gulp.watch("src/xf_editor.js", ["js", "amd"]);
+	gulp.watch("xf_editor.js", ["js", "amd"]);
 });
 
 gulp.task("default", function() {

@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8" />
+    <title>xfEditor — 涂鸦演示</title>
+    <link rel="stylesheet" href="css/style.css" />
+    <link rel="stylesheet" href="../css/xf_editor.min.css" />
+    <style>
+        #layout { padding-bottom: 60px; }
+        header h1 { font-size: 24px; }
+        .intro {
+            width: 90%; margin: 15px auto 20px; padding: 15px 20px;
+            background: #f5f7fa; border-left: 4px solid #2196F3; border-radius: 4px;
+            font-size: 14px; line-height: 1.8; color: #555;
+        }
+        .intro code {
+            background: #e8e8e8; padding: 2px 6px; border-radius: 3px;
+            font-family: Consolas, Monaco, monospace; font-size: 12px; color: #c7254e;
+        }
+        .intro pre {
+            background: #2d2d2d; color: #f8f8f2; padding: 12px 16px; border-radius: 6px;
+            overflow-x: auto; font-size: 12px; line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <div id="layout">
+        <header>
+            <h1>xfEditor 涂鸦（Canvas Graffiti）演示</h1>
+            <p>点击工具栏的「涂鸦」按钮绘制；点击预览区中已生成的涂鸦图片可重新编辑。</p>
+        </header>
+
+        <div class="intro">
+            <h2>语法说明</h2>
+            <p>涂鸦使用 <code>[[canvas[:align] title="..."]] ... [[/canvas]]</code> 块语法，内容体为图片的 data URI。保存时编辑器会在 PNG 与 JPEG 之间自动选择体积更小者（JPEG 通常可缩小 60%~80% 且内容零丢失），因此文档中可能出现 <code>data:image/png;base64,</code> 或 <code>data:image/jpeg;base64,</code>：</p>
+            <pre>[[canvas:center title="示例名称"]]
+(data:image/jpeg;base64,/9j/4AAQ...)
+[[/canvas]]</pre>
+            <ul>
+                <li><code>[[canvas]]</code> 默认左对齐渲染</li>
+                <li><code>[[canvas:right]]</code> 右对齐渲染</li>
+                <li><code>[[canvas:center]]</code> 居中对齐渲染</li>
+                <li><code>[[canvas:right title="示例名称"]]</code> 右对齐并给图片添加名称标记</li>
+                <li><b>工具栏</b>：撤销 / 恢复 / 画笔 / 橡皮擦 / 重置 / 清空 / 选择 / 放大 / 缩小 九个按钮紧挨成一组（按钮 30×30px、间隔 2px），其中“选择/扩展画布”已移至“清空”右侧、“放大”左侧</li>
+                <li><b>清空画布</b>：一键清除全部内容并把画布尺寸重置为填满绘制区；清空后仍可用“撤销 / 恢复”回退或前进</li>
+                <li><b>选择工具（扩展画布）</b>：点击后光标变为小手（抓取）；在画布上<b>长按左键并拖动</b>即按拖拽方向扩展画布——
+                    <br>· 向右拖 → 向<b>左</b>扩展，画布内全部涂鸦内容整体<b>右移</b>新增的宽度；
+                    <br>· 向下拖 → 向<b>上</b>扩展，内容整体<b>下移</b>新增的高度；
+                    <br>· 向左拖 → 向<b>右</b>扩展（仅加宽，内容位置不变）；
+                    <br>· 向上拖 → 向<b>下</b>扩展（仅加高，内容位置不变）；
+                    <br>松手后光标恢复。画布超出绘制区时自动出现滚动条。</li>
+                <li><b>画笔 / 橡皮只作画不改尺寸</b>：绘制（含放大后绘制）过程绝不修改画布宽高，无抖动、无尺寸异常；如需改变画布大小，请使用“选择工具”拖拽扩展。</li>
+                <li><b>画布占满绘制区</b>：可视画布始终铺满 <code>.xf-cg-canvas-wrap</code>，空白区域为白底，超出时滚动查看</li>
+                <li><b>缩放不丢内容</b>：放大 / 缩小只改变显示比例，画布舞台之外的内容永不丢失</li>
+                <li><b>智能裁剪 + 最小体积导出</b>：保存时按内容包围盒自动裁剪去空白并叠加白底，再在 WebP / 多档 JPEG / PNG 中自动选择体积最小者（内容零丢失）</li>
+                <li><b>弹窗最大化 / 恢复</b>：支持最大化占满可视区，画布区高度 = 内容高 − 底部按钮高 − 工具栏高</li>
+            </ul>
+        </div>
+
+        <div id="test-xfEditor">
+            <textarea style="display:none;"># 涂鸦示例
+
+下面是默认左对齐、带名称标记的涂鸦：
+
+[[canvas title="我的第一幅涂鸦"]]
+(data:image/png;base64,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)
+[[/canvas]]
+
+---
+
+右对齐的涂鸦：
+
+[[canvas:right title="右对齐示例"]]
+(data:image/png;base64,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)
+[[/canvas]]
+
+---
+
+居中显示的涂鸦（点击预览区图片可重新编辑）：
+
+[[canvas:center]]
+(data:image/png;base64,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)
+[[/canvas]]
+</textarea>
+        </div>
+    </div>
+
+    <script src="js/jquery.min.js"></script>
+    <script src="../xf_editor.min.js"></script>
+    <script src="../languages/zh-cn.min.js"></script>
+    <script>
+        $(function() {
+            var testEditor = xfEditor("test-xfEditor", {
+                width: "100%",
+                height: 720,
+                path: "../lib/",
+                pluginPath: "../plugins/",
+                toolbarIcons: "full",
+                watch: true,
+                markdown: ""
+            });
+        });
+    </script>
+</body>
+</html>

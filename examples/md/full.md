@@ -1442,7 +1442,102 @@ console.log("多层嵌套演示");
 
 ---
 
-## 二十七、🏁 结语
+## 二十七、🖌️ 画布涂鸦 Canvas Graffiti
+
+通过工具栏的 **画笔（✏️）** 图标（或调用 `canvasDialog()`）打开涂鸦面板，可在画布上手绘画作、标注、签名、思维导图等，
+保存后以 `data:image/...;base64,...` 形式内嵌于文档，无需任何外部图片文件。
+
+### 27.1 语法
+
+涂鸦使用 `[[canvas[:align] title="..."]] ... [[/canvas]]` 块语法，内容体为图片的 `data:` URI：
+
+```markdown
+[[canvas:center title="我的涂鸦"]]
+(data:image/jpeg;base64,/9j/4AAQ...)
+[[/canvas]]
+```
+
+- `[[canvas]]` 与 `[[/canvas]]` 为块级容器配对标签。
+- 可选对齐参数：`left`（默认）/ `center` / `right`，写在 `canvas:` 后，如 `[[canvas:center]]`。
+- 可选标题参数：`title="..."`，支持中文与英文，始终显示在图片**正下方居中**位置。
+- 内容体为图片 `data:` URI。**保存时编辑器会在 WebP / 多档 JPEG / PNG 之间自动选择体积最小者**（在 XSS 白名单 `png|jpeg|webp` 内放行），因此文档中可能出现 `data:image/png;base64,`、`data:image/jpeg;base64,` 或 `data:image/webp;base64,`。对白底/纯色等简单画面会自动选 PNG（体积更小），对色彩丰富的画面会选 WebP/JPEG，内容始终零丢失。
+
+### 27.2 涂鸦面板工具栏
+
+工具栏采用紧凑分组、图标化布局：
+
+| 分组 | 功能 | 说明 |
+|------|------|------|
+| 操作（同一 `.xf-cg-group` 内，按钮均 30×30px、间距 2px） | ↶ 撤销 / ↷ 恢复 / ✏️ 画笔 / 🧽 橡皮擦 / 🔄 重置 / 🗑️ 清空 / ↔️ 选择 / 🔍 放大 / 🔍 缩小 | 九个功能按钮紧挨成一组，宽度高度均 30px、间隔 2px；其中 ↔️ 选择/扩展画布 位于 🗑️ 清空 右侧、🔍 放大 左侧 |
+| 颜色 | 颜色选择器 + 8 色快捷色板 + 粗细滑块 | 粗细 1–40，色板选中高亮 |
+| 橡皮大小 | 橡皮大小滑块 | 范围 2–60，实时改变橡皮擦擦除半径 |
+| 视图 | 百分比实时显示 | 与操作组中的放大 / 缩小 / 重置联动 |
+| 对齐 / 名称 | 对齐下拉 + 名称输入框 | 设置渲染对齐方式与图片标题 |
+
+> **画笔 / 橡皮擦 / 选择工具 三者互斥**：点选橡皮后需再点画笔才能回到画笔模式；点选选择工具后可再次点选以退出。
+> **画笔 / 橡皮只作画、不改尺寸**：绘制（含放大后绘制）过程**绝不修改**画布宽高，因此不会出现抖动或尺寸被意外改变；需要改变画布大小时，请使用「选择工具」拖拽扩展。
+
+### 27.2.1 清空画布（🗑️）
+
+点击 **清空画布** 按钮：一次性清除画布上的所有内容，并把画布尺寸 **重置为填满绘制区**（`.xf-cg-canvas-wrap` 的宽高），缩放比例归位为 100%。清空操作本身会被记入撤销栈，因此清空后仍可点击 **撤销 / 恢复** 回退或前进到清空前的状态。
+
+### 27.2.2 选择工具 / 方向性扩展画布（↔️）
+
+点击 **选择工具** 后，光标变为「小手（抓取）」；在画布上 **长按鼠标左键并拖动**，即按拖拽方向 **方向性地扩展画布**，松手后光标恢复。扩展方向与内容位移规则如下（拖拽增量实时换算到画布坐标）：
+
+- **向右拖** → 向**左**扩展画布，画布内**全部涂鸦内容整体右移**新增的宽度；
+- **向下拖** → 向**上**扩展画布，画布内**全部涂鸦内容整体下移**新增的高度；
+- **向左拖** → 向**右**扩展画布（仅加宽，内容位置不变）；
+- **向上拖** → 向**下**扩展画布（仅加高，内容位置不变）。
+
+当画布尺寸超出绘制区时，绘制区会 **自动出现滚动条**，可滚动查看全部内容。
+
+### 27.2.3 画布始终占满绘制区
+
+可视画布会 **始终铺满** `.xf-cg-canvas-wrap` 的宽度与高度（不足时以白底填充，超出时滚动查看），不会出现四周留白或尺寸错乱的问题。
+
+### 27.3 缩放不丢失内容（放大 / 缩小 / 重置）
+
+涂鸦采用「离屏基准画布 + 可视视口」架构：放大 / 缩小**只改变显示比例**，绝不裁剪或丢弃画布舞台之外的内容。
+
+- 验证：涂鸦任意内容后，无论放大到 299% 还是缩回 100%，再保存，画布舞台之外的内容都完整保留。
+- 🔍 放大 / 🔍 缩小 / 🔄 重置 三个按钮位于操作组内，并实时显示当前缩放百分比。
+- 视口画布与缩放显示严格 1:1：缩小后画布整体按比例变小（内容居中显示于灰底容器中），**整张可视画布均可涂鸦，不存在右侧 / 底部“死区”**；放大后画布变大，超出容器时由容器出现滚动条，同样全部可涂鸦。
+
+### 27.4 扩展画布（改变尺寸的唯一途径）
+
+画布的宽度 / 高度**只能通过「选择工具」拖拽来修改**（见 27.2.2）。画笔与橡皮仅用于在现有画布范围内作画，不会自动加宽 / 加高，也不会因绘制导致画布抖动或尺寸被改变——这样既避免了误改尺寸，也保证了绘制体验的流畅稳定。
+
+### 27.5 保存时智能裁剪（去空白）
+
+保存时编辑器会扫描所有非透明像素，按内容包围盒 **自动裁剪**，仅保留有涂鸦内容的区域并保留一定安全边距，去除上下左右四个方向的大片空白；同时**绝不丢失任何涂鸦内容**，再叠加白色背景后导出。这样既减小体积，又保证画面完整。
+
+### 27.6 弹窗最大化 / 恢复
+
+涂鸦弹窗支持 **最大化（⛶）/ 恢复** 按钮：
+
+- 最大化后画布区占满可视区（约 94vw × 94vh），方便精细作画；再次点击恢复原尺寸。
+- 画布区高度始终 = 弹窗内容高度 − 底部操作按钮高度 − 工具栏高度；中屏 / 手机上也不会溢出或无法关闭（弹窗最大宽度限制为可视区 95%）。
+
+### 27.7 鼠标指针反馈
+
+- 画笔模式：画布内鼠标变为画笔图标。
+- 橡皮擦模式：画布内鼠标变为与当前橡皮大小一致的半透明圆形，便于直观感知擦除位置与范围。
+
+### 27.8 重新编辑
+
+渲染后的涂鸦图片可直接点击，再次打开涂鸦面板并载入原图进行编辑（不会出现空白或不可用）。
+
+### 27.9 真实示例
+
+下面是一段真实可渲染的涂鸦（点击预览区图片可重新编辑）：
+
+[[canvas:center title="示例涂鸦"]]
+(data:image/png;base64,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)
+[[/canvas]]
+
+---
+## 二十八、🏁 结语
 
 xfEditor 持续迭代，致力于为开发者和内容创作者提供最优秀的 Markdown 编辑体验。
 

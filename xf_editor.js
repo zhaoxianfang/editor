@@ -166,7 +166,7 @@
             "|",
             { "copybook" : ["copybook-tian", "copybook-mi", "copybook-pinyin"] },
             "|",
-            "tabs", "columns", "tooltip", "formula", "|",
+            "tabs", "columns", "tooltip", "formula", "canvas", "|",
             "color", "bg-color", "|",
             "goto-line", "watch", "preview", "fullscreen", "clear", "search", "|",
             "help", "info"
@@ -301,6 +301,7 @@
         pageBlock            : true,           // 启用纸张页面语法 [[page:A4]] / [[page:A5]]
         video                : true,           // 启用视频列表语法 [[video]]
         file                 : true,           // 启用文件列表语法 [[file]]
+        canvas               : true,           // 启用画布涂鸦语法 [[canvas]]
         tooltip              : true,           // 启用悬浮提示语法 [text](tooltip:tip)
         syncScroll           : true,           // 启用编辑区和预览区同步滚动（v1.17.0）
         previewOnly          : false,          // 纯预览模式（禁用表格编辑、图片缩放等交互功能）
@@ -362,6 +363,7 @@
             clear            : "fa-eraser",
             help             : "fa-question-circle",
             info             : "fa-info-circle",
+            canvas           : "fa-yelp",
             "align-left"     : "fa-align-left",
             "align-center"   : "fa-align-center",
             "align-right"    : "fa-align-right",
@@ -377,12 +379,12 @@
             "echarts-funnel" : "fa-filter",
             "chart"          : "fa-area-chart",
             "tabs"           : "fa-folder-o",
-            "columns"        : "fa-newspaper-o",
+            "columns"        : "fa-columns",
             "grid"           : "fa-th",
             "tooltip"        : "fa-comment-o",
-            "color"          : "fa-font",
+            "color"          : "fa-tint",
             "bg-color"       : "fa-paint-brush",
-            "formula"         : "",
+            "formula"         : "fa-superscript",
             "copybook"       : "xf_editor-icon-copybook",
             "copybook-tian"  : "xf_editor-icon-tian",
             "copybook-mi"    : "xf_editor-icon-mi",
@@ -447,6 +449,7 @@
                 insert           : "插入",
                 pinyin           : "拼音标注",
                 "image-resize"   : "图片尺寸",
+                "canvas"         : "涂鸦",
                 "echarts-tree"   : "树图/脑图",
                 "echarts-bar"    : "柱状图",
                 "echarts-line"   : "折线图",
@@ -1493,7 +1496,7 @@
                         if (subName === "watch" && !settings.watch) {
                             subIndex = "unwatch";
                         }
-                        var subTitle = settings.lang.toolbar[subIndex] || "";
+                        var subTitle = settings.lang.toolbar[subIndex] || subName;
                         var subIconClass = settings.toolbarIconsClass[subIndex] || "";
                         var subIconTexts = settings.toolbarIconTexts[subIndex] || "";
                         
@@ -1746,6 +1749,30 @@
                 
                 return false;
             });
+
+            // 画布涂鸦：点击预览区图片重新加载到画布操作版进行编辑
+            if (this.previewContainer && !settings.previewOnly) {
+                this.previewContainer.off("click.xf_editor-canvas").on("click.xf_editor-canvas", ".xfeditor-canvas-graffiti-img", function() {
+                    var $img = $(this);
+                    var src = $img.attr("src") || "";
+                    if (!src) return;
+                    var md = _this.cm.getValue();
+                    var re = /\[\[canvas[^\]]*\]\]\s*\(([\s\S]*?)\)\s*\[\[\/canvas\]\]/g;
+                    var m, found = null, fallback = null;
+                    while ((m = re.exec(md)) !== null) {
+                        if (!fallback) fallback = m;
+                        if (m[1].trim() === src) { found = m; break; }
+                    }
+                    if (!found && fallback) found = fallback;
+                    if (!found) return;
+                    var openTag = found[0].match(/^\[\[canvas([^\]]*)\]\]/);
+                    var attrs = openTag ? openTag[1] : "";
+                    var align = "left", title = "";
+                    var am = attrs.match(/^:(\w+)/); if (am) align = am[1];
+                    var tm = attrs.match(/title="([^"]*)"/); if (tm) title = tm[1];
+                    _this.canvasDialog({ src: src, align: align, title: title, start: found.index, end: found.index + found[0].length });
+                });
+            }
 
             return this;
         },
@@ -3005,6 +3032,10 @@
             
             previewContainer.find("img").each(function() {
                 var $img = $(this);
+                // 画布涂鸦图片不参与图片缩放：点击用于重新编辑，且需保持 p > img + span 结构
+                if ($img.hasClass("xfeditor-canvas-graffiti-img")) {
+                    return;
+                }
                 if ($img.hasClass("xf_editor-img-resizable")) {
                     return;
                 }
@@ -4496,6 +4527,13 @@
             if (f.fileList) {
                 c.push('.xf_editor-file-list{margin:10px 0;}.xf_editor-file-list a{display:inline-block;margin:3px 6px 3px 0;padding:4px 10px;border:1px solid #ddd;border-radius:3px;text-decoration:none;color:#333;font-size:13px;}.xf_editor-file-list a:hover{background:#f0f0f0;}');
             }
+            // --- canvas 画布涂鸦 ---
+            c.push('.xfeditor-canvas-graffiti-wrap{margin:16px 0;text-align:left;}');
+            c.push('.xfeditor-canvas-graffiti-wrap.xfeditor-canvas-graffiti-center{text-align:center;}');
+            c.push('.xfeditor-canvas-graffiti-wrap.xfeditor-canvas-graffiti-right{text-align:right;}');
+            c.push('.xfeditor-canvas-graffiti-inner{display:inline-block;max-width:100%;vertical-align:top;}');
+            c.push('.xfeditor-canvas-graffiti-img{display:block;max-width:100%;height:auto;cursor:pointer;border:1px solid #e1e4e8;border-radius:4px;box-shadow:0 1px 4px rgba(0,0,0,0.08);}');
+            c.push('.xfeditor-canvas-graffiti-title{display:block;width:100%;text-align:center;margin-top:6px;font-size:13px;color:#555;}');
             // --- textAlign 文字对齐 ---
             if (f.textAlign) {
                 c.push('.xf_editor-text-align{display:block;margin:0.5em 0;}.xf_editor-text-align-center{text-align:center!important;}.xf_editor-text-align-left{text-align:left!important;}.xf_editor-text-align-right{text-align:right!important;}');
@@ -7314,6 +7352,548 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             }
             
             return this;
+        },
+
+        /**
+         * 画布涂鸦对话框
+         * 打开画布操作版进行涂鸦绘画，支持撤销/恢复/颜色/粗细/橡皮擦/缩放/对齐/名称
+         * opts: { src, align, title, start, end } —— start/end 存在时为编辑已有涂鸦
+         */
+        canvasDialog : function(opts) {
+            opts = opts || {};
+            var _this = this;
+            var editor = this;
+            var settings = this.settings;
+
+            // 避免同名对话框在 DOM 中累积，导致后续打开定位到旧的（空白）对话框
+            if (this.editor && this.editor.find(".canvas-graffiti-dialog").length) {
+                this.editor.find(".canvas-graffiti-dialog").remove();
+            }
+
+            var isEdit = !!(opts && opts.src);
+            var align = (opts && opts.align) || "left";
+            var title = (opts && opts.title) || "";
+            var editStart = (opts && typeof opts.start === "number") ? opts.start : -1;
+            var editEnd = (opts && typeof opts.end === "number") ? opts.end : -1;
+
+            var dialogHTML = [
+                '<div class="xf-canvas-graffiti">',
+                '<style>',
+                '.xf-canvas-graffiti{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;display:flex;flex-direction:column;flex:1 1 auto;min-height:0;}',
+                '.canvas-graffiti-dialog .xf_editor-dialog-close{top:16px;right:18px;}',
+                '.canvas-graffiti-dialog .xf-cg-max-btn{position:absolute;top:16px;right:50px;font-size:18px;color:rgba(255,255,255,.85);cursor:pointer;z-index:5;transition:transform .15s;}',
+                '.canvas-graffiti-dialog .xf-cg-max-btn:hover{color:#fff;transform:scale(1.12);}',
+                '.canvas-graffiti-dialog .xf_editor-dialog-container{display:flex!important;flex-direction:column;padding:0!important;overflow:hidden!important;}',
+                '.canvas-graffiti-dialog .xf_editor-dialog-footer{flex:0 0 auto;}',
+                '.canvas-graffiti-dialog .xf-canvas-graffiti{flex:1 1 auto;min-height:0;}',
+                '.xf-canvas-graffiti .xf-cg-toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;padding:10px 12px;background:linear-gradient(180deg,#fafbfc,#eef1f5);border-bottom:1px solid #e3e6ea;font-size:13px;flex:0 0 auto;}',
+                '.xf-canvas-graffiti .xf-cg-group{display:flex;align-items:center;gap:5px;padding:4px 9px;background:#fff;border:1px solid #e3e6ea;border-radius:9px;box-shadow:0 1px 2px rgba(0,0,0,0.03);}',
+                '.xf-canvas-graffiti .xf-cg-group.xf-cg-group-main{gap:2px;padding:3px 6px;}',
+                '.xf-canvas-graffiti .xf-cg-glabel{font-size:11px;color:#8a9099;letter-spacing:.3px;white-space:nowrap;flex:0 0 auto;}',
+                '.xf-canvas-graffiti .xf-cg-btn{display:inline-flex;align-items:center;justify-content:center;height:32px;padding:0;font-size:15px;border:1px solid #d6dbe1;border-radius:7px;background:#fff;cursor:pointer;color:#3a3f45;transition:all .15s;}',
+                '.xf-canvas-graffiti .xf-cg-group-main .xf-cg-btn{width:30px!important;min-width:30px!important;height:30px;font-size:14px;border-radius:6px;}',
+                '.xf-canvas-graffiti .xf-cg-btn:hover{background:#eaf2fd;border-color:#9ec3f0;color:#1a6fd6;}',
+                '.xf-canvas-graffiti .xf-cg-btn:active{transform:translateY(1px);}',
+                '.xf-canvas-graffiti .xf-cg-btn.xf-cg-toggle-on{background:#2C7EEA;border-color:#2C7EEA;color:#fff;box-shadow:0 2px 6px rgba(44,126,234,.35);}',
+                '.xf-canvas-graffiti .xf-cg-btn.xf-cg-eraser-on{background:#fff4e5;border-color:#ffb74d;color:#e65100;box-shadow:0 2px 6px rgba(255,152,0,.25);}',
+                '.xf-canvas-graffiti .xf-cg-color{width:30px;height:30px;padding:2px;border:1px solid #d6dbe1;border-radius:7px;cursor:pointer;background:#fff;}',
+                '.xf-canvas-graffiti .xf-cg-presets{display:inline-flex;gap:4px;align-items:center;}',
+                '.xf-canvas-graffiti .xf-cg-swatch{width:16px;height:16px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.15);cursor:pointer;transition:transform .12s;}',
+                '.xf-canvas-graffiti .xf-cg-swatch:hover{transform:scale(1.18);}',
+                '.xf-canvas-graffiti .xf-cg-swatch.xf-cg-active{box-shadow:0 0 0 2px #2C7EEA;}',
+                '.xf-canvas-graffiti .xf-cg-range{width:84px;vertical-align:middle;accent-color:#2C7EEA;}',
+                '.xf-canvas-graffiti .xf-cg-rangeval{display:inline-block;min-width:22px;text-align:center;color:#3a3f45;font-variant-numeric:tabular-nums;background:#f0f2f5;border-radius:5px;padding:1px 5px;font-size:12px;}',
+                '.xf-canvas-graffiti .xf-cg-zoomval{min-width:44px;text-align:center;color:#3a3f45;font-variant-numeric:tabular-nums;background:#eef3fb;border:1px solid #dce6f5;border-radius:6px;padding:3px 6px;font-size:12px;}',
+                '.xf-canvas-graffiti .xf-cg-select,.xf-canvas-graffiti .xf-cg-title{font-size:13px;padding:5px 8px;border:1px solid #d6dbe1;border-radius:7px;background:#fff;color:#3a3f45;}',
+                '.xf-canvas-graffiti .xf-cg-title{width:130px;}',
+                '.xf-canvas-graffiti .xf-cg-canvas-wrap{flex:1 1 auto;min-height:0;overflow:auto;padding:0;position:relative;background:#f0f2f5;background-image:radial-gradient(#dfe3e8 1px,transparent 1px);background-size:18px 18px;}',
+                '.xf-canvas-graffiti .xf-cg-canvas{display:block;margin:0;background:#fff;border:1px solid #d0d7de;border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,0.10);touch-action:none;}',
+                '.xf-canvas-graffiti .xf-cg-hint{position:sticky;top:0;left:0;z-index:5;margin:0 0 8px;padding:7px 12px;font-size:12.5px;line-height:1.5;color:#0b5ed7;background:#eaf2fd;border:1px solid #bcd6f7;border-radius:7px;box-shadow:0 1px 4px rgba(44,126,234,.15);}',
+                '.xf-canvas-graffiti .xf-cg-hint .fa{margin-right:5px;}',
+                '</style>',
+                '<div class="xf-cg-toolbar">',
+                '  <div class="xf-cg-group xf-cg-group-main" role="group" aria-label="画布操作">',
+                '    <button type="button" class="xf-cg-btn" data-act="undo" title="撤销 (Undo)"><i class="fa fa-undo"></i></button>',
+                '    <button type="button" class="xf-cg-btn" data-act="redo" title="恢复 (Redo)"><i class="fa fa-repeat"></i></button>',
+                '    <button type="button" class="xf-cg-btn xf-cg-toggle-on" data-act="pen" title="画笔 (Pen)"><i class="fa fa-pencil"></i></button>',
+                '    <button type="button" class="xf-cg-btn" data-act="eraser" title="橡皮擦 (Eraser)"><i class="fa fa-eraser"></i></button>',
+                '    <button type="button" class="xf-cg-btn" data-act="zoomreset" title="重置缩放 (Reset)"><i class="fa fa-refresh"></i></button>',
+                '    <button type="button" class="xf-cg-btn" data-act="clear" title="清空画布 (Clear)"><i class="fa fa-trash"></i></button>',
+                '    <button type="button" class="xf-cg-btn" data-act="select" title="选择/扩展画布 (Select & Resize)"><i class="fa fa-arrows"></i></button>',
+                '    <button type="button" class="xf-cg-btn" data-act="zoomin" title="放大 (Zoom in)"><i class="fa fa-search-plus"></i></button>',
+                '    <button type="button" class="xf-cg-btn" data-act="zoomout" title="缩小 (Zoom out)"><i class="fa fa-search-minus"></i></button>',
+                '    <span class="xf-cg-zoomval">100%</span>',
+                '  </div>',
+                '  <div class="xf-cg-group">',
+                '    <input type="color" class="xf-cg-color" value="#e53935" title="画笔颜色">',
+                '    <span class="xf-cg-presets"></span>',
+                '    <label class="xf-cg-glabel">粗细</label>',
+                '    <input type="range" min="1" max="40" value="4" class="xf-cg-range xf-cg-size"><b class="xf-cg-rangeval">4</b>',
+                '  </div>',
+                '  <div class="xf-cg-group">',
+                '    <label class="xf-cg-glabel">橡皮大小</label>',
+                '    <input type="range" min="2" max="60" value="20" class="xf-cg-range xf-cg-esize"><b class="xf-cg-rangeval">20</b>',
+                '  </div>',
+                '  <div class="xf-cg-group">',
+                '    <label class="xf-cg-glabel">对齐</label>',
+                '    <select class="xf-cg-select xf-cg-align"><option value="left">左</option><option value="center">中</option><option value="right">右</option></select>',
+                '    <label class="xf-cg-glabel">名称</label>',
+                '    <input type="text" class="xf-cg-title" placeholder="[可选] 添加图片名称">',
+                '  </div>',
+                '</div>',
+                '<div class="xf-cg-canvas-wrap">',
+                '  <div class="xf-cg-hint" style="display:none;"><i class="fa fa-info-circle"></i> 小提示：长按鼠标左键进行上下左右拖动可以从不同的方向扩展画布的宽度和高度</div>',
+                '  <canvas class="xf-cg-canvas"></canvas>',
+                '</div>',
+                '</div>'
+            ].join("\n");
+
+            var dialog = this.createDialog({
+                name: "canvas-graffiti-dialog",
+                width: 920,
+                height: "680px",
+                title: (isEdit ? "编辑涂鸦" : "涂鸦"),
+                content: dialogHTML,
+                mask: true,
+                lockScreen: true,
+                drag: true,
+                buttons: {
+                    saveBtn: ["保存", function() {
+                        var dataUri = exportDataUri();
+                        var a = dialog.find(".xf-cg-align").val();
+                        var t = dialog.find(".xf-cg-title").val();
+                        var block = _this._buildCanvasBlock(dataUri, a, t);
+                        var cm = editor.cm;
+                        if (isEdit && editStart >= 0 && editEnd >= 0 && cm) {
+                            var from = cm.posFromIndex(editStart);
+                            var to = cm.posFromIndex(editEnd);
+                            cm.setSelection(from, to);
+                            cm.replaceSelection(block);
+                        } else if (cm) {
+                            cm.replaceSelection("\n" + block + "\n");
+                        }
+                        $(window).off("resize.xf_cg_cursor", onWinResize);
+                        dialog.hide().lockScreen(false).hideMask().remove();
+                    }],
+                    cancelBtn: ["取消", function() {
+                        $(window).off("resize.xf_cg_cursor", onWinResize);
+                        dialog.hide().lockScreen(false).hideMask().remove();
+                    }]
+                }
+            });
+
+            var vp = dialog.find(".xf-cg-canvas")[0];
+            var vctx = vp.getContext("2d");
+            var wrap = dialog.find(".xf-cg-canvas-wrap")[0];
+            // 离屏“舞台”画布：保存真实绘制内容（1:1），缩放/视图仅为显示层，永不裁切内容
+            var base = document.createElement("canvas");
+            var bctx = base.getContext("2d");
+            var baseW = 760, baseH = 460;
+            base.width = baseW; base.height = baseH;
+            var drawing = false, lastX = 0, lastY = 0;
+            var selecting = false, selStart = null, selBaseW = 0, selBaseH = 0, selOrig = null, selPushed = false;
+            var undoStack = [], redoStack = [];
+            var MAX_STACK = 40;
+            var state = { color: "#e53935", size: 4, eraser: false, eraserSize: 20, scale: 1, tool: "pen" };
+            var MIN_W = 60, MIN_H = 60;
+            var $maxBtn = null;
+
+            function makeCanvas(w, h) { var c = document.createElement("canvas"); c.width = w; c.height = h; return c; }
+            function resetStage(w, h) { baseW = w; baseH = h; base.width = w; base.height = h; bctx = base.getContext("2d"); }
+            // 视图渲染：把舞台按当前缩放绘制到可视画布（白底，确保导出无黑底）
+            // 视图渲染：把舞台按当前缩放绘制到可视画布；可视画布尺寸 = max(舞台显示尺寸, 容器尺寸)，
+            // 因此画布始终占满 .xf-cg-canvas-wrap，超出容器时由容器出现滚动条
+            function render() {
+                var dispW = Math.max(1, Math.round(baseW * state.scale));
+                var dispH = Math.max(1, Math.round(baseH * state.scale));
+                // 可视画布尺寸 = 舞台按缩放比例显示后的尺寸（严格 1:1，绝不放大/缩小填满容器）。
+                // 这样整张可视画布都对应真实内容，缩放后整个画布均可涂鸦，不会出现“右侧/底部死区”。
+                // 当 dispW/dispH 小于容器时，画布居中显示于灰底容器中；大于容器时容器出现滚动条。
+                var elW = dispW, elH = dispH;
+                // 仅在尺寸真正变化时才重设画布（避免绘制过程中因反复分配 backing store 造成抖动）
+                if (vp.width !== elW || vp.height !== elH) {
+                    vp.style.width = elW + "px";
+                    vp.style.height = elH + "px";
+                    vp.width = elW; vp.height = elH;
+                }
+                vctx.fillStyle = "#ffffff"; vctx.fillRect(0, 0, elW, elH);
+                vctx.drawImage(base, 0, 0, baseW, baseH, 0, 0, dispW, dispH);
+            }
+            // 布局：容器高度 = 弹窗内容高度 - 头部高度（底部按钮为 flex:0 固定项，不再被裁切）
+            function layout() {
+                var dlg = dialog;
+                var headerH = dlg.find(".xf_editor-dialog-header").outerHeight() || 0;
+                var contH = Math.max(140, dlg.height() - headerH);
+                dlg.find(".xf_editor-dialog-container").css({ height: contH + "px", padding: "0", overflow: "hidden" });
+            }
+            // 最大化 / 还原
+            var maximized = false, origSize = null;
+            function toggleMaximize() {
+                if (!maximized) {
+                    origSize = { width: dialog.width(), height: dialog.height(), left: dialog[0].style.left, top: dialog[0].style.top };
+                    dialog.css({ width: "96vw", height: "94vh", left: "2vw", top: "3vh" });
+                    maximized = true;
+                    if ($maxBtn) $maxBtn.removeClass("fa-expand").addClass("fa-compress").attr("title", "还原尺寸");
+                } else {
+                    dialog.css(origSize);
+                    maximized = false;
+                    if ($maxBtn) $maxBtn.removeClass("fa-compress").addClass("fa-expand").attr("title", "最大化");
+                }
+                layout(); render();   // 尺寸变化后重新计算布局并重绘，确保画布正确铺满/居中
+            }
+            layout();
+            render();
+            $maxBtn = $('<a href="javascript:;" class="xf-cg-max-btn fa fa-expand" title="最大化"></a>');
+            $maxBtn.insertBefore(dialog.children(".xf_editor-dialog-close"));
+            $maxBtn.on(xfEditor.mouseOrTouch("click", "touchend"), function(e) { e.preventDefault(); e.stopPropagation(); toggleMaximize(); });
+
+            // 导出：先按内容智能裁剪（保留安全边距），再合成白底导出，优先 jpeg 以减小体积，内容绝不丢失
+            function contentBounds() {
+                var w = base.width, h = base.height;
+                var data; try { data = bctx.getImageData(0, 0, w, h).data; } catch (e) { return null; }
+                var minX = w, minY = h, maxX = -1, maxY = -1;
+                for (var y = 0; y < h; y++) {
+                    for (var x = 0; x < w; x++) {
+                        if (data[(y * w + x) * 4 + 3] > 0) {
+                            if (x < minX) minX = x; if (x > maxX) maxX = x;
+                            if (y < minY) minY = y; if (y > maxY) maxY = y;
+                        }
+                    }
+                }
+                if (maxX < 0) return null;
+                return { minX: minX, minY: minY, maxX: maxX, maxY: maxY };
+            }
+            // 智能裁剪：按内容包围盒裁剪并保留安全边距（不丢内容）
+            function cropToContent() {
+                var b = contentBounds();
+                if (!b) return base;
+                var m = 24;
+                var minX = Math.max(0, b.minX - m), minY = Math.max(0, b.minY - m);
+                var maxX = Math.min(base.width - 1, b.maxX + m), maxY = Math.min(base.height - 1, b.maxY + m);
+                var cw = maxX - minX + 1, ch = maxY - minY + 1;
+                var c = makeCanvas(cw, ch);
+                c.getContext("2d").drawImage(base, minX, minY, cw, ch, 0, 0, cw, ch);
+                return c;
+            }
+            // 导出：智能裁剪 -> 合成白底 -> 在 webp / 多档 jpeg / png 中选择体积最小者，保证内容完整
+            function exportDataUri() {
+                var cropped = cropToContent();
+                var out = makeCanvas(cropped.width, cropped.height);
+                var octx = out.getContext("2d");
+                octx.fillStyle = "#ffffff"; octx.fillRect(0, 0, out.width, out.height);
+                octx.drawImage(cropped, 0, 0);
+                // 超大型画布保护：超过上限时等比缩小（内容仍完整，仅降低极端分辨率，避免巨大 data URI / 内存溢出）
+                var MAXD = 4096;
+                if (out.width > MAXD || out.height > MAXD) {
+                    var r = MAXD / Math.max(out.width, out.height);
+                    var c2 = makeCanvas(Math.max(1, Math.round(out.width * r)), Math.max(1, Math.round(out.height * r)));
+                    c2.getContext("2d").drawImage(out, 0, 0, c2.width, c2.height);
+                    out = c2;
+                }
+                var best = null;
+                function consider(uri) { if (uri && (!best || uri.length < best.length)) best = uri; }
+                try { consider(out.toDataURL("image/webp", 0.92)); } catch (e) {}
+                try { consider(out.toDataURL("image/png")); } catch (e) {}
+                [0.92, 0.85, 0.78].forEach(function(q) { try { consider(out.toDataURL("image/jpeg", q)); } catch (e) {} });
+                return best || out.toDataURL("image/png");
+            }
+
+            // 快照：克隆整张舞台画布（避免 getImageData/putImageData 的性能开销）
+            function makeSnapshot() {
+                var c = makeCanvas(base.width, base.height);
+                c.getContext("2d").drawImage(base, 0, 0);
+                return { w: base.width, h: base.height, canvas: c };
+            }
+            function pushUndo() {
+                try {
+                    undoStack.push(makeSnapshot());
+                    if (undoStack.length > MAX_STACK) undoStack.shift();
+                    redoStack = [];
+                } catch (e) {}
+            }
+            function restoreSnapshot(snap) {
+                base.width = snap.w; base.height = snap.h; baseW = snap.w; baseH = snap.h;
+                bctx = base.getContext("2d");
+                bctx.drawImage(snap.canvas, 0, 0);
+                render();
+            }
+            // 撤销/恢复：标准快照栈模型（当前状态不入栈；每次变更前 pushUndo 保存“变更前状态”）
+            function doUndo() {
+                if (undoStack.length === 0) return;
+                redoStack.push(makeSnapshot());
+                var s = undoStack.pop();
+                restoreSnapshot(s);
+            }
+            function doRedo() {
+                if (redoStack.length === 0) return;
+                undoStack.push(makeSnapshot());
+                var s = redoStack.pop();
+                restoreSnapshot(s);
+            }
+            function getPos(e) {
+                var rect = vp.getBoundingClientRect();
+                var cx = e.clientX, cy = e.clientY;
+                if (e.touches && e.touches.length) { cx = e.touches[0].clientX; cy = e.touches[0].clientY; }
+                var vx = (cx - rect.left) * (vp.width / rect.width);
+                var vy = (cy - rect.top) * (vp.height / rect.height);
+                return { x: vx / state.scale, y: vy / state.scale };
+            }
+            function applyStroke() {
+                bctx.lineCap = "round";
+                bctx.lineJoin = "round";
+                bctx.lineWidth = (state.eraser ? state.eraserSize : state.size);
+                if (state.eraser) {
+                    bctx.globalCompositeOperation = "destination-out";
+                    bctx.strokeStyle = "rgba(0,0,0,1)";
+                } else {
+                    bctx.globalCompositeOperation = "source-over";
+                    bctx.strokeStyle = state.color;
+                }
+            }
+            function startDraw(e) {
+                if (e.cancelable) e.preventDefault();
+                if (state.tool === "select") {
+                    // 选择/扩展工具：按下即进入“抓取”状态（小手抓握光标），拖拽时按方向扩展画布
+                    selecting = true;
+                    selStart = { x: e.clientX, y: e.clientY };
+                    selBaseW = baseW; selBaseH = baseH;
+                    selOrig = makeSnapshot();
+                    selPushed = false;
+                    vp.style.cursor = "grabbing";
+                    if (vp.setPointerCapture && e.pointerId !== undefined) { try { vp.setPointerCapture(e.pointerId); } catch (_) {} }
+                    return;
+                }
+                // 画笔 / 橡皮：绘制过程绝不修改画布尺寸（消除抖动与尺寸异常）
+                pushUndo();
+                drawing = true;
+                var p = getPos(e);
+                lastX = p.x; lastY = p.y;
+                applyStroke();
+                bctx.beginPath();
+                bctx.moveTo(p.x, p.y);
+                bctx.lineTo(p.x + 0.1, p.y + 0.1);
+                bctx.stroke();
+                render();
+                if (vp.setPointerCapture && e.pointerId !== undefined) {
+                    try { vp.setPointerCapture(e.pointerId); } catch (_) {}
+                }
+            }
+            function moveDraw(e) {
+                if (!drawing && !selecting) return;
+                if (e.cancelable) e.preventDefault();
+                if (selecting) {
+                    // 以按下点为原点计算拖拽位移（换算到舞台坐标）
+                    var dx = (e.clientX - selStart.x) / state.scale;
+                    var dy = (e.clientY - selStart.y) / state.scale;
+                    var addW = Math.round(Math.abs(dx));
+                    var addH = Math.round(Math.abs(dy));
+                    if (!selPushed && (addW > 0 || addH > 0)) { pushUndo(); selPushed = true; }
+                    resizeStage(dx, dy);
+                    return;
+                }
+                // 绘制：仅在已有画布范围内作画，不改变画布尺寸
+                var p = getPos(e);
+                applyStroke();
+                bctx.beginPath();
+                bctx.moveTo(lastX, lastY);
+                bctx.lineTo(p.x, p.y);
+                bctx.stroke();
+                lastX = p.x; lastY = p.y;
+                render();
+            }
+            function endDraw() {
+                drawing = false;
+                selecting = false;
+                // 松开鼠标：光标恢复（选择工具恢复为箭头，其余恢复各自光标）
+                if (state.tool === "select") vp.style.cursor = "default";
+                else updateCursor();
+            }
+            // 选择工具扩展画布（按拖拽方向决定扩展方向与内容位移）
+            //  向右拖 → 向左扩展（内容整体右移 addW）       向左拖 → 向右扩展（内容不变）
+            //  向下拖 → 向上扩展（内容整体下移 addH）         向上拖 → 向下扩展（内容不变）
+            function resizeStage(dx, dy) {
+                var addW = Math.round(Math.abs(dx));
+                var addH = Math.round(Math.abs(dy));
+                if (addW === 0 && addH === 0) return;
+                var MAX_DIM = 4096;
+                addW = Math.min(addW, MAX_DIM - selBaseW);
+                addH = Math.min(addH, MAX_DIM - selBaseH);
+                if (addW < 0) addW = 0;
+                if (addH < 0) addH = 0;
+                if (addW === 0 && addH === 0) return;
+                var nw = selBaseW + addW, nh = selBaseH + addH;
+                var offX = (dx > 0) ? addW : 0;   // 向右拖：内容右移
+                var offY = (dy > 0) ? addH : 0;   // 向下拖：内容下移
+                var tmp = makeCanvas(nw, nh);
+                tmp.getContext("2d").drawImage(selOrig.canvas, offX, offY);
+                base = tmp; baseW = nw; baseH = nh; bctx = base.getContext("2d");
+                render();
+            }
+
+            if (window.PointerEvent) {
+                vp.addEventListener("pointerdown", startDraw);
+                vp.addEventListener("pointermove", moveDraw);
+                vp.addEventListener("pointerup", endDraw);
+                vp.addEventListener("pointercancel", endDraw);
+            } else {
+                vp.addEventListener("mousedown", startDraw);
+                vp.addEventListener("mousemove", moveDraw);
+                vp.addEventListener("mouseup", endDraw);
+                vp.addEventListener("mouseleave", endDraw);
+                vp.addEventListener("touchstart", startDraw, { passive: false });
+                vp.addEventListener("touchmove", moveDraw, { passive: false });
+                vp.addEventListener("touchend", endDraw);
+            }
+
+            // 缩放：仅改变显示层（视图），舞台内容 1:1 不变，无论放大多少倍内容都不会丢失
+            function applyZoom(factor) {
+                state.scale = Math.max(0.2, Math.min(5, state.scale * factor));
+                render();
+                updateCursor();   // 缩放后刷新光标（尤其橡皮光标大小需随缩放更新）
+            }
+            function resetZoom() {
+                state.scale = 1;
+                render();
+            }
+
+            // 自定义鼠标指针：画笔为画笔图标，橡皮为与橡皮大小一致的圆形
+            var penSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" fill="#2C7EEA" stroke="#1a4fa0" stroke-width="1"/></svg>';
+            var PEN_CURSOR = 'url("data:image/svg+xml;utf8,' + encodeURIComponent(penSvg) + '") 3 20, crosshair';
+            function updateCursor() {
+                if (state.eraser) {
+                    // 橡皮擦在画布上的实际显示直径 = 橡皮尺寸 × 缩放比例（橡皮尺寸为舞台坐标，显示时按缩放折算）
+                    var dispScale = state.scale || 1;
+                    var d = Math.max(8, Math.min(140, Math.round(state.eraserSize * dispScale)));
+                    var r = d / 2;
+                    var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="' + d + '" height="' + d + '"><circle cx="' + r + '" cy="' + r + '" r="' + (r - 1) + '" fill="rgba(120,170,255,0.25)" stroke="#2C7EEA" stroke-width="1.5"/></svg>';
+                    vp.style.cursor = 'url("data:image/svg+xml;utf8,' + encodeURIComponent(svg) + '") ' + r + ' ' + r + ', auto';
+                } else {
+                    vp.style.cursor = PEN_CURSOR;
+                }
+            }
+            function setPenMode() { setTool("pen"); }
+            // 统一工具切换：画笔 / 橡皮 / 选择工具 三者互斥，并同步视觉与光标
+            function setTool(tool) {
+                state.tool = tool;
+                state.eraser = (tool === "eraser");
+                dialog.find('[data-act="pen"]').toggleClass("xf-cg-toggle-on", tool === "pen");
+                dialog.find('[data-act="eraser"]').toggleClass("xf-cg-eraser-on", tool === "eraser");
+                dialog.find('[data-act="select"]').toggleClass("xf-cg-toggle-on", tool === "select");
+                // 选择/扩展画布工具激活时显示拖拽扩展提示，切换到其它工具时隐藏
+                dialog.find(".xf-cg-hint").css("display", tool === "select" ? "block" : "none");
+                if (tool === "select") vp.style.cursor = "default";
+                else updateCursor();
+            }
+            var onWinResize = function() {
+                if (!dialog.is(":visible") || !dialog.parent().length) { $(window).off("resize.xf_cg_cursor", onWinResize); return; }
+                updateCursor(); layout(); render();
+            };
+            $(window).on("resize.xf_cg_cursor", onWinResize);
+
+            dialog.find('[data-act="undo"]').on(xfEditor.mouseOrTouch("click", "touchend"), doUndo);
+            dialog.find('[data-act="redo"]').on(xfEditor.mouseOrTouch("click", "touchend"), doRedo);
+            dialog.find('[data-act="pen"]').on(xfEditor.mouseOrTouch("click", "touchend"), function() {
+                setTool("pen");
+            });
+            dialog.find('[data-act="eraser"]').on(xfEditor.mouseOrTouch("click", "touchend"), function() {
+                setTool("eraser");
+            });
+            dialog.find('[data-act="select"]').on(xfEditor.mouseOrTouch("click", "touchend"), function() {
+                setTool(state.tool === "select" ? "pen" : "select");
+            });
+            dialog.find('[data-act="clear"]').on(xfEditor.mouseOrTouch("click", "touchend"), function() {
+                pushUndo();   // 先保存当前内容，清空后即可通过“撤销/恢复”回退或前进
+                resetStage(Math.max(MIN_W, wrap.clientWidth), Math.max(MIN_H, wrap.clientHeight));
+                state.scale = 1;
+                render();
+                dialog.find(".xf-cg-zoomval").text("100%");
+            });
+            dialog.find('[data-act="zoomin"]').on(xfEditor.mouseOrTouch("click", "touchend"), function() {
+                applyZoom(1.2);
+                dialog.find(".xf-cg-zoomval").text(Math.round(state.scale * 100) + "%");
+            });
+            dialog.find('[data-act="zoomout"]').on(xfEditor.mouseOrTouch("click", "touchend"), function() {
+                applyZoom(1 / 1.2);
+                dialog.find(".xf-cg-zoomval").text(Math.round(state.scale * 100) + "%");
+            });
+            dialog.find('[data-act="zoomreset"]').on(xfEditor.mouseOrTouch("click", "touchend"), function() {
+                resetZoom();
+                dialog.find(".xf-cg-zoomval").text(Math.round(state.scale * 100) + "%");
+            });
+            dialog.find(".xf-cg-color").on("input", function() {
+                state.color = $(this).val();
+                if (state.eraser) setPenMode();
+                syncSwatch();
+            });
+            dialog.find(".xf-cg-size").on("input", function() {
+                state.size = parseInt($(this).val(), 10) || 4;
+                $(this).next(".xf-cg-rangeval").text(state.size);
+            });
+            dialog.find(".xf-cg-esize").on("input", function() {
+                state.eraserSize = parseInt($(this).val(), 10) || 20;
+                $(this).next(".xf-cg-rangeval").text(state.eraserSize);
+                if (state.eraser) updateCursor();
+            });
+
+            var presets = ["#e53935", "#1e88e5", "#43a047", "#fdd835", "#8e24aa", "#000000", "#ffffff", "#fb8c00"];
+            var $presets = dialog.find(".xf-cg-presets");
+            function syncSwatch() {
+                $presets.children(".xf-cg-swatch").each(function() {
+                    $(this).toggleClass("xf-cg-active", $(this).data("c") === state.color);
+                });
+            }
+            presets.forEach(function(c) {
+                $('<span class="xf-cg-swatch" style="background:' + c + '" data-c="' + c + '"></span>').appendTo($presets).on(xfEditor.mouseOrTouch("click", "touchend"), function() {
+                    state.color = c;
+                    dialog.find(".xf-cg-color").val(c);
+                    if (state.eraser) setPenMode();
+                    syncSwatch();
+                });
+            });
+
+            // 初始化
+            layout();
+            if (isEdit) {
+                dialog.find(".xf-cg-align").val(align);
+                dialog.find(".xf-cg-title").val(title);
+                var img = new Image();
+                img.onload = function() {
+                    var iw = Math.max(MIN_W, img.naturalWidth || wrap.clientWidth || baseW);
+                    var ih = Math.max(MIN_H, img.naturalHeight || wrap.clientHeight || baseH);
+                    baseW = iw; baseH = ih; base.width = iw; base.height = ih; bctx = base.getContext("2d");
+                    bctx.drawImage(img, 0, 0);
+                    undoStack = []; redoStack = [];
+                    render();
+                };
+                img.onerror = function() {
+                    resetStage(Math.max(MIN_W, wrap.clientWidth), Math.max(MIN_H, wrap.clientHeight));
+                    undoStack = []; redoStack = [];
+                    render();
+                };
+                img.src = opts.src;
+            } else {
+                resetStage(Math.max(MIN_W, wrap.clientWidth), Math.max(MIN_H, wrap.clientHeight));
+                undoStack = []; redoStack = [];
+            }
+            render();
+            setPenMode();
+            syncSwatch();
+
+            return dialog;
+        },
+
+        /**
+         * 构造画布涂鸦 Markdown 块
+         * [[canvas:right title="..."]]
+         * (data:image/png;base64,xxxx)
+         * [[/canvas]]
+         */
+        _buildCanvasBlock : function(dataUri, align, title) {
+            var header = "[[canvas";
+            if (align && align !== "left") header += ":" + align;
+            if (title) header += ' title="' + String(title).replace(/"/g, "&quot;") + '"';
+            header += "]]";
+            return header + "\n(" + dataUri + ")\n[[/canvas]]";
         }
     };
     xfEditor.fn.init.prototype = xfEditor.fn; 
@@ -7662,6 +8242,10 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
         
         file : function() {
             this.executePlugin("fileDialog", "file-dialog/file-dialog");
+        },
+
+        canvas : function() {
+            this.canvasDialog();
         },
         
         code : function() {
@@ -10208,6 +10792,39 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             }
         }
 
+        // 处理画布涂鸦语法：[[canvas]] / [[canvas:right]] / [[canvas:center title="..."]] ... [[/canvas]]
+        // 内容体为 (data:image/png;base64,xxxx)，渲染为 <p><img data-type="xfeditor_canvas_graffiti" ...><span title></p>
+        if (options.canvas !== false) {
+            var canvasBlocks = findBalancedBlocks(markdown, /\[\[canvas[^\]]*\]\]/g, /\[\[\/canvas\]\]/g);
+            for (var ci = canvasBlocks.length - 1; ci >= 0; ci--) {
+                var cb = canvasBlocks[ci];
+                if (!cb || !cb.fullMatch) continue;
+                try {
+                    var openTagMatch = cb.fullMatch.match(/^\[\[canvas([^\]]*)\]\]/);
+                    var attrs = openTagMatch ? openTagMatch[1] : "";
+                    var cAlign = "left", cTitle = "";
+                    var cAm = attrs.match(/^:(\w+)/);
+                    if (cAm) cAlign = cAm[1];
+                    var cTm = attrs.match(/title="([^"]*)"/);
+                    if (cTm) cTitle = cTm[1];
+                    var cDataMatch = cb.content.match(/\(([\s\S]*?)\)\s*$/);
+                    var cDataUri = cDataMatch ? cDataMatch[1].trim() : cb.content.trim();
+                    // XSS 防护：仅允许 PNG / JPEG data URI（涂鸦导出优先 jpeg 以减小体积）
+                    if (!/^data:image\/(png|jpeg|webp);base64,/i.test(cDataUri)) continue;
+                    var cAlignClass = "xfeditor-canvas-graffiti-" + (cAlign === "center" ? "center" : (cAlign === "right" ? "right" : "left"));
+                    var cImgHtml = '<img data-type="xfeditor_canvas_graffiti" class="xfeditor-canvas-graffiti-img" src="' + xfEditor.escapeAttr(cDataUri) + '" alt="' + xfEditor.escapeAttr(cTitle || "涂鸦") + '">';
+                    var cTitleHtml = cTitle ? '<span class="xfeditor-canvas-graffiti-title">' + xfEditor.escapeHtml(cTitle) + '</span>' : '';
+                    var cResultHtml = '<p class="xfeditor-canvas-graffiti-wrap ' + cAlignClass + '"><span class="xfeditor-canvas-graffiti-inner">' + cImgHtml + cTitleHtml + '</span></p>';
+                    var cPlaceholder = addPlaceholder(cResultHtml);
+                    markdown = markdown.substring(0, cb.start) + cPlaceholder + markdown.substring(cb.end);
+                } catch(e) {
+                    if (typeof console !== "undefined" && console.warn) {
+                        console.warn("[xfEditor] Canvas block processing error:", e);
+                    }
+                }
+            }
+        }
+
         // 处理上标和下标语法（脚注引用已在 tabs 之前处理完毕，不冲突）
         // 上标：^文本^ → <sup>文本</sup>
         // 下标：^^文本^^ → <sub>文本</sub>
@@ -12413,7 +13030,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             tabs          : settings.tabs, columns : settings.columns,
             grid          : settings.grid, pageBlock : settings.pageBlock,
             tooltip       : settings.tooltip, copybook : settings.copybook,
-            video         : settings.video, fileList : settings.fileList
+            video         : settings.video, fileList : settings.fileList, canvas : settings.canvas
         }, overrides || {});
     };
 
