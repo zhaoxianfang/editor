@@ -728,6 +728,14 @@
             
             var editor           = this.editor       = $("#" + id);
             
+            // ★ 幂等初始化保护（根本性修复重复 CodeMirror 问题）：
+            //   若同一编辑器容器已被初始化（或正在异步初始化），直接返回已缓存的实例，
+            //   避免重复调用 xfEditor() 产生第二个 CodeMirror / 重复追加 DOM 结构
+            //   （典型场景：AJAX 局部重渲染导致初始化脚本被重复执行）。
+            if (editor.length && editor.data("xfEditorInstance")) {
+                return editor.data("xfEditorInstance");
+            }
+            
             this.id              = id;
             this.lang            = settings.lang;
             this.timer           = null;
@@ -876,6 +884,10 @@
                     _this.showDraftRecovery();
                 }, 500);
             }
+
+            // 缓存实例引用，供幂等初始化复用（必须在返回前尽早设置，
+            // 以便异步初始化期间发生的重复调用也能返回同一实例）
+            try { editor.data("xfEditorInstance", this); } catch (e) {}
 
             return this;
         },
@@ -1075,6 +1087,12 @@
          */
         
         setCodeMirror : function() { 
+            // ★ 幂等保护：若 CodeMirror 已创建（如 recreate 流程未正确置空，或重复调用），
+            //   直接返回，避免对同一个 textarea 二次 fromTextArea 产生重复编辑区。
+            if (this.cm) {
+                return this;
+            }
+            
             var settings         = this.settings;
             var editor           = this.editor;
             
@@ -1173,6 +1191,8 @@
          */
         
         addKeyMap : function(map, bottom) {
+            // ★ 空守卫：CodeMirror 未就绪时不绑定，避免崩溃（与 removeKeyMap 保持一致）
+            if (!this.cm) return this;
             this.cm.addKeyMap(map, bottom);
             
             return this;
@@ -1328,7 +1348,12 @@
             }
             
             this.settings = settings;
-            this.recreate();
+
+            // ★ 仅当编辑器已加载完成时才重建；未初始化时仅保存配置，待 init 时生效，
+            //   避免对尚不存在的 DOM/CodeMirror 执行 recreate 导致崩溃
+            if (this.cm && this.state && this.state.loaded) {
+                this.recreate();
+            }
             
             return this;
         },
@@ -1978,7 +2003,18 @@
             var editor           = this.editor;
             var settings         = this.settings;
             
-            this.codeMirror.remove();
+            // ★ 正确销毁旧 CodeMirror 实例，避免内存泄漏与重复实例：
+            //   旧逻辑仅移除包装层却未清空 this.cm，会导致 setCodeMirror 的重复保护失效。
+            //   这里先 toTextArea() 还原底层 textarea 并移除包装层，再置空引用。
+            if (this.cm) {
+                try {
+                    if (this.cm.getWrapperElement && this.cm.getWrapperElement().parentNode) {
+                        this.cm.toTextArea();
+                    }
+                } catch (e) {}
+                this.cm = null;
+            }
+            this.codeMirror = this.cmElement = null;
             
             this.setCodeMirror();
 
@@ -2070,6 +2106,8 @@
             
             var _this           = this;
             var cm              = this.cm;
+            // ★ 空守卫：CodeMirror 未就绪时不绑定，避免崩溃
+            if (!cm) return this;
             var settings        = this.settings;
             var toolbarHandlers = xfEditor.toolbarHandlers;
             var disabledKeyMaps = settings.disabledKeyMaps;
@@ -2105,7 +2143,7 @@
                     }
                 }
                 
-                $(window).on("keydown.xf_editor-fkeys", function(event) {
+                $(window).off("keydown.xf_editor-fkeys").on("keydown.xf_editor-fkeys", function(event) {
                     
                     var keymaps = {
                         "120" : "F9",
@@ -2148,6 +2186,9 @@
             var cm               = this.cm;
             var settings         = this.settings;
             var editor           = this.editor;
+            
+            // ★ 空守卫：CodeMirror 未就绪时不绑定，避免崩溃
+            if (!cm) return this;
             
             cm.on("change", function(_cm, changeObj) {
                 if (settings.watch)
@@ -2247,7 +2288,9 @@
             this.resize();
             this.registerKeyMaps();
             
-            $(window).resize(function(){
+            // ★ 使用命名空间绑定，避免 recreate() 重复调用 loadedDisplay 时
+            //   累积多个 window resize 监听导致 resize() 被重复执行
+            $(window).off("resize.xf_editor-resize").on("resize.xf_editor-resize", function(){
                 _this.resize();
             });
             
@@ -2339,10 +2382,15 @@
             
             var state      = this.state;
             var editor     = this.editor;
-            var preview    = this.preview;
-            var toolbar    = this.toolbar;
+            var preview    = this.preview || $();
+            var toolbar    = this.toolbar || $();
             var settings   = this.settings;
             var codeMirror = this.codeMirror;
+            
+            // ★ 空守卫：CodeMirror 未就绪（尚未初始化或已销毁）时不执行布局计算，避免崩溃
+            if (!codeMirror) {
+                return this;
+            }
             
             if (width)
             {
@@ -2438,7 +2486,8 @@
             
             settings.onbeforesave.call(this);
             
-            var cm               = this.cm;            
+            var cm               = this.cm;
+            if (!cm) return this;
             var cmValue          = cm.getValue();
             var previewContainer = this.previewContainer;
 
@@ -2470,7 +2519,17 @@
             
             marked.setOptions(markedOptions);
 
-            var newMarkdownDoc = xfEditor._renderMarkdownPipeline(cmValue, markedOptions, rendererOptions, settings);
+            // ★ 容错：解析/渲染失败不应中断整个编辑器（此前会导致预览区停止更新或抛异常）
+            var newMarkdownDoc;
+            try {
+                newMarkdownDoc = xfEditor._renderMarkdownPipeline(cmValue, markedOptions, rendererOptions, settings);
+            } catch (renderErr) {
+                if (typeof console !== "undefined" && console.error) {
+                    console.error("[xfEditor] Markdown 解析渲染失败：", renderErr);
+                }
+                settings.onaftersave.call(this);
+                return this;
+            }
             
             this.markdownTextarea.text(cmValue);
             
@@ -3357,6 +3416,8 @@
          */
 
         getCursorPosition : function() {
+            // ★ 空守卫：CodeMirror 未就绪时返回安全默认值，避免崩溃
+            if (!this.cm) return { line: 0, ch: 0 };
             var cursor = this.cm.getCursor();
             return { line: cursor.line + 1, ch: cursor.ch };
         },
@@ -3585,8 +3646,10 @@
             // 拼音标注：{汉字|pinyin}
             r.pinyin = /\{[^}]+\|[^}]+\}/.test(md);
 
-            // 上下标：~下标~ 或 ^上标^（排除 ~~ 删除线和 ^^ 尖括号）
-            r.supsub = /(?<!\*)[~\^][^~\^\n\r]+[~\^](?!\*)/.test(md);
+            // 上下标：~下标~ 或 ^上标^（排除被 * 包裹的情形，避免误判）
+            // ★ 不使用 ES2018 负向后顾 (?<!\*)：旧浏览器（如较老 Safari/IE）解析该正则会抛出
+            //   SyntaxError，进而阻断整个 xf_editor.js 的加载。改用 (?:^|[^\\*]) 等价写法。
+            r.supsub = /(?:^|[^*])[~\^][^~\^\n\r]+[~\^](?!\*)/.test(md);
 
             // 文字对齐：-> / <- / 行首控制标记
             r.textAlign = /^[ \t]*(->|<-)/m.test(md);
@@ -3597,8 +3660,9 @@
             // 脚注：[^label]
             r.footnote = /\[\^[^\]]+\][^:(]/m.test(md);
 
-            // @提及链接：@username
-            r.atLink = /(?<!\w)@[a-zA-Z0-9_\u4e00-\u9fa5]+/.test(md);
+            // @提及链接：@username（排除邮箱地址中的 @，避免误判）
+            // ★ 不使用 ES2018 负向后顾 (?<!\w)：改用 (?:^|[^\\w]) 等价写法保证跨浏览器兼容
+            r.atLink = /(?:^|[^\w])@[a-zA-Z0-9_\u4e00-\u9fa5]+/.test(md);
 
             // 邮件链接：<email> 或 [text](mailto:...)
             r.emailLink = /<[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}>/.test(md) ||
@@ -3634,6 +3698,8 @@
          */
         
         setValue : function(value) {
+            // ★ 空守卫：CodeMirror 未就绪时不操作，避免崩溃（与 setMarkdown 保持一致）
+            if (!this.cm) return this;
             this.cm.setValue(value);
             
             return this;
@@ -3997,8 +4063,9 @@
          * @param {String}  [options.lang="zh-CN"]           HTML lang 属性
          * @param {String}  [options.charset="UTF-8"]       字符编码
          * @param {String}  [options.theme=""]              主题（"dark" / "slate" 时启用暗色主题）
-         * @param {Boolean} [options.toc=false]              是否包含目录（TOC）
-         * @param {Array}   [options.externalStyles=[]]     额外外部样式表链接（按需，默认空）
+             * @param {Boolean} [options.toc=false]              是否包含目录（TOC）
+             * @param {Boolean} [options.absoluteUrls=false]     是否将相对资源地址（图片/媒体/链接的 src/href/poster）改写为绝对地址，使导出内容脱离原站点后仍可正确加载
+             * @param {Array}   [options.externalStyles=[]]     额外外部样式表链接（按需，默认空）
          * @param {Array}   [options.externalScripts=[]]     额外外部脚本链接（按需，默认空）
          * @param {Object}  [options.customMeta={}]          自定义 meta 标签
          * @returns {String} 完整的 HTML 代码字符串（片段或文档，取决于 wrap；to_browser=true 时同时触发下载）
@@ -4026,6 +4093,7 @@
                 customMeta       : {},
                 theme            : '',
                 toc              : false,
+                absoluteUrls     : false,
                 toBrowser        : ''
             }, options);
 
@@ -4126,6 +4194,38 @@
                 } catch (e) {}
                 return rel;
             };
+
+            // ★ 资源 URL 绝对化增强（absoluteUrls 选项）：
+            //   当 opts.absoluteUrls 为 true 时，将内容中的相对资源地址（img/video/link 的
+            //   src/href/poster 等）改写为「基于当前文档地址」的绝对地址，使导出的片段/文档
+            //   在脱离原站点后仍能正确加载图片与媒体（嵌入其它页面或下载为独立文件时尤其有用）。
+            //   仅改写相对地址；http(s)://、//、data:、mailto:、tel:、#、javascript: 等保持原样；
+            //   <pre>/<code>/<script>/<style> 内部文本受保护，不会误改代码示例中的字符串。
+            if (opts.absoluteUrls) {
+                try {
+                    var _isAbsUrl = function(u) {
+                        return !u || u.charAt(0) === '#' || /^(https?:)?\/\//i.test(u) ||
+                               /^(data|mailto|tel|blob):/i.test(u) || /^javascript:/i.test(u);
+                    };
+                    var _absParts = [];
+                    var _absSafe = rawHTML.replace(/<(pre|code|script|style)\b[^>]*>[\s\S]*?<\/\1>/gi, function(m) {
+                        _absParts.push(m);
+                        return '\u0003ABS' + (_absParts.length - 1) + '\u0003';
+                    });
+                    _absSafe = _absSafe.replace(/( (?:src|href|poster|data-src)\s*=\s*")([^"]*?)(")/gi, function(_, pre, url, post) {
+                        if (_isAbsUrl(url)) return _;
+                        try { return pre + _resolveAssetUrl(url) + post; } catch (e) { return _; }
+                    });
+                    _absSafe = _absSafe.replace(/\u0003ABS(\d+)\u0003/g, function(_, i) {
+                        return _absParts[parseInt(i, 10)];
+                    });
+                    rawHTML = _absSafe;
+                } catch (absErr) {
+                    if (typeof console !== "undefined" && console.warn) {
+                        console.warn("[xfEditor] absoluteUrls 处理失败，已跳过：", absErr);
+                    }
+                }
+            }
 
             // ★ ECharts 外部脚本注入（getHTML 专属增强，唯一允许外链的资源）
             //   规则：仅当 Markdown 中使用了 ```echarts 语法（由 getUseTypes() 判定）时，
@@ -5388,6 +5488,9 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
                 return this;
             }
             
+            // ★ 空守卫：CodeMirror/预览区未就绪时不操作，避免崩溃
+            if (!this.cm) return this;
+            
             this.state.watching = settings.watch = true;
             this.preview.show();
             
@@ -5426,6 +5529,8 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
         
         unwatch : function(callback) {
             var settings        = this.settings;
+            // ★ 空守卫：CodeMirror 未就绪时不操作，避免崩溃
+            if (!this.cm) return this;
             this.state.watching = settings.watch = false;
             this.preview.hide();
             
@@ -7036,6 +7141,9 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
                 return this;
             }
             
+            // ★ 空守卫：CodeMirror 未就绪时不操作，避免崩溃
+            if (!this.cm) return this;
+            
             if (!settings.readOnly)
             {
                 this.cm.execCommand(command || "find");
@@ -7246,6 +7354,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
 
             // 3. 解绑所有窗口事件（使用命名空间批量清理）
             $(window).off("load.xf_editor-pageload");
+            $(window).off("resize.xf_editor-resize");   // 解绑 loadedDisplay 中命名空间化的 resize 监听
             $(window).off(".xf_editor-echarts");  // 匹配所有子命名空间如 resize.xf_editor-echarts.xxx
             $(window).off("resize.xf_editor-echarts-md");
             $(window).off("resize.xfEditorDraft");
@@ -7314,6 +7423,9 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             this.state.loaded      = false;
             this.state.preview     = false;
             this.state.fullscreen  = false;
+
+            // 9. 清除容器上缓存的实例引用，使后续可正常重新初始化（幂等守卫失效）
+            try { editor.removeData("xfEditorInstance"); } catch (e) {}
 
             // 9. 清理所有悬浮提示 popup 元素及其 Blob URL
             $("body").children(".xf_editor-tooltip-popup").each(function() {
@@ -12832,6 +12944,17 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
         };
 
         css.href   = (/\.css$/i.test(fileName)) ? fileName : (fileName + ".css");
+
+        // 优雅处理 CSS 加载失败（避免静默失败且便于排查 404）
+        css.onerror = function() {
+            if (!xfEditor.loadFiles.failed) {
+                xfEditor.loadFiles.failed = [];
+            }
+            xfEditor.loadFiles.failed.push(fileName);
+            if (typeof console !== "undefined" && console.warn) {
+                console.warn("[xfEditor] Failed to load css: " + fileName);
+            }
+        };
 
         if(into === "head") {
             document.getElementsByTagName("head")[0].appendChild(css);
