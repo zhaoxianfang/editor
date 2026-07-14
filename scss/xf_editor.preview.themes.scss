@@ -268,8 +268,11 @@
         border-color: #2d3a52 !important;
 
         // 顶部 macOS 红绿灯标题栏
+        // ★ 修复：暗色主题下标题栏背景原为 #0f172a，与页面背景色(#0f172a)完全一致，
+        //   导致标题栏“消失”融入页面、代码内容顶部异常。改为独立的渐变蓝灰色，
+        //   既与页面背景拉开对比，又与代码块主体(#1e293b)形成层次感。
         &::before {
-            background: #0f172a !important;
+            background: linear-gradient(180deg, #243049 0%, #1a2536 100%) !important;
             border-bottom-color: #2d3a52 !important;
         }
 
@@ -840,8 +843,11 @@
         color: #e6edf3;
 
         // 顶部 macOS 红绿灯标题栏
+        // ★ 修复：暗色主题下标题栏背景原为 #0f172a，与页面背景色(#0f172a)完全一致，
+        //   导致标题栏“消失”融入页面、代码内容顶部异常。改为独立的渐变蓝灰色，
+        //   既与页面背景拉开对比，又与代码块主体(#1e293b)形成层次感。
         &::before {
-            background: #0f172a !important;
+            background: linear-gradient(180deg, #243049 0%, #1a2536 100%) !important;
             border-bottom-color: #2d3a52 !important;
         }
 

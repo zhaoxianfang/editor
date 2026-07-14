@@ -6504,7 +6504,7 @@ hr.xf_editor-page-break {
   border-color: #2d3a52 !important;
 }
 .xf_editor-preview-theme-dark pre::before {
-  background: #0f172a !important;
+  background: linear-gradient(180deg, #243049 0%, #1a2536 100%) !important;
   border-bottom-color: #2d3a52 !important;
 }
 .xf_editor-preview-theme-dark pre code {
@@ -7108,7 +7108,7 @@ hr.xf_editor-page-break {
   color: #e6edf3;
 }
 [data-theme=dark] .xf_editor-html-preview pre::before {
-  background: #0f172a !important;
+  background: linear-gradient(180deg, #243049 0%, #1a2536 100%) !important;
   border-bottom-color: #2d3a52 !important;
 }
 [data-theme=dark] .xf_editor-html-preview pre code {
