@@ -2262,7 +2262,41 @@
             
             // 触发 onEditorLoad 事件（编辑器加载完成）
             settings.onEditorLoad.call(this);
-            
+
+            // ═══ 跟随宿主主题（从源头解决，无需使用网页打补丁） ═══
+            // xfEditor 的暗色通过给「自身容器」加 xf-editor-theme-dark 类生效，
+            // 不依赖宿主 <html data-theme> 的 CSS 级联，因此必须主动 setTheme 才能跟随。
+            // 这里在编辑器内部注册对宿主 <html data-theme> 的监听：仅「读取」宿主主题并
+            // 下发到编辑器自身容器（调用 this.setTheme），绝对不写回宿主 documentElement，
+            // 因此不会与任何监听 data-theme 的 MutationObserver 形成反馈环（不会导致页面卡死）。
+            // 这样所有使用 xfEditor 的页面在初始化后即可自动跟随整页主题切换，页面无需任何补丁。
+            (function (self) {
+                function applyHostTheme() {
+                    var hostDark = (typeof document !== 'undefined' &&
+                        document.documentElement.getAttribute('data-theme') === 'dark');
+                    self.setTheme(hostDark ? 'dark' : 'default');
+                }
+                // 先按当前宿主主题对齐一次
+                try { applyHostTheme(); } catch (e) {}
+                // 再监听后续主题切换
+                if (typeof MutationObserver !== 'undefined') {
+                    var _xfHostThemeMo = new MutationObserver(function () {
+                        try { applyHostTheme(); } catch (e) {}
+                    });
+                    _xfHostThemeMo.observe(document.documentElement, {
+                        attributes: true, attributeFilter: ['data-theme']
+                    });
+                    // 随编辑器销毁一并断开，避免泄漏
+                    var _origDestroy = self.destroy;
+                    if (typeof _origDestroy === 'function') {
+                        self.destroy = function () {
+                            try { _xfHostThemeMo.disconnect(); } catch (e) {}
+                            return _origDestroy.apply(self, arguments);
+                        };
+                    }
+                }
+            })(this);
+
             // 触发 onPageLoad 事件（当前网页 DOM 加载完成）
             $(function() {
                 settings.onPageLoad.call(_this);
