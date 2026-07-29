@@ -7697,6 +7697,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
                 '.xf-canvas-graffiti .xf-cg-btn:hover{background:#eaf2fd;border-color:#9ec3f0;color:#1a6fd6;}',
                 '.xf-canvas-graffiti .xf-cg-btn:active{transform:translateY(1px);}',
                 '.xf-canvas-graffiti .xf-cg-btn.xf-cg-toggle-on{background:#2C7EEA;border-color:#2C7EEA;color:#fff;box-shadow:0 2px 6px rgba(44,126,234,.35);}',
+                '.xf-canvas-graffiti .xf-cg-btn svg{display:block;pointer-events:none;}',
                 '.xf-canvas-graffiti .xf-cg-btn.xf-cg-eraser-on{background:#fff4e5;border-color:#ffb74d;color:#e65100;box-shadow:0 2px 6px rgba(255,152,0,.25);}',
                 '.xf-canvas-graffiti .xf-cg-color{width:30px;height:30px;padding:2px;border:1px solid #d6dbe1;border-radius:7px;cursor:pointer;background:#fff;}',
                 '.xf-canvas-graffiti .xf-cg-presets{display:inline-flex;gap:4px;align-items:center;}',
@@ -7725,6 +7726,13 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
                 '    <button type="button" class="xf-cg-btn" data-act="zoomin" title="放大 (Zoom in)"><i class="fa fa-search-plus"></i></button>',
                 '    <button type="button" class="xf-cg-btn" data-act="zoomout" title="缩小 (Zoom out)"><i class="fa fa-search-minus"></i></button>',
                 '    <span class="xf-cg-zoomval">100%</span>',
+                '  </div>',
+                '  <div class="xf-cg-group xf-cg-group-main xf-cg-group-shapes" role="group" aria-label="形状工具">',
+                '    <button type="button" class="xf-cg-btn" data-act="line" title="直线工具 (Line)"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><line x1="2.5" y1="13.5" x2="13.5" y2="2.5"/></svg></button>',
+                '    <button type="button" class="xf-cg-btn" data-act="rect" title="矩形工具 (Rectangle)"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><rect x="2" y="3.5" width="12" height="9" rx="1"/></svg></button>',
+                '    <button type="button" class="xf-cg-btn" data-act="ellipse" title="椭圆工具 (Ellipse)"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><ellipse cx="8" cy="8" rx="6" ry="4.2"/></svg></button>',
+                '    <button type="button" class="xf-cg-btn" data-act="curve" title="曲线工具 (Curve)：拖拽画基线，松开后移动鼠标调弯曲度，单击完成"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M2 13 Q 8 -1 14 13"/></svg></button>',
+                '    <button type="button" class="xf-cg-btn" data-act="circle" title="圆形工具 (Circle)"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="8" r="5.6"/></svg></button>',
                 '  </div>',
                 '  <div class="xf-cg-group">',
                 '    <input type="color" class="xf-cg-color" value="#e53935" title="画笔颜色">',
@@ -7787,13 +7795,18 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             var vp = dialog.find(".xf-cg-canvas")[0];
             var vctx = vp.getContext("2d");
             var wrap = dialog.find(".xf-cg-canvas-wrap")[0];
-            // 离屏"舞台"画布：保存真实绘制内容（1:1），缩放/视图仅为显示层，永不裁切内容
+            // 离屏“舞台”画布：保存真实绘制内容（1:1），缩放/视图仅为显示层，永不裁切内容
             var base = document.createElement("canvas");
             var bctx = base.getContext("2d");
             var baseW = 760, baseH = 460;
             base.width = baseW; base.height = baseH;
             var drawing = false, lastX = 0, lastY = 0;
             var selecting = false, selStart = null, selBaseW = 0, selBaseH = 0, selOrig = null, selPushed = false;
+            // 形状工具状态：拖拽起点 / 拖拽前舞台快照 / 是否正在拖拽 / 是否发生过移动
+            // 曲线工具为两阶段：拖拽确定起止基线 -> 松开后移动鼠标调整弯曲度 -> 单击提交
+            var SHAPE_TOOLS = ["line", "rect", "ellipse", "curve", "circle"];
+            var shapeDrawing = false, shapeStart = null, shapeSnap = null, shapeMoved = false, lastShapePos = null;
+            var curveAdjusting = false, curveP1 = null, curveP2 = null;
             var undoStack = [], redoStack = [];
             var MAX_STACK = 40;
             var state = { color: "#e53935", size: 4, eraser: false, eraserSize: 20, scale: 1, tool: "pen" };
@@ -7809,7 +7822,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
                 var dispW = Math.max(1, Math.round(baseW * state.scale));
                 var dispH = Math.max(1, Math.round(baseH * state.scale));
                 // 可视画布尺寸 = 舞台按缩放比例显示后的尺寸（严格 1:1，绝不放大/缩小填满容器）。
-                // 这样整张可视画布都对应真实内容，缩放后整个画布均可涂鸦，不会出现"右侧/底部死区"。
+                // 这样整张可视画布都对应真实内容，缩放后整个画布均可涂鸦，不会出现“右侧/底部死区”。
                 // 当 dispW/dispH 小于容器时，画布居中显示于灰底容器中；大于容器时容器出现滚动条。
                 var elW = dispW, elH = dispH;
                 // 仅在尺寸真正变化时才重设画布（避免绘制过程中因反复分配 backing store 造成抖动）
@@ -7879,6 +7892,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             }
             // 导出：智能裁剪 -> 合成白底 -> 在 webp / 多档 jpeg / png 中选择体积最小者，保证内容完整
             function exportDataUri() {
+                cancelCurveAdjust();   // 保存时若曲线尚未提交，先取消预览基线，避免导出未确认的内容
                 var cropped = cropToContent();
                 var out = makeCanvas(cropped.width, cropped.height);
                 var octx = out.getContext("2d");
@@ -7919,14 +7933,16 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
                 bctx.drawImage(snap.canvas, 0, 0);
                 render();
             }
-            // 撤销/恢复：标准快照栈模型（当前状态不入栈；每次变更前 pushUndo 保存"变更前状态"）
+            // 撤销/恢复：标准快照栈模型（当前状态不入栈；每次变更前 pushUndo 保存“变更前状态”）
             function doUndo() {
+                cancelCurveAdjust();   // 撤销前取消未提交的曲线预览
                 if (undoStack.length === 0) return;
                 redoStack.push(makeSnapshot());
                 var s = undoStack.pop();
                 restoreSnapshot(s);
             }
             function doRedo() {
+                cancelCurveAdjust();
                 if (redoStack.length === 0) return;
                 undoStack.push(makeSnapshot());
                 var s = redoStack.pop();
@@ -7952,10 +7968,90 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
                     bctx.strokeStyle = state.color;
                 }
             }
+            // 形状工具画笔属性（形状始终用画笔颜色/粗细，与橡皮无关）
+            function applyShapeStroke() {
+                bctx.lineCap = "round";
+                bctx.lineJoin = "round";
+                bctx.lineWidth = state.size;
+                bctx.globalCompositeOperation = "source-over";
+                bctx.strokeStyle = state.color;
+            }
+            // 恢复拖拽前快照（形状预览：每次移动先还原再重画形状，实现橡皮筋效果）
+            function redrawFromSnap() {
+                if (!shapeSnap) return;
+                bctx.globalCompositeOperation = "source-over";
+                bctx.clearRect(0, 0, base.width, base.height);
+                bctx.drawImage(shapeSnap.canvas, 0, 0);
+            }
+            // 按当前形状工具从 shapeStart 到 p 绘制形状（预览与提交共用）
+            function strokeShape(p) {
+                var s = shapeStart;
+                var dx = p.x - s.x, dy = p.y - s.y;
+                applyShapeStroke();
+                bctx.beginPath();
+                switch (state.tool) {
+                    case "line":
+                    case "curve":   // 曲线第一阶段：预览起止基线（直线）
+                        bctx.moveTo(s.x, s.y);
+                        bctx.lineTo(p.x, p.y);
+                        break;
+                    case "rect":
+                        bctx.rect(Math.min(s.x, p.x), Math.min(s.y, p.y), Math.abs(dx), Math.abs(dy));
+                        break;
+                    case "ellipse":
+                        bctx.ellipse((s.x + p.x) / 2, (s.y + p.y) / 2, Math.abs(dx) / 2, Math.abs(dy) / 2, 0, 0, Math.PI * 2);
+                        break;
+                    case "circle":
+                        // 正圆：以拖拽方向为象限，半径取水平/垂直位移较大者的一半
+                        var r = Math.max(Math.abs(dx), Math.abs(dy)) / 2;
+                        var cx = s.x + (dx >= 0 ? r : -r);
+                        var cy = s.y + (dy >= 0 ? r : -r);
+                        bctx.arc(cx, cy, r, 0, Math.PI * 2);
+                        break;
+                }
+                bctx.stroke();
+            }
+            // 曲线预览/提交：以 cp 为控制点的二次贝塞尔曲线（P1 -> cp -> P2）
+            function strokeQuadratic(cp) {
+                applyShapeStroke();
+                bctx.beginPath();
+                bctx.moveTo(curveP1.x, curveP1.y);
+                bctx.quadraticCurveTo(cp.x, cp.y, curveP2.x, curveP2.y);
+                bctx.stroke();
+            }
+            // 取消曲线弯曲度调节阶段（切换工具/清空画布时）：还原基线预览并回退撤销栈
+            function cancelCurveAdjust() {
+                if (!curveAdjusting) return;
+                redrawFromSnap();
+                if (undoStack.length) undoStack.pop();
+                curveAdjusting = false;
+                shapeSnap = null;
+                render();
+            }
             function startDraw(e) {
                 if (e.cancelable) e.preventDefault();
+                // 曲线第二阶段：单击以当前位置为控制点提交曲线
+                if (curveAdjusting) {
+                    var cp0 = getPos(e);
+                    redrawFromSnap();
+                    strokeQuadratic(cp0);
+                    curveAdjusting = false;
+                    shapeSnap = null;
+                    render();
+                    return;
+                }
+                if (SHAPE_TOOLS.indexOf(state.tool) !== -1) {
+                    pushUndo();
+                    shapeDrawing = true;
+                    shapeMoved = false;
+                    shapeStart = getPos(e);
+                    lastShapePos = shapeStart;
+                    shapeSnap = makeSnapshot();
+                    if (vp.setPointerCapture && e.pointerId !== undefined) { try { vp.setPointerCapture(e.pointerId); } catch (_) {} }
+                    return;
+                }
                 if (state.tool === "select") {
-                    // 选择/扩展工具：按下即进入"抓取"状态（小手抓握光标），拖拽时按方向扩展画布
+                    // 选择/扩展工具：按下即进入“抓取”状态（小手抓握光标），拖拽时按方向扩展画布
                     selecting = true;
                     selStart = { x: e.clientX, y: e.clientY };
                     selBaseW = baseW; selBaseH = baseH;
@@ -7981,8 +8077,26 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
                 }
             }
             function moveDraw(e) {
-                if (!drawing && !selecting) return;
+                if (!drawing && !selecting && !shapeDrawing && !curveAdjusting) return;
                 if (e.cancelable) e.preventDefault();
+                // 曲线第二阶段：移动鼠标实时预览弯曲度
+                if (curveAdjusting) {
+                    var cp = getPos(e);
+                    redrawFromSnap();
+                    strokeQuadratic(cp);
+                    render();
+                    return;
+                }
+                // 形状拖拽：橡皮筋预览（先还原快照，再重画形状）
+                if (shapeDrawing) {
+                    var sp = getPos(e);
+                    shapeMoved = true;
+                    lastShapePos = sp;
+                    redrawFromSnap();
+                    strokeShape(sp);
+                    render();
+                    return;
+                }
                 if (selecting) {
                     // 以按下点为原点计算拖拽位移（换算到舞台坐标）
                     var dx = (e.clientX - selStart.x) / state.scale;
@@ -8004,6 +8118,25 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
                 render();
             }
             function endDraw() {
+                if (shapeDrawing) {
+                    shapeDrawing = false;
+                    if (!shapeMoved) {
+                        // 未发生拖拽（原地点击）：不产生形状，回退撤销栈
+                        if (undoStack.length) undoStack.pop();
+                        shapeSnap = null;
+                        return;
+                    }
+                    if (state.tool === "curve") {
+                        // 曲线进入第二阶段：基线已确定，移动鼠标调整弯曲度，单击提交
+                        curveAdjusting = true;
+                        curveP1 = shapeStart;
+                        curveP2 = lastShapePos;
+                    } else {
+                        // 直线/矩形/椭圆/圆形：预览即最终结果，直接提交
+                        shapeSnap = null;
+                    }
+                    return;
+                }
                 drawing = false;
                 selecting = false;
                 // 松开鼠标：光标恢复（选择工具恢复为箭头，其余恢复各自光标）
@@ -8069,20 +8202,33 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
                     var r = d / 2;
                     var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="' + d + '" height="' + d + '"><circle cx="' + r + '" cy="' + r + '" r="' + (r - 1) + '" fill="rgba(120,170,255,0.25)" stroke="#2C7EEA" stroke-width="1.5"/></svg>';
                     vp.style.cursor = 'url("data:image/svg+xml;utf8,' + encodeURIComponent(svg) + '") ' + r + ' ' + r + ', auto';
+                } else if (SHAPE_TOOLS.indexOf(state.tool) !== -1) {
+                    vp.style.cursor = "crosshair";
                 } else {
                     vp.style.cursor = PEN_CURSOR;
                 }
             }
             function setPenMode() { setTool("pen"); }
-            // 统一工具切换：画笔 / 橡皮 / 选择工具 三者互斥，并同步视觉与光标
+            // 统一工具切换：画笔 / 橡皮 / 选择 / 形状（直线/矩形/椭圆/曲线/圆形）互斥，并同步视觉与光标
             function setTool(tool) {
+                cancelCurveAdjust();   // 曲线调节中途切换工具：取消未提交的曲线
                 state.tool = tool;
                 state.eraser = (tool === "eraser");
                 dialog.find('[data-act="pen"]').toggleClass("xf-cg-toggle-on", tool === "pen");
                 dialog.find('[data-act="eraser"]').toggleClass("xf-cg-eraser-on", tool === "eraser");
                 dialog.find('[data-act="select"]').toggleClass("xf-cg-toggle-on", tool === "select");
-                // 选择/扩展画布工具激活时显示拖拽扩展提示，切换到其它工具时隐藏
-                dialog.find(".xf-cg-hint").css("display", tool === "select" ? "block" : "none");
+                SHAPE_TOOLS.forEach(function(t) {
+                    dialog.find('[data-act="' + t + '"]').toggleClass("xf-cg-toggle-on", tool === t);
+                });
+                // 提示条：选择工具 / 曲线工具各有操作提示，其它工具隐藏
+                var $hint = dialog.find(".xf-cg-hint");
+                if (tool === "select") {
+                    $hint.html('<i class="fa fa-info-circle"></i> 小提示：长按鼠标左键进行上下左右拖动可以从不同的方向扩展画布的宽度和高度').css("display", "block");
+                } else if (tool === "curve") {
+                    $hint.html('<i class="fa fa-info-circle"></i> 曲线工具：先按住拖拽画出起止基线，松开后移动鼠标调整弯曲度，再单击一次完成绘制').css("display", "block");
+                } else {
+                    $hint.css("display", "none");
+                }
                 if (tool === "select") vp.style.cursor = "default";
                 else updateCursor();
             }
@@ -8103,8 +8249,15 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             dialog.find('[data-act="select"]').on(xfEditor.mouseOrTouch("click", "touchend"), function() {
                 setTool(state.tool === "select" ? "pen" : "select");
             });
+            // 形状工具：直线 / 矩形 / 椭圆 / 曲线 / 圆形（再次点击已激活的形状按钮切回画笔）
+            SHAPE_TOOLS.forEach(function(t) {
+                dialog.find('[data-act="' + t + '"]').on(xfEditor.mouseOrTouch("click", "touchend"), function() {
+                    setTool(state.tool === t ? "pen" : t);
+                });
+            });
             dialog.find('[data-act="clear"]').on(xfEditor.mouseOrTouch("click", "touchend"), function() {
-                pushUndo();   // 先保存当前内容，清空后即可通过"撤销/恢复"回退或前进
+                cancelCurveAdjust();   // 清空前取消未提交的曲线，避免快照混入
+                pushUndo();   // 先保存当前内容，清空后即可通过“撤销/恢复”回退或前进
                 resetStage(Math.max(MIN_W, wrap.clientWidth), Math.max(MIN_H, wrap.clientHeight));
                 state.scale = 1;
                 render();
