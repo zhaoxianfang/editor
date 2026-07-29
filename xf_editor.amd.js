@@ -7722,7 +7722,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
                 '    <button type="button" class="xf-cg-btn" data-act="eraser" title="橡皮擦 (Eraser)"><i class="fa fa-eraser"></i></button>',
                 '    <button type="button" class="xf-cg-btn" data-act="zoomreset" title="重置缩放 (Reset)"><i class="fa fa-refresh"></i></button>',
                 '    <button type="button" class="xf-cg-btn" data-act="clear" title="清空画布 (Clear)"><i class="fa fa-trash"></i></button>',
-                '    <button type="button" class="xf-cg-btn" data-act="select" title="选择/扩展画布 (Select & Resize)"><i class="fa fa-arrows"></i></button>',
+                '    <button type="button" class="xf-cg-btn" data-act="select" title="选择工具：框选区域后拖拽移动 (Select / Move)"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-dasharray="2.4 2"><rect x="2.5" y="2.5" width="11" height="11" rx="1"/></svg></button>',
                 '    <button type="button" class="xf-cg-btn" data-act="zoomin" title="放大 (Zoom in)"><i class="fa fa-search-plus"></i></button>',
                 '    <button type="button" class="xf-cg-btn" data-act="zoomout" title="缩小 (Zoom out)"><i class="fa fa-search-minus"></i></button>',
                 '    <span class="xf-cg-zoomval">100%</span>',
@@ -7801,7 +7801,9 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             var baseW = 760, baseH = 460;
             base.width = baseW; base.height = baseH;
             var drawing = false, lastX = 0, lastY = 0;
-            var selecting = false, selStart = null, selBaseW = 0, selBaseH = 0, selOrig = null, selPushed = false;
+            // 选择/移动工具状态：selRect=已确定选区(舞台坐标)，selDragging=正在框选，movingSel=正在拖动内容
+            var selRect = null, selDragging = false, selDragStart = null, selMoved = false;
+            var movingSel = false, moveSnap = null, moveLayer = null, moveGrab = null, moveOldRect = null;
             // 形状工具状态：拖拽起点 / 拖拽前舞台快照 / 是否正在拖拽 / 是否发生过移动
             // 曲线工具为两阶段：拖拽确定起止基线 -> 松开后移动鼠标调整弯曲度 -> 单击提交
             var SHAPE_TOOLS = ["line", "rect", "ellipse", "curve", "circle"];
@@ -7833,6 +7835,20 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
                 }
                 vctx.fillStyle = "#ffffff"; vctx.fillRect(0, 0, elW, elH);
                 vctx.drawImage(base, 0, 0, baseW, baseH, 0, 0, dispW, dispH);
+                // 选择工具：绘制选区虚线边框（半透明填充），方便直观查看当前选中区域
+                if (state.tool === "select" && selRect) {
+                    var sx = selRect.x * state.scale, sy = selRect.y * state.scale;
+                    var sw = selRect.w * state.scale, sh = selRect.h * state.scale;
+                    vctx.save();
+                    vctx.strokeStyle = "#2C7EEA";
+                    vctx.lineWidth = 1.5;
+                    vctx.setLineDash([5, 4]);
+                    vctx.strokeRect(sx + 0.5, sy + 0.5, sw, sh);
+                    vctx.setLineDash([]);
+                    vctx.fillStyle = "rgba(44,126,234,0.08)";
+                    vctx.fillRect(sx, sy, sw, sh);
+                    vctx.restore();
+                }
             }
             // 布局：容器高度 = 弹窗内容高度 - 头部高度（底部按钮为 flex:0 固定项，不再被裁切）
             function layout() {
@@ -7983,6 +7999,18 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
                 bctx.clearRect(0, 0, base.width, base.height);
                 bctx.drawImage(shapeSnap.canvas, 0, 0);
             }
+            // 提取舞台中某矩形区域的像素（含 alpha），用于移动选区的“剪切”预览
+            function extractRect(r) {
+                var w = Math.max(1, Math.round(r.w)), h = Math.max(1, Math.round(r.h));
+                var c = makeCanvas(w, h);
+                try { c.getContext("2d").drawImage(base, r.x, r.y, w, h, 0, 0, w, h); } catch (e) {}
+                return c;
+            }
+            // 判断舞台坐标点是否落在当前选区内
+            function isOverSelection(pos) {
+                if (!selRect) return false;
+                return pos.x >= selRect.x && pos.x <= selRect.x + selRect.w && pos.y >= selRect.y && pos.y <= selRect.y + selRect.h;
+            }
             // 按当前形状工具从 shapeStart 到 p 绘制形状（预览与提交共用）
             function strokeShape(p) {
                 var s = shapeStart;
@@ -8051,13 +8079,22 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
                     return;
                 }
                 if (state.tool === "select") {
-                    // 选择/扩展工具：按下即进入“抓取”状态（小手抓握光标），拖拽时按方向扩展画布
-                    selecting = true;
-                    selStart = { x: e.clientX, y: e.clientY };
-                    selBaseW = baseW; selBaseH = baseH;
-                    selOrig = makeSnapshot();
-                    selPushed = false;
-                    vp.style.cursor = "grabbing";
+                    var sp = getPos(e);
+                    if (selRect && isOverSelection(sp)) {
+                        // 在已有选区内按下：开始“剪切并拖动”选区内容（预览期间不破坏原图）
+                        pushUndo();
+                        movingSel = true;
+                        moveOldRect = selRect;          // 锁定“原始选区”，每帧都擦除这一块，避免被快照还原后残留
+                        moveSnap = makeSnapshot();      // 移动前的完整快照，每帧重绘以实现橡皮筋预览
+                        moveLayer = extractRect(selRect);
+                        moveGrab = { x: sp.x - selRect.x, y: sp.y - selRect.y };
+                    } else {
+                        // 在空白处按下：开始框选新区域
+                        selDragging = true;
+                        selMoved = false;
+                        selDragStart = sp;
+                        selRect = null;
+                    }
                     if (vp.setPointerCapture && e.pointerId !== undefined) { try { vp.setPointerCapture(e.pointerId); } catch (_) {} }
                     return;
                 }
@@ -8077,7 +8114,14 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
                 }
             }
             function moveDraw(e) {
-                if (!drawing && !selecting && !shapeDrawing && !curveAdjusting) return;
+                if (!drawing && !selDragging && !shapeDrawing && !curveAdjusting && !movingSel) {
+                    // 选择工具悬停：在选区内显示“可移动”光标，否则显示“框选”光标
+                    if (state.tool === "select") {
+                        var hp = getPos(e);
+                        vp.style.cursor = (selRect && isOverSelection(hp)) ? "move" : "crosshair";
+                    }
+                    return;
+                }
                 if (e.cancelable) e.preventDefault();
                 // 曲线第二阶段：移动鼠标实时预览弯曲度
                 if (curveAdjusting) {
@@ -8097,14 +8141,30 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
                     render();
                     return;
                 }
-                if (selecting) {
-                    // 以按下点为原点计算拖拽位移（换算到舞台坐标）
-                    var dx = (e.clientX - selStart.x) / state.scale;
-                    var dy = (e.clientY - selStart.y) / state.scale;
-                    var addW = Math.round(Math.abs(dx));
-                    var addH = Math.round(Math.abs(dy));
-                    if (!selPushed && (addW > 0 || addH > 0)) { pushUndo(); selPushed = true; }
-                    resizeStage(dx, dy);
+                // 选择工具：框选新区域（橡皮筋预览，仅更新 selRect，由 render 画虚线边框）
+                if (selDragging) {
+                    var p2 = getPos(e);
+                    selMoved = true;
+                    selRect = {
+                        x: Math.min(selDragStart.x, p2.x),
+                        y: Math.min(selDragStart.y, p2.y),
+                        w: Math.abs(p2.x - selDragStart.x),
+                        h: Math.abs(p2.y - selDragStart.y)
+                    };
+                    render();
+                    return;
+                }
+                // 选择工具：拖动已选内容（剪切预览：还原快照→擦除原选区→在拖拽位置重绘内容）
+                if (movingSel) {
+                    var p3 = getPos(e);
+                    var nx = p3.x - moveGrab.x, ny = p3.y - moveGrab.y;
+                    bctx.globalCompositeOperation = "source-over";
+                    bctx.clearRect(0, 0, base.width, base.height);
+                    bctx.drawImage(moveSnap.canvas, 0, 0);                 // 还原移动前内容
+                    bctx.clearRect(moveOldRect.x, moveOldRect.y, moveOldRect.w, moveOldRect.h); // 擦除原选区（实现“剪切”，锁定原始位置）
+                    bctx.drawImage(moveLayer, nx, ny);                     // 在新位置重绘内容
+                    selRect = { x: nx, y: ny, w: moveOldRect.w, h: moveOldRect.h };
+                    render();
                     return;
                 }
                 // 绘制：仅在已有画布范围内作画，不改变画布尺寸
@@ -8138,32 +8198,26 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
                     return;
                 }
                 drawing = false;
-                selecting = false;
-                // 松开鼠标：光标恢复（选择工具恢复为箭头，其余恢复各自光标）
-                if (state.tool === "select") vp.style.cursor = "default";
+                // 选择工具：框选完成 / 移动完成 的资源清理
+                if (selDragging) {
+                    selDragging = false;
+                    if (!selMoved || (selRect && selRect.w < 3 && selRect.h < 3)) {
+                        selRect = null;   // 未形成有效选区，清除
+                    }
+                    render();
+                    return;
+                }
+                if (movingSel) {
+                    movingSel = false;
+                    moveSnap = null; moveLayer = null; moveGrab = null; moveOldRect = null;
+                    render();
+                    return;
+                }
+                // 松开鼠标：光标恢复（选择工具恢复为十字光标，其余恢复各自光标）
+                if (state.tool === "select") vp.style.cursor = "crosshair";
                 else updateCursor();
             }
-            // 选择工具扩展画布（按拖拽方向决定扩展方向与内容位移）
-            //  向右拖 → 向左扩展（内容整体右移 addW）       向左拖 → 向右扩展（内容不变）
-            //  向下拖 → 向上扩展（内容整体下移 addH）         向上拖 → 向下扩展（内容不变）
-            function resizeStage(dx, dy) {
-                var addW = Math.round(Math.abs(dx));
-                var addH = Math.round(Math.abs(dy));
-                if (addW === 0 && addH === 0) return;
-                var MAX_DIM = 4096;
-                addW = Math.min(addW, MAX_DIM - selBaseW);
-                addH = Math.min(addH, MAX_DIM - selBaseH);
-                if (addW < 0) addW = 0;
-                if (addH < 0) addH = 0;
-                if (addW === 0 && addH === 0) return;
-                var nw = selBaseW + addW, nh = selBaseH + addH;
-                var offX = (dx > 0) ? addW : 0;   // 向右拖：内容右移
-                var offY = (dy > 0) ? addH : 0;   // 向下拖：内容下移
-                var tmp = makeCanvas(nw, nh);
-                tmp.getContext("2d").drawImage(selOrig.canvas, offX, offY);
-                base = tmp; baseW = nw; baseH = nh; bctx = base.getContext("2d");
-                render();
-            }
+            // 选择工具扩展画布逻辑已移除（旧“选择/扩展画布”被新的“框选+移动”选择工具取代）
 
             if (window.PointerEvent) {
                 vp.addEventListener("pointerdown", startDraw);
@@ -8179,6 +8233,22 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
                 vp.addEventListener("touchmove", moveDraw, { passive: false });
                 vp.addEventListener("touchend", endDraw);
             }
+            vp.tabIndex = 0;   // 使画布可获焦，框选/拖动后按 Delete 能冒泡到对话框触发删除
+
+            // 快捷键：选择工具选中区域后，按 Delete / Backspace 删除该区域内容
+            dialog.on("keydown.xf_cg_del", function(e) {
+                if (e.key !== "Delete" && e.key !== "Backspace") return;
+                var t = e.target;
+                // 输入框/文本域/可编辑元素中不触发（避免误删与干扰输入）
+                if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
+                if (state.tool !== "select" || !selRect) return;
+                e.preventDefault();
+                pushUndo();   // 删除作为一步撤销记录，可被撤销/恢复回退
+                bctx.globalCompositeOperation = "source-over";
+                bctx.clearRect(selRect.x, selRect.y, selRect.w, selRect.h);
+                selRect = null;   // 清除选区与虚线边框
+                render();
+            });
 
             // 缩放：仅改变显示层（视图），舞台内容 1:1 不变，无论放大多少倍内容都不会丢失
             function applyZoom(factor) {
@@ -8204,6 +8274,8 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
                     vp.style.cursor = 'url("data:image/svg+xml;utf8,' + encodeURIComponent(svg) + '") ' + r + ' ' + r + ', auto';
                 } else if (SHAPE_TOOLS.indexOf(state.tool) !== -1) {
                     vp.style.cursor = "crosshair";
+                } else if (state.tool === "select") {
+                    vp.style.cursor = "crosshair";
                 } else {
                     vp.style.cursor = PEN_CURSOR;
                 }
@@ -8212,6 +8284,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             // 统一工具切换：画笔 / 橡皮 / 选择 / 形状（直线/矩形/椭圆/曲线/圆形）互斥，并同步视觉与光标
             function setTool(tool) {
                 cancelCurveAdjust();   // 曲线调节中途切换工具：取消未提交的曲线
+                selRect = null; selDragging = false; movingSel = false; moveOldRect = null;   // 切换工具时清除选区与移动状态
                 state.tool = tool;
                 state.eraser = (tool === "eraser");
                 dialog.find('[data-act="pen"]').toggleClass("xf-cg-toggle-on", tool === "pen");
@@ -8223,14 +8296,15 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
                 // 提示条：选择工具 / 曲线工具各有操作提示，其它工具隐藏
                 var $hint = dialog.find(".xf-cg-hint");
                 if (tool === "select") {
-                    $hint.html('<i class="fa fa-info-circle"></i> 小提示：长按鼠标左键进行上下左右拖动可以从不同的方向扩展画布的宽度和高度').css("display", "block");
+                    $hint.html('<i class="fa fa-info-circle"></i> 选择工具：在画布上拖拽框选一个区域；在选区内按下并拖动可把该区域的涂鸦内容“剪切”移动到新位置；选中后按 Delete 键可删除该区域内容').css("display", "block");
                 } else if (tool === "curve") {
                     $hint.html('<i class="fa fa-info-circle"></i> 曲线工具：先按住拖拽画出起止基线，松开后移动鼠标调整弯曲度，再单击一次完成绘制').css("display", "block");
                 } else {
                     $hint.css("display", "none");
                 }
-                if (tool === "select") vp.style.cursor = "default";
+                if (tool === "select") vp.style.cursor = "crosshair";
                 else updateCursor();
+                render();
             }
             var onWinResize = function() {
                 if (!dialog.is(":visible") || !dialog.parent().length) { $(window).off("resize.xf_cg_cursor", onWinResize); return; }
@@ -8257,6 +8331,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             });
             dialog.find('[data-act="clear"]').on(xfEditor.mouseOrTouch("click", "touchend"), function() {
                 cancelCurveAdjust();   // 清空前取消未提交的曲线，避免快照混入
+                selRect = null;        // 清空选区，避免残留虚线边框
                 pushUndo();   // 先保存当前内容，清空后即可通过“撤销/恢复”回退或前进
                 resetStage(Math.max(MIN_W, wrap.clientWidth), Math.max(MIN_H, wrap.clientHeight));
                 state.scale = 1;
