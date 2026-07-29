@@ -86,6 +86,7 @@
                 "grid"           : "网格布局",
                 "insert-flowchart": "流程图",
                 "insert-sequence": "时序图",
+                "banner"         : "插入Banner",
                 "page"           : "插入页面",
                 "page-a3"        : "A3 页面",
                 "page-a4"        : "A4 页面",

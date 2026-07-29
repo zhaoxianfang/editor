@@ -85,6 +85,7 @@
                 grid          : "Grid",
                 "insert-flowchart": "Flowchart",
                 "insert-sequence": "Sequence Diagram",
+                banner        : "Insert Banner",
                 page          : "Insert Page",
                 "page-a3": "A3 Page",
                 "page-a4": "A4 Page",

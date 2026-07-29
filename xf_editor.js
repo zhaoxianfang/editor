@@ -154,7 +154,7 @@
             "|", 
             "list-ul", "list-ol", "hr", "|",
             "link", "reference-link", "image", "video", "file", "|",
-            { "insert" : ["code", "preformatted-text", "code-block", "table", "datetime", "html-entities", "pagebreak", "grid", "insert-flowchart", "insert-sequence"] },
+            { "insert" : ["code", "preformatted-text", "code-block", "table", "datetime", "html-entities", "pagebreak", "grid", "banner", "insert-flowchart", "insert-sequence"] },
             "|",
             { "page" : ["page-a3", "page-a4", "page-a5"] },
             "|",
@@ -302,6 +302,7 @@
         video                : true,           // 启用视频列表语法 [[video]]
         file                 : true,           // 启用文件列表语法 [[file]]
         canvas               : true,           // 启用画布涂鸦语法 [[canvas]]
+        banner               : true,           // 启用轮播图语法 [[banner]]
         tooltip              : true,           // 启用悬浮提示语法 [text](tooltip:tip)
         syncScroll           : true,           // 启用编辑区和预览区同步滚动（v1.17.0）
         previewOnly          : false,          // 纯预览模式（禁用表格编辑、图片缩放等交互功能）
@@ -394,7 +395,8 @@
             "page-a5"        : "fa-file-o",
             "page"           : "fa-file-o",
             "insert-flowchart" : "fa-sitemap",
-            "insert-sequence"  : "fa-exchange"
+            "insert-sequence"  : "fa-exchange",
+            "banner"           : "fa-puzzle-piece"
         },        
         toolbarIconTexts     : {},
         
@@ -473,6 +475,7 @@
                 "page-a5"        : "插入A5页面",
                 "insert-flowchart" : "插入流程图",
                 "insert-sequence"  : "插入时序图",
+                "banner"           : "插入Banner",
                 "page"             : "页面尺寸"
             },
             buttons : {
@@ -2702,6 +2705,9 @@
                 if (settings.columns) {
                     _this.initColumns();
                 }
+                if (settings.banner) {
+                    _this.initBanners();
+                }
                 if (settings.tooltip) {
                     _this.initTooltips();
                 }
@@ -3131,6 +3137,10 @@
                 if ($img.hasClass("xfeditor-canvas-graffiti-img")) {
                     return;
                 }
+                // banner 轮播图内的图片不启用拖拽调整尺寸：点击用于切换/跳转，且需保持铺满容器
+                if ($img.closest(".xf_editor-banner").length) {
+                    return;
+                }
                 if ($img.hasClass("xf_editor-img-resizable")) {
                     return;
                 }
@@ -3293,6 +3303,14 @@
         initColumns : function() {
             // ★ v1.17.23: 委托给统一静态方法
             xfEditor._initColumns(this.previewContainer);
+        },
+
+        /**
+         * Initialize Banner carousels in preview area
+         */
+        initBanners : function() {
+            // 委托给统一静态方法
+            xfEditor._initBanners(this.previewContainer);
         },
 
         /**
@@ -4506,6 +4524,8 @@
             f.video = html.indexOf('xf_editor-video-player') >= 0 || /<video\b/.test(html);
             // 文件列表
             f.fileList = html.indexOf('xf_editor-file-list') >= 0;
+            // 轮播图（Banner）
+            f.banner = html.indexOf('xf_editor-banner') >= 0;
             // 目录（TOC）
             f.toc = html.indexOf('markdown-toc') >= 0;
             // 代码块（含复制按钮）— 检测 <pre> 标签存在性
@@ -4662,6 +4682,23 @@
             // --- fileList 文件列表 ---
             if (f.fileList) {
                 c.push('.xf_editor-file-list{margin:10px 0;}.xf_editor-file-list a{display:inline-block;margin:3px 6px 3px 0;padding:4px 10px;border:1px solid #ddd;border-radius:3px;text-decoration:none;color:#333;font-size:13px;}.xf_editor-file-list a:hover{background:#f0f0f0;}');
+            }
+            // --- banner 轮播图 ---
+            if (f.banner) {
+                c.push('.xf_editor-banner{position:relative;width:100%;margin:15px 0;min-height:160px;overflow:hidden;border-radius:8px;background:#000;box-shadow:0 4px 16px rgba(0,0,0,0.15);}');
+                c.push('.xf_editor-banner-slides{display:flex;height:100%;transition:transform .6s cubic-bezier(.4,0,.2,1);will-change:transform;}');
+                c.push('.xf_editor-banner-slide{position:relative;flex:0 0 100%;min-width:100%;height:100%;display:block;text-decoration:none!important;border-bottom:none!important;cursor:default;overflow:hidden;}');
+                c.push('a.xf_editor-banner-link{cursor:pointer;}a.xf_editor-banner-link::after{display:none!important;}');
+                c.push('.xf_editor-banner-slide img{display:block;width:100%!important;height:100%!important;object-fit:cover;margin:0!important;border:none!important;border-radius:0!important;user-select:none;-webkit-user-drag:none;}');
+                c.push('.xf_editor-banner-caption{position:absolute;left:0;right:0;bottom:0;padding:28px 20px 14px;background:linear-gradient(transparent,rgba(0,0,0,.65));color:#fff;pointer-events:none;}');
+                c.push('.xf_editor-banner-caption h3{margin:0 0 4px!important;padding:0!important;border:none!important;font-size:18px!important;line-height:1.4;color:#fff!important;}');
+                c.push('.xf_editor-banner-caption p{margin:0!important;font-size:13px;line-height:1.5;color:rgba(255,255,255,.85);}');
+                c.push('.xf_editor-banner-arrow{position:absolute;top:50%;transform:translateY(-50%);z-index:5;width:36px;height:36px;padding:0;border:none;border-radius:50%;background:rgba(0,0,0,.35);color:#fff;font-size:16px;line-height:36px;text-align:center;cursor:pointer;opacity:0;transition:opacity .25s,background .25s;user-select:none;}');
+                c.push('.xf_editor-banner:hover .xf_editor-banner-arrow{opacity:1;}.xf_editor-banner-arrow:hover{background:rgba(0,0,0,.6);}');
+                c.push('.xf_editor-banner-prev{left:12px;}.xf_editor-banner-next{right:12px;}');
+                c.push('.xf_editor-banner-dots{position:absolute;left:0;right:0;bottom:8px;z-index:5;display:flex;justify-content:center;gap:8px;}');
+                c.push('.xf_editor-banner-dot{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.5);cursor:pointer;transition:all .25s;}');
+                c.push('.xf_editor-banner-dot.active{background:#fff;transform:scale(1.25);}');
             }
             // --- canvas 画布涂鸦 ---
             c.push('.xfeditor-canvas-graffiti-wrap{margin:16px 0;text-align:left;}');
@@ -4988,6 +5025,56 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             s.push('  }');
             s.push('}');
             } // end if (f.tabs)
+            s.push('');
+            // --- Banner 轮播图初始化 ---
+            if (f.banner) {
+            s.push('function initBanners(container){');
+            s.push('  if(!container)return;');
+            s.push('  var banners=$$(".xf_editor-banner",container);');
+            s.push('  for(var i=0;i<banners.length;i++){');
+            s.push('    (function(bn){');
+            s.push('      try{');
+            s.push('        if(getAttr(bn,"data-initialized")==="true")return;');
+            s.push('        setAttr(bn,"data-initialized","true");');
+            s.push('        var wrap=$1(">.xf_editor-banner-slides",bn);');
+            s.push('        if(!wrap)return;');
+            s.push('        var slides=$$(">.xf_editor-banner-slide",wrap);');
+            s.push('        var count=slides.length;');
+            s.push('        if(count===0)return;');
+            s.push('        if(!hasCls(bn,"xf_editor-banner-fixed")){');
+            s.push('          var img0=$1("img",slides[0]);');
+            s.push('          var syncH=function(){if(img0&&img0.offsetHeight>0){bn.style.height=img0.offsetHeight+"px";addCls(bn,"xf_editor-banner-fixed");}};');
+            s.push('          if(img0){if(img0.complete&&img0.naturalHeight>0){syncH();}else{addEvt(img0,"load",syncH);}}');
+            s.push('        }');
+            s.push('        var index=0,timer=null,moved=false;');
+            s.push('        function goTo(n){');
+            s.push('          index=(n+count)%count;');
+            s.push('          wrap.style.transform="translateX(-"+(index*100)+"%)";');
+            s.push('          var dots=$$(".xf_editor-banner-dot",bn);');
+            s.push('          for(var d=0;d<dots.length;d++){if(getAttr(dots[d],"data-index")==String(index)){addCls(dots[d],"active");}else{rmCls(dots[d],"active");}}');
+            s.push('        }');
+            s.push('        function stop(){if(timer){clearInterval(timer);timer=null;}}');
+            s.push('        function play(){if(count<2)return;stop();timer=setInterval(function(){goTo(index+1);},3000);}');
+            s.push('        if(count>1){');
+            s.push('          var prev=$1(".xf_editor-banner-prev",bn),next=$1(".xf_editor-banner-next",bn);');
+            s.push('          if(prev)addEvt(prev,"click",function(e){e.preventDefault();e.stopPropagation();goTo(index-1);play();});');
+            s.push('          if(next)addEvt(next,"click",function(e){e.preventDefault();e.stopPropagation();goTo(index+1);play();});');
+            s.push('          var dots=$$(".xf_editor-banner-dot",bn);');
+            s.push('          for(var d=0;d<dots.length;d++){(function(dot){addEvt(dot,"click",function(e){e.preventDefault();e.stopPropagation();goTo(parseInt(getAttr(dot,"data-index"),10)||0);play();});})(dots[d]);}');
+            s.push('          addEvt(bn,"mouseenter",stop);');
+            s.push('          addEvt(bn,"mouseleave",play);');
+            s.push('          var startX=0;');
+            s.push('          addEvt(bn,"touchstart",function(e){startX=e.touches[0].clientX;moved=false;stop();});');
+            s.push('          addEvt(bn,"touchend",function(e){var dx=e.changedTouches[0].clientX-startX;if(Math.abs(dx)>40){moved=true;goTo(dx<0?index+1:index-1);}play();});');
+            s.push('          play();');
+            s.push('        }');
+            s.push('        var links=$$("a.xf_editor-banner-link",bn);');
+            s.push('        for(var li2=0;li2<links.length;li2++){addEvt(links[li2],"click",function(e){if(moved){e.preventDefault();moved=false;}});}');
+            s.push('      }catch(e){}');
+            s.push('    })(banners[i]);');
+            s.push('  }');
+            s.push('}');
+            } // end if (f.banner)
             s.push('');
             // --- 代码复制按钮 ---
             if (f.codeBlock) {
@@ -5414,6 +5501,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             s.push('  var inits=[];');
             if (f.tooltip)   { s.push('  inits.push({name:"tooltips",fn:function(){initTooltips(c);}});'); }
             if (f.tabs)      { s.push('  inits.push({name:"tabs",fn:function(){initTabs(c);}});'); }
+            if (f.banner)    { s.push('  inits.push({name:"banners",fn:function(){initBanners(c);}});'); }
             if (f.columns)   { s.push('  inits.push({name:"columns",fn:function(){initColumns(c);}});'); }
             if (f.codeBlock) { s.push('  inits.push({name:"codeCopy",fn:function(){initCodeCopy(c);}});'); }
             if (f.footnotes) { s.push('  inits.push({name:"footnotes",fn:function(){initFootnotes(c);}});'); }
@@ -8589,6 +8677,21 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             cm.setCursor(cursor.line + 2, 0);
         },
 
+        banner : function() {
+            var cm = this.cm;
+            var cursor = cm.getCursor();
+            cm.replaceSelection([
+                "",
+                "[[banner width=\"100%\" height=\"320px\"]]",
+                "{url:\"https://picsum.photos/id/1015/1200/500\",title:\"标题1\",desc:\"描述1\",href:\"https://example.com/1\"},",
+                "{url:\"https://picsum.photos/id/1016/1200/500\",title:\"标题2\",desc:\"描述2\"},",
+                "{url:\"https://picsum.photos/id/1018/1200/500\",desc:\"描述3\"},",
+                "[[/banner]]",
+                ""
+            ].join("\n"));
+            cm.setCursor(cursor.line + 2, 0);
+        },
+
         tooltip : function() {
             var cm = this.cm;
             var cursor = cm.getCursor();
@@ -9654,6 +9757,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
                 pageBlock: disableBlocks ? false : opts.pageBlock,
                 video: disableBlocks ? false : opts.video,
                 file: disableBlocks ? false : opts.file,
+                banner: disableBlocks ? false : opts.banner,
                 tooltip: opts.tooltip,
                 copybook: opts.copybook
             };
@@ -10973,6 +11077,112 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             }
         }
 
+        // 处理轮播图语法：[[banner width="..." height="..."]] {url:"...",title:"...",desc:"...",href:"..."}, ... [[/banner]]
+        // width 可选，默认 100%；height 可选，默认取第一张图片的高度（由 _initBanners 运行时计算）
+        if (options.banner !== false) {
+            var bannerBlocks = findBalancedBlocks(markdown, /\[\[banner[^\]]*\]\]/g, /\[\[\/banner\]\]/g);
+            for (var bi = bannerBlocks.length - 1; bi >= 0; bi--) {
+                var bb = bannerBlocks[bi];
+                if (!bb || !bb.fullMatch) continue;
+                try {
+                    var bOpenMatch = bb.fullMatch.match(/^\[\[banner([^\]]*)\]\]/);
+                    var bAttrs = bOpenMatch ? bOpenMatch[1] : "";
+                    // 尺寸值安全校验：仅允许数字 + 常见 CSS 单位 或 auto，防止样式注入
+                    var safeCssSize = function(v, def) {
+                        if (!v) return def;
+                        v = String(v).trim();
+                        if (v === "auto") return v;
+                        if (/^\d+(?:\.\d+)?(px|%|em|rem|vw|vh)?$/.test(v)) {
+                            return /[a-z%]$/i.test(v) ? v : (v + "px");
+                        }
+                        return def;
+                    };
+                    var bWm = bAttrs.match(/width\s*=\s*"([^"]*)"/i);
+                    var bHm = bAttrs.match(/height\s*=\s*"([^"]*)"/i);
+                    var bWidth  = safeCssSize(bWm ? bWm[1] : "", "100%");
+                    var bHeight = safeCssSize(bHm ? bHm[1] : "", "");
+                    
+                    // 解析条目行：{url:"...",title:"...",desc:"...",href:"..."}，字段顺序不限，title/desc/href 均可省略
+                    var bItems = [];
+                    var bLines = bb.content.trim().split("\n");
+                    var pickField = function(line, name) {
+                        var m = line.match(new RegExp(name + '\\s*:\\s*"([^"]*)"'));
+                        return m ? m[1].trim() : "";
+                    };
+                    // URL 白名单校验：仅允许 http(s)、相对路径、锚点、data:image
+                    var safeUrl = function(u, allowData) {
+                        if (!u || u.length > 2000) return "";
+                        if (/^\s*(javascript|vbscript)\s*:/i.test(u)) return "";
+                        if (/^data:/i.test(u)) {
+                            return (allowData && /^data:image\//i.test(u)) ? u : "";
+                        }
+                        return u;
+                    };
+                    for (var bli = 0; bli < bLines.length; bli++) {
+                        var bLine = bLines[bli].trim();
+                        if (!bLine || bLine.charAt(0) !== "{") continue;
+                        if (/^<!--xf_editor-/.test(bLine)) continue;
+                        var bUrl = safeUrl(pickField(bLine, "url"), true);
+                        if (!bUrl) continue;
+                        bItems.push({
+                            url   : bUrl,
+                            title : pickField(bLine, "title"),
+                            desc  : pickField(bLine, "desc"),
+                            href  : safeUrl(pickField(bLine, "href"), false)
+                        });
+                        // 安全限制：最多支持 20 张轮播图
+                        if (bItems.length >= 20) {
+                            if (typeof console !== "undefined" && console.warn) {
+                                console.warn("[xfEditor] Maximum banner slides limit (20) exceeded");
+                            }
+                            break;
+                        }
+                    }
+                    
+                    var bResultHtml = "";
+                    if (bItems.length > 0) {
+                        var bStyle = "width:" + bWidth + ";" + (bHeight ? "height:" + bHeight + ";" : "");
+                        bResultHtml = '<div class="xf_editor-banner' + (bHeight ? ' xf_editor-banner-fixed' : '') + '" style="' + bStyle + '" data-banner-count="' + bItems.length + '">';
+                        bResultHtml += '<div class="xf_editor-banner-slides">';
+                        for (var bsi = 0; bsi < bItems.length; bsi++) {
+                            var bIt = bItems[bsi];
+                            var bCaption = "";
+                            if (bIt.title || bIt.desc) {
+                                bCaption = '<div class="xf_editor-banner-caption">' +
+                                    (bIt.title ? '<h3>' + xfEditor.escapeHtml(bIt.title) + '</h3>' : '') +
+                                    (bIt.desc ? '<p>' + xfEditor.escapeHtml(bIt.desc) + '</p>' : '') +
+                                    '</div>';
+                            }
+                            var bImg = '<img src="' + xfEditor.escapeAttr(bIt.url) + '" alt="' + xfEditor.escapeAttr(bIt.title || ("banner-" + (bsi + 1))) + '" loading="lazy" draggable="false" />';
+                            if (bIt.href) {
+                                bResultHtml += '<a class="xf_editor-banner-slide xf_editor-banner-link" href="' + xfEditor.escapeAttr(bIt.href) + '" target="_blank" rel="noopener noreferrer">' + bImg + bCaption + '</a>';
+                            } else {
+                                bResultHtml += '<div class="xf_editor-banner-slide">' + bImg + bCaption + '</div>';
+                            }
+                        }
+                        bResultHtml += '</div>';
+                        if (bItems.length > 1) {
+                            // 注意：使用 span 而非 button，button 标签会被 HTML 安全白名单过滤掉
+                            bResultHtml += '<span class="xf_editor-banner-arrow xf_editor-banner-prev" role="button" tabindex="0" aria-label="上一张">&#10094;</span>';
+                            bResultHtml += '<span class="xf_editor-banner-arrow xf_editor-banner-next" role="button" tabindex="0" aria-label="下一张">&#10095;</span>';
+                            bResultHtml += '<div class="xf_editor-banner-dots">';
+                            for (var bdi = 0; bdi < bItems.length; bdi++) {
+                                bResultHtml += '<span class="xf_editor-banner-dot' + (bdi === 0 ? ' active' : '') + '" data-index="' + bdi + '"></span>';
+                            }
+                            bResultHtml += '</div>';
+                        }
+                        bResultHtml += '</div>';
+                    }
+                    var bPlaceholder = addPlaceholder(bResultHtml);
+                    markdown = markdown.substring(0, bb.start) + bPlaceholder + markdown.substring(bb.end);
+                } catch(e) {
+                    if (typeof console !== "undefined" && console.warn) {
+                        console.warn("[xfEditor] Banner block processing error:", e);
+                    }
+                }
+            }
+        }
+
         // 处理上标和下标语法（脚注引用已在 tabs 之前处理完毕，不冲突）
         // 上标：^文本^ → <sup>文本</sup>
         // 下标：^^文本^^ → <sub>文本</sub>
@@ -11152,6 +11362,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             pageBlock            : true,           // 启用纸张页面 [[page:A4]] / [[page:A5]] 语法
             video                : true,           // 启用视频列表 [[video]] 语法
             file                 : true,           // 启用文件列表 [[file]] 语法
+            banner               : true,           // 启用轮播图 [[banner]] 语法
             tooltip              : true,           // 启用悬浮提示 [text](tooltip:content) 语法
             copybook             : true        };
         
@@ -13033,6 +13244,106 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
     };
 
     /**
+     * 静态轮播图（Banner）交互初始化（供编辑器预览和纯预览模式共用）
+     * 效果：横向滑动切换（translateX + 过渡动画）、自动播放（3s，悬停暂停）、
+     *       左右箭头、圆点指示器、触摸滑动切换；height 未指定时取第一张图片高度
+     * @private
+     * @param {jQuery} $container  预览容器
+     */
+    xfEditor._initBanners = function($container) {
+        if (!$container || !$container.length) return;
+        $container.find(".xf_editor-banner").each(function() {
+            var banner = this;
+            var $banner = $(banner);
+            if ($banner.attr("data-initialized") === "true") return;
+            $banner.attr("data-initialized", "true");
+
+            var $slidesWrap = $banner.children(".xf_editor-banner-slides");
+            var $slides = $slidesWrap.children(".xf_editor-banner-slide");
+            var count = $slides.length;
+            if (count === 0) return;
+
+            // 高度未指定时：取第一张图片的实际高度
+            if (!$banner.hasClass("xf_editor-banner-fixed")) {
+                var firstImg = $slides.eq(0).find("img")[0];
+                var syncHeight = function() {
+                    if (!firstImg) return;
+                    var h = firstImg.offsetHeight;
+                    if (h > 0) {
+                        $banner.css("height", h + "px").addClass("xf_editor-banner-fixed");
+                    }
+                };
+                if (firstImg) {
+                    if (firstImg.complete && firstImg.naturalHeight > 0) {
+                        syncHeight();
+                    } else {
+                        $(firstImg).one("load", syncHeight);
+                    }
+                }
+            }
+
+            var index = 0, timer = null, moved = false;
+
+            function goTo(i) {
+                index = (i + count) % count;
+                $slidesWrap.css("transform", "translateX(-" + (index * 100) + "%)");
+                $banner.find(".xf_editor-banner-dot").removeClass("active")
+                       .filter('[data-index="' + index + '"]').addClass("active");
+            }
+
+            function stop() {
+                if (timer) { clearInterval(timer); timer = null; }
+            }
+
+            function play() {
+                if (count < 2) return;
+                stop();
+                timer = setInterval(function() {
+                    // 预览区重渲染后旧节点被移除，自动清理定时器防止泄漏
+                    if (!document.body.contains(banner)) { stop(); return; }
+                    goTo(index + 1);
+                }, 3000);
+            }
+
+            if (count > 1) {
+                $banner.on("click", ".xf_editor-banner-prev", function(e) {
+                    e.preventDefault(); e.stopPropagation();
+                    goTo(index - 1); play();
+                });
+                $banner.on("click", ".xf_editor-banner-next", function(e) {
+                    e.preventDefault(); e.stopPropagation();
+                    goTo(index + 1); play();
+                });
+                $banner.on("click", ".xf_editor-banner-dot", function(e) {
+                    e.preventDefault(); e.stopPropagation();
+                    goTo(parseInt($(this).attr("data-index"), 10) || 0); play();
+                });
+                // 悬停暂停自动播放
+                $banner.on("mouseenter", stop).on("mouseleave", play);
+                // 触摸滑动切换（阈值 40px）
+                var startX = 0;
+                banner.addEventListener("touchstart", function(e) {
+                    startX = e.touches[0].clientX; moved = false; stop();
+                }, { passive: true });
+                banner.addEventListener("touchend", function(e) {
+                    var dx = e.changedTouches[0].clientX - startX;
+                    if (Math.abs(dx) > 40) {
+                        moved = true;
+                        goTo(dx < 0 ? index + 1 : index - 1);
+                    }
+                    play();
+                }, { passive: true });
+                play();
+            }
+
+            // 滑动后抑制链接点击误触发；无 href 的幻灯片点击无任何响应
+            $banner.on("click", "a.xf_editor-banner-link", function(e) {
+                if (moved) { e.preventDefault(); moved = false; }
+            });
+        });
+    };
+
+    /**
      * 静态多栏布局分隔线初始化（供编辑器预览和纯预览模式共用）
      * @private
      * @param {jQuery} $container  预览容器
@@ -13173,7 +13484,8 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             tabs          : settings.tabs, columns : settings.columns,
             grid          : settings.grid, pageBlock : settings.pageBlock,
             tooltip       : settings.tooltip, copybook : settings.copybook,
-            video         : settings.video, fileList : settings.fileList, canvas : settings.canvas
+            video         : settings.video, fileList : settings.fileList, canvas : settings.canvas,
+            banner        : settings.banner
         }, overrides || {});
     };
 
@@ -13239,6 +13551,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             pageBlock            : true,
             video                : true,
             file                 : true,
+            banner               : true,
             tooltip              : true,
             copybook             : true
         };
@@ -13426,6 +13739,11 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
         // 6. Columns 多栏布局分隔线
         if (settings.columns) {
             xfEditor._initColumns(div);
+        }
+
+        // 6.5 Banner 轮播图交互
+        if (settings.banner) {
+            xfEditor._initBanners(div);
         }
 
         // ★ v1.17.23: 新增 — 页面分页处理（与编辑器预览保持一致）

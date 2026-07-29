@@ -1537,7 +1537,35 @@ console.log("多层嵌套演示");
 [[/canvas]]
 
 ---
-## 二十八、🏁 结语
+## 二十八、🎠 Banner 轮播图
+
+> 使用 `[[banner]] ... [[/banner]]` 语法插入轮播图，支持自动播放（3 秒，悬停暂停）、左右箭头、圆点指示器与触摸滑动。
+> `width`（可选）为整体显示宽度，默认 `100%`；`height`（可选）为整体显示高度，默认取第一张图片的高度。
+> 每行一个条目：`url` 为图片地址（必填）；`title` 标题、`desc` 描述均可省略；`href` 为点击跳转地址，不配置时点击无任何响应。
+
+### 28.1 完整配置（宽高 + 标题 + 描述 + 跳转链接）
+
+[[banner width="100%" height="320px"]]
+{url:"https://picsum.photos/id/1015/1200/500",title:"山川河流",desc:"大自然的鬼斧神工，山川与河流交相辉映",href:"https://github.com/zhaoxianfang/xfeditor"},
+{url:"https://picsum.photos/id/1016/1200/500",title:"峡谷风光",desc:"深邃的峡谷中隐藏着无尽的奥秘",href:"https://gitee.com/zhaoxianfang/xfeditor"},
+{url:"https://picsum.photos/id/1018/1200/500",title:"雪山湖泊",desc:"雪山倒映在宁静的湖面上"},
+[[/banner]]
+
+### 28.2 极简配置（默认宽度 100%，高度取第一张图片；无标题、无跳转）
+
+[[banner]]
+{url:"https://picsum.photos/id/1039/1200/420",desc:"瀑布飞流直下"},
+{url:"https://picsum.photos/id/1043/1200/420",desc:"静谧的森林小径"},
+[[/banner]]
+
+### 28.3 自定义宽度（居中展示单张图，点击跳转）
+
+[[banner width="60%" height="220px"]]
+{url:"https://picsum.photos/id/1047/900/400",title:"城市夜景",desc:"华灯初上的城市天际线",href:"https://github.com/zhaoxianfang/xfeditor"},
+[[/banner]]
+
+---
+## 二十九、🏁 结语
 
 xfEditor 持续迭代，致力于为开发者和内容创作者提供最优秀的 Markdown 编辑体验。
 
@@ -1553,7 +1581,7 @@ xfEditor 持续迭代，致力于为开发者和内容创作者提供最优秀�
 | 📐 公式 | KaTeX 行内/块级数学公式、Flowchart 流程图、Sequence 时序图 |
 | 🔤 排版 | 拼音标注、文本对齐（行内/块级）、上标/下标、组合上下标、字体大小（8-200px） |
 | 👣 脚注 | 引用跳转、自动汇总、多脚注、内联格式、标题脚注、高亮动画 |
-| 📦 媒体 | 图片上传/跨域、文件上传、视频嵌入/上传、附件链接 |
+| 📦 媒体 | 图片上传/跨域、文件上传、视频嵌入/上传、附件链接、Banner 轮播图 |
 | ✍️ 教育 | 田字格、米字格、拼音格字帖（宽度控制、脚注嵌入、混合格型） |
 | 🛡 安全 | XSS 过滤、HTML 标签白名单控制、Hidden 隐藏代码块、URL 安全 |
 | 🎨 样式 | 代码块 class/id 属性扩展、40+ 语言高亮、主题切换（default/dark） |

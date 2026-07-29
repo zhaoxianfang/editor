@@ -3,9 +3,10 @@
 <head>
     <link rel="shortcut icon" href="../images/favicon.ico" type="image/x-icon">
     <meta charset="utf-8" />
-    <title>xfEditor v1.17.27 — 全部功能完整演示</title>
+    <title>xfEditor v1.17.28 — 全部功能完整演示</title>
     <link rel="stylesheet" href="css/style.css" />
     <link rel="stylesheet" href="../css/xf_editor.min.css" />
+    <link rel="stylesheet" href="../css/xf_editor.preview.min.css" />
     <style>
         #layout { padding-bottom: 60px; }
         .feature-btns { width: 90%; margin: 15px auto; text-align: center; }
@@ -40,12 +41,12 @@
 <body>
     <div id="layout">
         <header>
-            <h1>xfEditor v1.17.27 全部功能完整演示</h1>
+            <h1>xfEditor v1.17.28 全部功能完整演示</h1>
             <p>Complete All-Features Demo — 涵盖所有 Markdown 语法、扩展特性与 API 交互</p>
         </header>
 
         <div class="feature-intro">
-            <h2>v1.17.27 新增功能速览 <span class="badge badge-new">NEW</span></h2>
+            <h2>v1.17.28 新增功能速览 <span class="badge badge-new">NEW</span></h2>
             <ul>
                 
                 <li><strong>🙈 Hidden 隐藏代码块</strong>：<code>```(hidden)</code> <code>```(hidden.class#id)</code> 语法，渲染为 display:none!important 的隐藏 pre 标签，配合 iframe:pre 可「阅后即焚」式预览</li>
@@ -75,6 +76,7 @@
                 <li><strong>字帖</strong>：田字格/米字格/拼音格三种字帖，SVG 辅助线</li>
                 <li><strong>🔗 链接 target 语法</strong> <span class="badge badge-new">NEW</span>：<code>[文本](url){target=_blank}</code> 支持新窗口/当前窗口跳转，工具栏链接对话框支持 target 选择</li>
                 <li><strong>🖌️ 画布涂鸦 Canvas Graffiti</strong> <span class="badge badge-new">NEW</span>：工具栏「涂鸦」按钮打开画布面板，手绘画作/标注/签名；画笔/橡皮互斥切换、颜色与快捷色板、粗细、橡皮大小、撤销/恢复、缩放（放大/缩小/重置 + 百分比）、对齐与名称；点击已生成图片可重新编辑；弹窗最大宽度 95% 适配小屏</li>
+                <li><strong>🎠 Banner 轮播图</strong> <span class="badge badge-new">NEW</span>：工具栏「插入 Banner」按钮，使用 <code>[[banner width height]] ... [[/banner]]</code> 语法插入自动轮播图；支持自动播放 / 悬停暂停 / 箭头 / 圆点 / 触摸滑动，图片始终铺满容器（<code>object-fit:cover</code>），且与画布涂鸦图片一样不触发拖拽编辑</li>
             </ul>
         </div>
 
@@ -297,6 +299,17 @@ func main() {
 ```
 
 ---
+
+## 三·五、🎠 Banner 轮播图 <span class="badge badge-new">NEW v1.17.28</span>
+
+> 使用 `[[banner]] ... [[/banner]]` 插入轮播图，支持自动播放、箭头、圆点、触摸滑动，图片始终铺满容器。
+> 完整示例见 `md/full.md`（本页通过 HTTP 访问时会自动加载该文件）。
+
+[[banner width="100%" height="320px"]]
+{url:"https://picsum.photos/id/1015/1200/500",title:"山川河流",desc:"大自然的鬼斧神工"},
+{url:"https://picsum.photos/id/1016/1200/500",title:"峡谷风光",desc:"深邃的峡谷"},
+{url:"https://picsum.photos/id/1018/1200/500",title:"雪山湖泊",desc:"雪山倒映湖面"}
+[[/banner]]
 
 ## 四、代码块属性扩展 <span class="badge badge-new">NEW v1.17.27</span>
 
@@ -1502,7 +1515,13 @@ xfEditor 持续迭代，致力于为开发者和内容创作者提供最优秀�
         var testEditor;
 
         $(function() {
-            testEditor = xfEditor("test-xfEditor", {
+            // 优先加载最完整的示例 md/full.md（含 Banner 轮播图等全部功能）；
+            // 若以 file:// 直接打开导致 fetch 失败，则回退到本页内嵌的示例内容。
+            function initEditor(md) {
+                if (typeof md === "string" && md.length) {
+                    $("#test-xfEditor textarea").val(md);
+                }
+                testEditor = xfEditor("test-xfEditor", {
                 // ═══ 基础配置 ═══
                 width               : "100%",           // 编辑器宽度，默认 "100%"，支持百分比或像素值
                 height              : 800,              // 编辑器高度，默认 "100%"，支持百分比或像素值
@@ -1638,7 +1657,7 @@ xfEditor 持续迭代，致力于为开发者和内容创作者提供最优秀�
 
                 // ═══ 事件回调 ═══
                 onload              : function() {      // 编辑器加载完成回调，默认 function(){}
-                    console.log("✅ xfEditor v1.17.27 全部功能完整演示已加载");
+                    console.log("✅ xfEditor v1.17.28 全部功能完整演示已加载");
                 },
                 onchange            : function() {      // 编辑器内容变化回调，默认 function(){}
                     // 内容变化时触发
@@ -1673,6 +1692,13 @@ xfEditor 持续迭代，致力于为开发者和内容创作者提供最优秀�
                 onPageLoad          : function() {},    // 当前网页加载完成回调，默认 function(){}
                 onPageAllLoad       : function() {}     // 网页所有异步加载完成回调，默认 function(){}
             });
+            }
+
+            // 加载最完整的演示内容（md/full.md）；失败则回退内嵌示例内容
+            fetch("md/full.md", { cache: "no-store" })
+                .then(function(r){ return r.ok ? r.text() : Promise.reject(new Error("HTTP " + r.status)); })
+                .then(function(md){ initEditor(md); })
+                .catch(function(e){ console.warn("⚠️ 加载 md/full.md 失败，回退到内嵌示例：", e); initEditor(null); });
 
             // ════════════════════════════════════════════════════════════════════════════
             //  getHTML(options) 完整配置示例 —— 导出「可独立运行的 HTML」/ 触发浏览器下载
