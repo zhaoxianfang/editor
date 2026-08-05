@@ -1,3 +1,10 @@
+define([
+	"codemirror/lib/codemirror",
+	"jquery"
+], function (CodeMirror, $) {
+	"use strict";
+	var module = { exports: {} };
+	(function(){
 ;(function(factory) {
     "use strict";
 
@@ -27,68 +34,7 @@
 	{
         if (define.amd) // Require.js AMD 加载
         {
-            var cmModePath  = "codemirror/mode/";
-            var cmAddonPath = "codemirror/addon/";
-
-            var codeMirrorModules = [
-                "jquery", "marked", "prettify",
-                "katex", "raphael", "underscore", "flowchart",  "jqueryflowchart",  "sequenceDiagram",
-
-                "codemirror/lib/codemirror",
-                cmModePath + "css/css",
-                cmModePath + "sass/sass",
-                cmModePath + "shell/shell",
-                cmModePath + "sql/sql",
-                cmModePath + "clike/clike",
-                cmModePath + "php/php",
-                cmModePath + "xml/xml",
-                cmModePath + "markdown/markdown",
-                cmModePath + "javascript/javascript",
-                cmModePath + "htmlmixed/htmlmixed",
-                cmModePath + "gfm/gfm",
-                cmModePath + "http/http",
-                cmModePath + "go/go",
-                cmModePath + "dart/dart",
-                cmModePath + "coffeescript/coffeescript",
-                cmModePath + "nginx/nginx",
-                cmModePath + "python/python",
-                cmModePath + "perl/perl",
-                cmModePath + "lua/lua",
-                cmModePath + "r/r", 
-                cmModePath + "ruby/ruby", 
-                cmModePath + "rst/rst",
-                cmModePath + "smartymixed/smartymixed",
-                cmModePath + "vb/vb",
-                cmModePath + "vbscript/vbscript",
-                cmModePath + "velocity/velocity",
-                cmModePath + "xquery/xquery",
-                cmModePath + "yaml/yaml",
-                cmModePath + "erlang/erlang",
-                cmModePath + "jade/jade",
-
-                cmAddonPath + "edit/trailingspace", 
-                cmAddonPath + "dialog/dialog", 
-                cmAddonPath + "search/searchcursor", 
-                cmAddonPath + "search/search", 
-                cmAddonPath + "scroll/annotatescrollbar", 
-                cmAddonPath + "search/matchesonscrollbar", 
-                cmAddonPath + "display/placeholder", 
-                cmAddonPath + "edit/closetag", 
-                cmAddonPath + "fold/foldcode",
-                cmAddonPath + "fold/foldgutter",
-                cmAddonPath + "fold/indent-fold",
-                cmAddonPath + "fold/brace-fold",
-                cmAddonPath + "fold/xml-fold", 
-                cmAddonPath + "fold/markdown-fold",
-                cmAddonPath + "fold/comment-fold", 
-                cmAddonPath + "mode/overlay", 
-                cmAddonPath + "selection/active-line", 
-                cmAddonPath + "edit/closebrackets", 
-                cmAddonPath + "display/fullscreen",
-                cmAddonPath + "search/match-highlighter"
-            ];
-
-            define(codeMirrorModules, factory);
+            /* Require.js define replace */
         } 
         else 
         {
@@ -102,16 +48,7 @@
     
 }(function() {    
 
-    if (typeof define == "function" && define.amd) {
-       $          = arguments[0];
-       marked     = arguments[1];
-       prettify   = arguments[2];
-       katex      = arguments[3];
-       Raphael    = arguments[4];
-       _          = arguments[5];
-       flowchart  = arguments[6];
-       CodeMirror = arguments[9];
-   }
+    /* Require.js assignment replace */
     
     "use strict";
     
@@ -2255,12 +2192,26 @@
             });
             
             cm.on("paste", function(_cm, e) {
+                // 粘贴的图片自动转 Base64 并以涂鸦语法插入（离线能力，不依赖上传服务器）
+                var cbData = e.clipboardData || window.clipboardData;
+                if (cbData && cbData.files && cbData.files.length)
+                {
+                    if (_this.insertImageFilesAsBase64(cbData.files) > 0)
+                    {
+                        e.preventDefault();
+                        return;
+                    }
+                }
+
                 settings.onpaste.call(_this, _cm, e);
             });
             
             cm.on("drop", function(_cm, e) {
                 settings.ondrop.call(_this, _cm, e);
             });
+
+            // 图片拖拽插入（始终启用，统一转 Base64 涂鸦语法插入）
+            this.bindImageDropEvent();
             
             cm.on("copy", function(_cm, e) {
                 settings.oncopy.call(_this, _cm, e);
@@ -3205,6 +3156,10 @@
                 var $img = $(this);
                 // 画布涂鸦图片不参与图片缩放：点击用于重新编辑，且需保持 p > img + span 结构
                 if ($img.hasClass("xfeditor-canvas-graffiti-img")) {
+                    return;
+                }
+                // banner 轮播图内的图片不启用拖拽调整尺寸：点击用于切换/跳转，且需保持铺满容器
+                if ($img.closest(".xf_editor-banner").length) {
                     return;
                 }
                 if ($img.hasClass("xf_editor-img-resizable")) {
@@ -4374,9 +4329,9 @@
             //   - 先保护字符串/正则（占位符），再移除注释；
             //   - ⚠️ 关键点：必须【保留换行】。换行即语句分隔符，若像旧版那样把所有 \n
             //     直接删掉，会让上一行的 "return / ) / }" 与下一行的 "else / (" 等合并成非法
-            //     token（例如 "returnelse"），从而报 "Unexpected token 'else'" 语法错误。
+            //     token（例如 "returnelse"），从而报 “Unexpected token 'else'” 语法错误。
             //     因此这里仅做：逐行去缩进、删空行、压缩行内多余空白，语义与原始脚本完全一致。
-            //   - 通过"手动循环"还原占位符，规避一次性 replace 回调偶发的还原遗漏。
+            //   - 通过“手动循环”还原占位符，规避一次性 replace 回调偶发的还原遗漏。
             var minifyJS = function(js) {
                 var parts = [];
                 var stash = function(m) {
@@ -8424,6 +8379,348 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             if (title) header += ' title="' + String(title).replace(/"/g, "&quot;") + '"';
             header += "]]";
             return header + "\n(" + dataUri + ")\n[[/canvas]]";
+        },
+
+        /**
+         * 绑定图片拖拽事件
+         *
+         * CodeMirror 的 dragDrop 选项被显式关闭（避免文本拖动），因此它不会绑定
+         * dragover/drop，cm.on("drop") 也不会触发；这里直接在编辑区 DOM 上监听原生事件。
+         *
+         * 拖入的图片始终以 Base64 涂鸦语法插入（离线能力，不依赖上传服务器），
+         * 因此无论当前处于上传模式还是 Base64 模式都会接管图片拖拽。
+         *
+         * @returns {xfEditor} 返回 xfEditor 的实例对象
+         */
+        bindImageDropEvent : function() {
+            var _this  = this;
+            var editor = this.editor;
+            
+            if (!editor || !editor.length) return this;
+            
+            var ns     = ".xf_editor-image-drop";
+            var target = editor.find(".CodeMirror");
+            
+            if (!target.length) target = editor;
+            
+            // 判断本次拖拽是否携带文件（拖动编辑器内文本时不应高亮）
+            var hasFiles = function(dt) {
+                if (!dt) return false;
+                if (dt.files && dt.files.length) return true;
+                if (dt.types)
+                {
+                    for (var i = 0; i < dt.types.length; i++)
+                    {
+                        if (dt.types[i] === "Files") return true;
+                    }
+                }
+                return false;
+            };
+            
+            target.off(ns);
+            
+            target.on("dragover" + ns + " dragenter" + ns, function(e) {
+                var dt = e.originalEvent ? e.originalEvent.dataTransfer : e.dataTransfer;
+                
+                if (!hasFiles(dt)) return;
+                
+                // 必须阻止默认行为，浏览器才会派发 drop 事件
+                e.preventDefault();
+                e.stopPropagation();
+                
+                try { dt.dropEffect = "copy"; } catch (ex) {}
+                
+                target.addClass("xf_editor-drag-over");
+            });
+            
+            target.on("dragleave" + ns + " dragend" + ns, function(e) {
+                target.removeClass("xf_editor-drag-over");
+            });
+            
+            target.on("drop" + ns, function(e) {
+                var oe = e.originalEvent || e;
+                var dt = oe.dataTransfer;
+                
+                if (!dt) return;
+                
+                target.removeClass("xf_editor-drag-over");
+                
+                var cm = _this.cm;
+                
+                // 拖入的是本地图片文件
+                if (dt.files && dt.files.length)
+                {
+                    var images = [];
+                    
+                    for (var i = 0; i < dt.files.length; i++)
+                    {
+                        if (/^image\//i.test(dt.files[i].type || "")) images.push(dt.files[i]);
+                    }
+                    
+                    if (images.length)
+                    {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        
+                        // 把光标移动到鼠标释放的位置，保证插入点符合预期
+                        if (cm && typeof cm.coordsChar === "function")
+                        {
+                            try {
+                                var pos = cm.coordsChar({ left : oe.clientX, top : oe.clientY });
+                                if (pos) cm.setCursor(pos);
+                            } catch (ex) {}
+                        }
+                        
+                        _this.insertImageFilesAsBase64(images);
+                        
+                        return false;
+                    }
+                }
+                
+                // 拖入的是图片地址（例如从其它网页把图片拖进来）
+                var url = "";
+                
+                try {
+                    url = dt.getData("text/uri-list") || dt.getData("text/plain") || "";
+                } catch (ex) {}
+                
+                url = (url || "").trim();
+                
+                if (/^https?:\/\/.+/i.test(url) || /^data:image\//i.test(url))
+                {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    if (cm && typeof cm.coordsChar === "function")
+                    {
+                        try {
+                            var dropPos = cm.coordsChar({ left : oe.clientX, top : oe.clientY });
+                            if (dropPos) cm.setCursor(dropPos);
+                        } catch (ex2) {}
+                    }
+                    
+                    var title = "图片";
+                    
+                    if (!/^data:/i.test(url))
+                    {
+                        title = (url.split("?")[0].split("/").pop() || "图片").replace(/\.[^.]+$/, "") || "图片";
+                    }
+                    
+                    _this.imageUrlToBase64(url, function(dataUri) {
+                        _this.insertBase64Canvas(dataUri, title);
+                        xfEditor.notify("图片已转换为 Base64 并插入。", "success");
+                    });
+                    
+                    return false;
+                }
+            });
+            
+            return this;
+        },
+
+        /**
+         * 获取当前图片处理模式
+         *
+         * - "upload" : 已开启 imageUpload 且配置了非空的 imageUploadURL，
+         *              本地图片/文件会被上传到 imageUploadURL 指向的服务器地址。
+         * - "base64" : 其余所有情况（未开启 imageUpload，或开启了但 imageUploadURL
+         *              未配置 / 配置为空），图片统一转成 Base64 并以涂鸦语法插入，
+         *              不依赖任何服务器上传能力。
+         *
+         * 无论处于哪种模式，「添加图片」对话框都始终可用，并且本地上传按钮始终显示，
+         * 用户既可以通过图片地址插入，也可以选择本地文件。
+         *
+         * @returns {String} "upload" | "base64"
+         */
+        getImageMode : function() {
+            var settings = this.settings || {};
+            var url      = settings.imageUploadURL;
+            var hasUrl   = (typeof url === "string") && url.trim() !== "";
+            return (settings.imageUpload && hasUrl) ? "upload" : "base64";
+        },
+
+        /**
+         * 判断当前是否处于「本地 Base64 图片模式」
+         * 即未开启 imageUpload，或虽开启但未配置有效的 imageUploadURL。
+         *
+         * 兼容历史调用方：原实现要求必须开启 imageUpload 才返回 true，
+         * 新版调整为「未配置有效上传地址即视为 Base64 降级模式」，
+         * 保证未开启 imageUpload 时也能通过本地文件/地址转 Base64 插入图片。
+         *
+         * @returns {Boolean}
+         */
+        isImageBase64Fallback : function() {
+            return this.getImageMode() === "base64";
+        },
+
+        /**
+         * 把 File / Blob 对象转换为 Base64 Data URI
+         * 涂鸦语法渲染时仅接受 png/jpeg/webp，其它格式（gif/bmp 等）统一转码为 png
+         *
+         * @param   {File|Blob} file     图片文件对象
+         * @param   {Function}  callback 成功回调 function(dataUri, file)
+         * @param   {Function}  [onError] 失败回调 function(errorMessage)
+         * @returns {void}
+         */
+        imageFileToBase64 : function(file, callback, onError) {
+            var _this = this;
+            var fail  = onError || function(msg) { xfEditor.notify(msg, "error", 5000); };
+
+            if (!file) { fail("图片文件为空。"); return; }
+            if (typeof FileReader === "undefined") { fail("当前浏览器不支持 FileReader，无法转换 Base64。"); return; }
+            if (!/^image\//i.test(file.type || "")) { fail("只允许插入图片文件。"); return; }
+
+            var reader = new FileReader();
+            reader.onerror = function() { fail("图片读取失败，请重试。"); };
+            reader.onload  = function(e) {
+                var dataUri = e.target.result;
+                // 渲染器只放行 png/jpeg/webp，其它格式转码为 png
+                if (/^data:image\/(png|jpeg|webp);base64,/i.test(dataUri)) {
+                    callback.call(_this, dataUri, file);
+                } else {
+                    _this._transcodeToPng(dataUri, function(pngUri) {
+                        callback.call(_this, pngUri, file);
+                    }, fail);
+                }
+            };
+            reader.readAsDataURL(file);
+        },
+
+        /**
+         * 把任意图片地址（远程 URL / data URI / blob URL）转换为 Base64 Data URI
+         * 远程图片依赖目标服务器的 CORS 响应头，跨域失败时回调 onError
+         *
+         * @param   {String}   url       图片地址
+         * @param   {Function} callback  成功回调 function(dataUri)
+         * @param   {Function} [onError] 失败回调 function(errorMessage)
+         * @returns {void}
+         */
+        imageUrlToBase64 : function(url, callback, onError) {
+            var _this = this;
+            var fail  = onError || function(msg) { xfEditor.notify(msg, "error", 5000); };
+
+            if (!url) { fail("图片地址不能为空。"); return; }
+
+            // 已经是合规 Base64，直接返回
+            if (/^data:image\/(png|jpeg|webp);base64,/i.test(url)) { callback.call(_this, url); return; }
+            // 其它类型 data URI（gif/bmp/svg 等）走转码
+            if (/^data:image\//i.test(url)) { _this._transcodeToPng(url, function(u){ callback.call(_this, u); }, fail); return; }
+
+            _this._transcodeToPng(url, function(dataUri) {
+                callback.call(_this, dataUri);
+            }, function() {
+                fail("远程图片转换 Base64 失败（可能是目标服务器未开启跨域 CORS 支持）。");
+            });
+        },
+
+        /**
+         * 通过 canvas 把图片转码为 PNG Data URI（内部方法）
+         *
+         * @param   {String}   src       图片地址或 data URI
+         * @param   {Function} callback  成功回调 function(pngDataUri)
+         * @param   {Function} onError   失败回调 function(errorMessage)
+         * @returns {void}
+         */
+        _transcodeToPng : function(src, callback, onError) {
+            var img = new Image();
+            // 远程图片需要匿名跨域才能避免 canvas 被污染（toDataURL 会抛安全错误）
+            if (!/^data:/i.test(src)) img.crossOrigin = "anonymous";
+            img.onload = function() {
+                try {
+                    var canvas = document.createElement("canvas");
+                    canvas.width  = img.naturalWidth  || img.width;
+                    canvas.height = img.naturalHeight || img.height;
+                    if (!canvas.width || !canvas.height) { onError("图片尺寸无效，转换失败。"); return; }
+                    canvas.getContext("2d").drawImage(img, 0, 0);
+                    callback(canvas.toDataURL("image/png"));
+                } catch (err) {
+                    onError("图片转换 Base64 失败：" + (err && err.message ? err.message : "画布被跨域数据污染"));
+                }
+            };
+            img.onerror = function() { onError("图片加载失败，请检查地址是否有效。"); };
+            img.src = src;
+        },
+
+        /**
+         * 以涂鸦语法把 Base64 图片插入编辑器
+         * [[canvas:center title="图片名称"]]
+         * (data:image/png;base64,xxxx)
+         * [[/canvas]]
+         *
+         * @param   {String} dataUri 图片 Base64 Data URI
+         * @param   {String} [title] 图片名称
+         * @param   {String} [align] 对齐方式 left|center|right，默认 center
+         * @returns {xfEditor}       返回 xfEditor 的实例对象
+         */
+        insertBase64Canvas : function(dataUri, title, align) {
+            var cm = this.cm;
+            if (!cm || !dataUri) return this;
+
+            align = align || "center";
+
+            // 标题会写进 [[canvas ... title="xxx"]] 开标签，其解析正则为 [^\]]*
+            // 因此需要剔除 ] 与换行，避免文件名把开标签截断导致渲染失败
+            var safeTitle = String(title || "").replace(/[\]\r\n]/g, " ").trim();
+
+            var block  = this._buildCanvasBlock(dataUri, align, safeTitle);
+            var cursor = cm.getCursor();
+            // 涂鸦语法必须独占整行，光标不在行首时先补换行
+            var prefix = (cursor.ch > 0) ? "\n" : "";
+
+            cm.focus();
+            cm.replaceSelection(prefix + block + "\n");
+
+            return this;
+        },
+
+        /**
+         * 把图片文件转换为 Base64 并以涂鸦语法插入（供拖拽 / 粘贴 / 对话框复用）
+         *
+         * @param   {File}   file    图片文件对象
+         * @param   {String} [align] 对齐方式，默认 center
+         * @returns {void}
+         */
+        insertImageFileAsBase64 : function(file, align) {
+            var _this    = this;
+            var settings = this.settings || {};
+
+            // 校验扩展名白名单
+            var formats = settings.imageFormats || ["jpg", "jpeg", "gif", "png", "bmp", "webp"];
+            var isImage = new RegExp("(\\.(" + formats.join("|") + "))$", "i");
+            var name    = file.name || "";
+            if (name && !isImage.test(name)) {
+                xfEditor.notify("只允许插入图片文件，允许的格式有：" + formats.join(", "), "warning");
+                return;
+            }
+
+            // 去掉扩展名作为图片名称
+            var title = name.replace(/\.[^.]+$/, "") || "图片";
+
+            this.imageFileToBase64(file, function(dataUri) {
+                _this.insertBase64Canvas(dataUri, title, align);
+                xfEditor.notify("图片已转换为 Base64 并插入。", "success");
+            });
+        },
+
+        /**
+         * 处理拖拽 / 粘贴进来的文件列表，逐个转 Base64 插入
+         *
+         * @param   {FileList|Array} files 文件列表
+         * @returns {Number}               实际处理的图片数量
+         */
+        insertImageFilesAsBase64 : function(files) {
+            if (!files || !files.length) return 0;
+
+            var count = 0;
+            for (var i = 0; i < files.length; i++) {
+                var file = files[i];
+                if (file && /^image\//i.test(file.type || "")) {
+                    this.insertImageFileAsBase64(file);
+                    count++;
+                }
+            }
+
+            return count;
         }
     };
     xfEditor.fn.init.prototype = xfEditor.fn; 
@@ -14761,3 +15058,6 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
     return xfEditor;
 
 }));
+	})();
+	return module.exports;
+});

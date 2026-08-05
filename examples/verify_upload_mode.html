@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>verify upload mode</title>
+<link rel="stylesheet" href="../css/xf_editor.css" />
+<script src="../lib/codemirror.min.js"></script>
+<script src="../xf_editor.min.js"></script>
+</head>
+<body>
+<textarea id="editor-container"></textarea>
+<script>
+window.onload = function(){
+  window.testEditor = xfEditor("editor-container", {
+    path: "../lib/",
+    pluginPath: "../plugins/",
+    imageUpload: true,
+    // 需求：开启 imageUpload 但不配置 imageUploadURL（或为空）时，
+    // 拖拽图片 / 本地上传 / 远程图片都会被转成 base64 涂鸦块插入。
+    imageUploadURL: "",
+    imageFormats: ["jpg","jpeg","gif","png","bmp","webp"]
+  });
+};
+</script>
+</body>
+</html>

@@ -2189,6 +2189,37 @@
             });
             
             cm.on("drop", function(_cm, e) {
+                // ★ 拖拽图片到编辑器：开启 imageUpload 但无上传地址时，
+                //   将图片读取为 base64 并插入涂鸦块（替代默认插入文件路径的行为）
+                var hasUploadURL = !!(settings.imageUpload && settings.imageUploadURL && String(settings.imageUploadURL).trim() !== "");
+                if (settings.imageUpload && !hasUploadURL && e && e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                    var imgFiles = [];
+                    for (var fi = 0; fi < e.dataTransfer.files.length; fi++) {
+                        if (/^image\//.test(e.dataTransfer.files[fi].type)) {
+                            imgFiles.push(e.dataTransfer.files[fi]);
+                        }
+                    }
+                    if (imgFiles.length > 0) {
+                        if (e.preventDefault) e.preventDefault();
+                        if (typeof _cm !== "undefined" && _cm && typeof _cm.getCursor === "function") {
+                            var dropPos = _cm.coordsChar ? _cm.coordsChar({ left: e.clientX, top: e.clientY }, "page") : _cm.getCursor();
+                            if (typeof _cm.setCursor === "function") _cm.setCursor(dropPos);
+                        }
+                        var pending = imgFiles.length;
+                        imgFiles.forEach(function(f) {
+                            _this.fileToDataURL(f, function(err, dataUri) {
+                                pending--;
+                                if (!err && dataUri) {
+                                    var block = _this._buildCanvasBlock(dataUri, "center", f.name || "");
+                                    _cm.replaceSelection("\n" + block + "\n");
+                                } else if (pending === 0) {
+                                    xfEditor.notify("图片读取失败，请重试。", "error", 5000);
+                                }
+                            });
+                        });
+                        return;
+                    }
+                }
                 settings.ondrop.call(_this, _cm, e);
             });
             
@@ -8358,6 +8389,43 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             if (title) header += ' title="' + String(title).replace(/"/g, "&quot;") + '"';
             header += "]]";
             return header + "\n(" + dataUri + ")\n[[/canvas]]";
+        },
+
+        /**
+         * 将图片（File/Blob 对象或远程 URL）读取/下载为 data URI (base64)。
+         * @param {File|Blob|string} input File/Blob 或 http(s) 图片地址
+         * @param {function} cb 回调 (err, dataUri)
+         */
+        fileToDataURL: function(input, cb) {
+            cb = cb || function() {};
+            try {
+                if (input && (typeof File !== "undefined" && input instanceof File || typeof Blob !== "undefined" && input instanceof Blob)) {
+                    var reader = new FileReader();
+                    reader.onload = function(e) { cb(null, e.target.result); };
+                    reader.onerror = function() { cb(new Error("read file failed")); };
+                    reader.readAsDataURL(input);
+                    return;
+                }
+                if (typeof input === "string" && !/^data:/.test(input)) {
+                    // 远程图片：尝试 fetch 转 base64（同源或允许跨域时有效）
+                    if (typeof fetch !== "function") { cb(new Error("fetch not supported")); return; }
+                    fetch(input).then(function(resp) {
+                        if (!resp.ok) throw new Error("http " + resp.status);
+                        return resp.blob();
+                    }).then(function(blob) {
+                        var reader = new FileReader();
+                        reader.onload = function(e) { cb(null, e.target.result); };
+                        reader.onerror = function() { cb(new Error("read blob failed")); };
+                        reader.readAsDataURL(blob);
+                    }).catch(function(err) {
+                        cb(err || new Error("fetch failed"));
+                    });
+                    return;
+                }
+                cb(new Error("invalid input"));
+            } catch (e) {
+                cb(e);
+            }
         }
     };
     xfEditor.fn.init.prototype = xfEditor.fn; 
