@@ -30,7 +30,6 @@
     <div id="editor">
         <textarea style="display:none;"># Hello xfEditor</textarea>
     </div>
-    <script src="js/jquery.min.js"></script>
     <script src="xf_editor.min.js"></script>
     <script type="text/javascript">
         var editor = xfEditor("editor", {
@@ -72,13 +71,14 @@ v1.17.27 新增 `xf_editor.preview.min.js` 打包文件，合并了预览模式�
 <script src="xf_editor.preview.min.js"></script>
 
 <!-- 方式二：兼容旧模式 — 分别引入（10 个 HTTP 请求） -->
-<script src="js/jquery.min.js"></script>
 <script src="lib/marked.min.js"></script>
 ...
 <script src="xf_editor.min.js"></script>
 ```
 
-**打包文件包含：** jQuery + marked + prettify + raphael + underscore + sequence-diagram + flowchart + jquery.flowchart + echarts + xfEditor
+**打包文件包含：** marked + prettify + raphael + underscore + sequence-diagram + flowchart + echarts + xfEditor
+
+> 无需 jQuery：编辑器已内置零依赖 micro-DOM。
 
 ---
 
@@ -991,7 +991,7 @@ editor.clearDraft();           // 清除草稿
 
 ```javascript
 xfEditor.markdownToHTML(id, options); // 渲染 Markdown 为 HTML
-xfEditor.$;                          // jQuery/Zepto 对象
+xfEditor.dom;                        // 内置 micro-DOM（xfEditor.$ / xfEditor.$dom 为其别名）
 xfEditor.marked;                     // marked 解析器
 xfEditor.defaults;                   // 全局默认配置
 ```

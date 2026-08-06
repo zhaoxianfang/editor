@@ -3,7 +3,7 @@
 <head>
     <link rel="shortcut icon" href="../images/favicon.ico" type="image/x-icon">
     <meta charset="utf-8" />
-    <title>jQuery 3.7 兼容性测试 | xfEditor</title>
+    <title>jQuery 共存兼容性测试 | xfEditor</title>
     <link rel="stylesheet" href="../css/xf_editor.min.css" />
     <style>
         body { padding: 20px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
@@ -39,7 +39,8 @@
     </style>
 </head>
 <body>
-    <h1>🧪 jQuery 3.7.1 兼容性测试页面</h1>
+    <h1>🧪 jQuery 共存兼容性测试</h1>
+    <p class="test-result info">xfEditor 已零 jQuery 依赖（内置 micro-DOM）。本页用于验证：当宿主页面自带 jQuery 时，编辑器不覆盖页面的 $ / jQuery，两者互不干扰、正常共存。</p>
     
     <div class="test-section">
         <div class="test-title">测试 1: jQuery 版本检查</div>

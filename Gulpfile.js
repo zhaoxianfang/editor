@@ -98,8 +98,8 @@ gulp.task("amd", function() {
         '            var cmAddonPath = "codemirror/addon/";', 
         '',
         '            var codeMirrorModules = [',
-        '                "jquery", "marked", "prettify",',
-        '                "katex", "raphael", "underscore", "flowchart",  "jqueryflowchart",  "sequenceDiagram",',
+        '                "marked", "prettify",',
+        '                "katex", "raphael", "underscore", "flowchart", "sequenceDiagram",',
         '',
         '                "codemirror/lib/codemirror",',
         '                cmModePath + "css/css",',
@@ -160,14 +160,14 @@ gulp.task("amd", function() {
     
     var replaceText2 = [
         "if (typeof define == \"function\" && define.amd) {",
-        "       $          = arguments[0];",
-        "       marked     = arguments[1];",
-        "       prettify   = arguments[2];",
-        "       katex      = arguments[3];",
-        "       Raphael    = arguments[4];",
-        "       _          = arguments[5];",
-        "       flowchart  = arguments[6];",
-        "       CodeMirror = arguments[9];",
+        "       marked     = arguments[0];",
+        "       prettify   = arguments[1];",
+        "       katex      = arguments[2];",
+        "       Raphael    = arguments[3];",
+        "       _          = arguments[4];",
+        "       flowchart  = arguments[5];",
+        "       sequenceDiagram = arguments[6];",
+        "       CodeMirror = arguments[7];",
         "   }"
     ].join("\r\n");
     

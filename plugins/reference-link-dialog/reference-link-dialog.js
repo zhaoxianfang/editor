@@ -135,7 +135,7 @@
 
 		} else { // for Sea.js
 			define(function(require) {
-                var xfEditor = require("./../../xfEditor");
+                var xfEditor = require("./../../xf_editor");
                 factory(xfEditor);
             });
 		}

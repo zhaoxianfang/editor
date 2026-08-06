@@ -13,7 +13,7 @@
 
 	var factory = function (exports) {
 
-		var $            = jQuery;
+		var $            = (exports && exports.dom) ? exports.dom : (typeof jQuery !== "undefined" ? jQuery : null);
 		var pluginName   = "goto-line-dialog";
 
 		var langs = {
@@ -144,7 +144,7 @@
 
 		} else { // for Sea.js
 			define(function(require) {
-                var xfEditor = require("./../../xfEditor");
+                var xfEditor = require("./../../xf_editor");
                 factory(xfEditor);
             });
 		}

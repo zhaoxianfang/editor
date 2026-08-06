@@ -391,7 +391,7 @@
         }
     }
     
-    /* ── 流程图暗色（★ v1.17.31 全面升级） ── */
+    /* ── 流程图暗色（★ v1.17.37 修复：fc-type-* 注入到 <g> 组 + operation 双矩形） ── */
     .flowchart {
         background: #0f1a2e;
         border-radius: 4px;
@@ -401,67 +401,73 @@
             background: #0f1a2e;
         }
 
-        /* ★ 节点类型区分 */
-        /* 开始/结束（圆角矩形） */
-        .start, .end {
+        /* ★ 开始/结束（圆角矩形） — JS 注入 fc-type-start/fc-type-end 到 <g> + start-element/end-element */
+        .fc-type-start, .start-element,
+        .fc-type-end, .end-element {
             rect, path {
                 fill: #166534;
-                stroke: #22c55e;
+                stroke: #22c55e !important;
             }
             text {
                 fill: #bbf7d0;
             }
         }
 
-        /* 操作（矩形） */
-        .operation {
-            rect, path {
+        /* ★ 操作（矩形） — JS 注入 fc-type-operation 到 <g> */
+        .fc-type-operation {
+            /* outer rect */
+            > rect {
                 fill: #1e3a5f;
-                stroke: #3b82f6;
+                stroke: #3b82f6 !important;
+            }
+            /* inner rect（v1.17.37 JS 后处理创建的 fc-operation-inner） */
+            .fc-operation-inner {
+                fill: #1e3a5f;
+                stroke: #3b82f6 !important;
             }
             text {
                 fill: #bfdbfe;
             }
         }
 
-        /* 条件/判断（菱形） */
-        .condition {
+        /* ★ 条件/判断（菱形） */
+        .fc-type-condition {
             rect, path {
                 fill: #5c3d0a;
-                stroke: #eab308;
+                stroke: #eab308 !important;
             }
             text {
                 fill: #fef08a;
             }
         }
 
-        /* 输入输出（平行四边形） */
-        .inputoutput {
+        /* ★ 输入输出（平行四边形） */
+        .fc-type-inputoutput {
             rect, path {
                 fill: #3b1f6e;
-                stroke: #8b5cf6;
+                stroke: #8b5cf6 !important;
             }
             text {
                 fill: #ddd6fe;
             }
         }
 
-        /* 子流程（带双竖线矩形） */
-        .subroutine {
+        /* ★ 子流程（带双竖线矩形） */
+        .fc-type-subroutine {
             rect, path {
                 fill: #1e293b;
-                stroke: #64748b;
+                stroke: #64748b !important;
             }
             text {
                 fill: #e2e8f0;
             }
         }
 
-        /* 并行 */
-        .parallel {
+        /* ★ 并行 */
+        .fc-type-parallel {
             rect, path {
                 fill: #1e3a3a;
-                stroke: #14b8a6;
+                stroke: #14b8a6 !important;
             }
             text {
                 fill: #ccfbf1;
@@ -1036,22 +1042,27 @@
             background: #0f1a2e;
         }
 
-        /* ★ 开始/结束节点 */
-        .start, .end {
+        /* ★ 开始/结束节点 — JS 注入 fc-type-start/fc-type-end 到 <g> + start-element/end-element */
+        .fc-type-start, .start-element,
+        .fc-type-end, .end-element {
             rect, path {
                 fill: #166534;
-                stroke: #22c55e;
+                stroke: #22c55e !important;
             }
             text {
                 fill: #bbf7d0;
             }
         }
 
-        /* ★ 操作节点 */
-        .operation {
-            rect, path {
+        /* ★ 操作节点 — JS 注入 fc-type-operation 到 <g> + 内矩形 fc-operation-inner */
+        .fc-type-operation {
+            > rect {
                 fill: #1e3a5f;
-                stroke: #3b82f6;
+                stroke: #3b82f6 !important;
+            }
+            .fc-operation-inner {
+                fill: #1e3a5f;
+                stroke: #3b82f6 !important;
             }
             text {
                 fill: #bfdbfe;
@@ -1059,10 +1070,10 @@
         }
 
         /* ★ 条件/判断节点（菱形） */
-        .condition {
+        .fc-type-condition {
             rect, path {
                 fill: #5c3d0a;
-                stroke: #eab308;
+                stroke: #eab308 !important;
             }
             text {
                 fill: #fef08a;
@@ -1070,10 +1081,10 @@
         }
 
         /* ★ 输入输出节点 */
-        .inputoutput {
+        .fc-type-inputoutput {
             rect, path {
                 fill: #3b1f6e;
-                stroke: #8b5cf6;
+                stroke: #8b5cf6 !important;
             }
             text {
                 fill: #ddd6fe;
@@ -1081,10 +1092,10 @@
         }
 
         /* ★ 子流程节点 */
-        .subroutine {
+        .fc-type-subroutine {
             rect, path {
                 fill: #1e293b;
-                stroke: #64748b;
+                stroke: #64748b !important;
             }
             text {
                 fill: #e2e8f0;
@@ -1092,10 +1103,10 @@
         }
 
         /* ★ 并行节点 */
-        .parallel {
+        .fc-type-parallel {
             rect, path {
                 fill: #1e3a3a;
-                stroke: #14b8a6;
+                stroke: #14b8a6 !important;
             }
             text {
                 fill: #ccfbf1;

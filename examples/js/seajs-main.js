@@ -1,12 +1,18 @@
 define(function(require){
-	var $ = require("jquery");
 	var xfEditor = require("xf_editor");
-    
+	// 使用编辑器内置的 micro-DOM，无需 jQuery
+	var $ = xfEditor.dom;
+
     require("../../src/js/languages/en"); // 加载英语语言包
-    
+
     console.log($, xfEditor);
-                
-    $.get("md/full.md", function(md){
+
+    var testEditor;
+
+    // 原生 fetch 替代 $.get
+    fetch("md/full.md").then(function(res){
+        return res.text();
+    }).then(function(md){
         testEditor = xfEditor("test-xfEditor", {
             width: "90%",
             height: 640,
@@ -32,45 +38,45 @@ define(function(require){
         });
     });
 
-    $("#show-btn").bind('click', function(){
+    $("#show-btn").on('click', function(){
         testEditor.show();
     });
 
-    $("#hide-btn").bind('click', function(){
+    $("#hide-btn").on('click', function(){
         testEditor.hide();
     });
 
-    $("#get-md-btn").bind('click', function(){
+    $("#get-md-btn").on('click', function(){
         console.log(testEditor.getMarkdown());
         xfEditor.notify("Markdown 内容已输出到控制台（F12 查看）", "success", 3000);
     });
 
-    $("#get-html-btn").bind('click', function() {
+    $("#get-html-btn").on('click', function() {
         console.log(testEditor.getHTML());
         xfEditor.notify("HTML 内容已输出到控制台（F12 查看）", "success", 3000);
-    });                
+    });
 
-    $("#watch-btn").bind('click', function() {
+    $("#watch-btn").on('click', function() {
         testEditor.watch();
-    });                 
+    });
 
-    $("#unwatch-btn").bind('click', function() {
+    $("#unwatch-btn").on('click', function() {
         testEditor.unwatch();
-    });              
+    });
 
-    $("#preview-btn").bind('click', function() {
+    $("#preview-btn").on('click', function() {
         testEditor.previewing();
     });
 
-    $("#fullscreen-btn").bind('click', function() {
+    $("#fullscreen-btn").on('click', function() {
         testEditor.fullscreen();
     });
 
-    $("#show-toolbar-btn").bind('click', function() {
+    $("#show-toolbar-btn").on('click', function() {
         testEditor.showToolbar();
     });
 
-    $("#close-toolbar-btn").bind('click', function() {
+    $("#close-toolbar-btn").on('click', function() {
         testEditor.hideToolbar();
     });
 });

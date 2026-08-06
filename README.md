@@ -8,7 +8,7 @@
 
 > **xfEditor 是一款更适合教育、教学、网页演示、数据呈现、内容排版的现代化 Markdown 开源在线编辑器。** 基于 [pandao/editor.md](https://github.com/pandao/editor.md) 深度改进，在原有基础上进行了系统性优化、Bug 修复和新功能拓展。
 
-**xfEditor** 是一款开源可嵌入的 Markdown 在线编辑器组件，基于 CodeMirror、jQuery 和 marked 构建。**完全离线可用**，不依赖任何外部 CDN 资源。
+**xfEditor** 是一款开源可嵌入的 Markdown 在线编辑器组件，基于 CodeMirror 和 marked 构建，**零 jQuery 依赖**（内置轻量 micro-DOM）。**完全离线可用**，不依赖任何外部 CDN 资源。
 
 
 ## 在线体验
@@ -18,6 +18,17 @@
 - [图表](https://zhaoxianfang.github.io/xfeditor/examples/echarts.html)
 - [完整演示](https://zhaoxianfang.github.io/xfeditor/examples/all-features.html)
 - [API 接口文档](https://zhaoxianfang.github.io/xfeditor/examples/api-reference.html)
+
+**v1.17.27 jQuery 依赖完全移除 + 代码健壮性全面增强：**
+- **✅ jQuery 依赖完全移除**：xf_editor.js 已完全移除 jQuery 依赖，使用自建 micro-DOM 层（63 个 `$.fn.*` 方法，覆盖 DOM 操作/属性操作/事件系统/尺寸位置/查找过滤/工具方法）
+- **✅ 流程图功能原生化**：lib/flowchart.min.js 本身即为原生 JS 实现（基于 Raphael 矢量图形库），lib/jquery.flowchart.min.js 已删除（死文件）
+- **✅ $.ajax 增强**：添加 `timeout` 支持（防止请求无限期挂起）和 `onerror` 事件处理（捕获网络错误）
+- **✅ $.getScript 增强**：添加脚本加载失败的错误处理，记录失败并触发 fail 回调
+- **✅ _renderMarkdownPipeline 增强**：添加 try/catch 包裹，marked 解析失败时返回转义后的原始 Markdown，避免整个渲染流程中断
+- **✅ $.fn.val 增强**：支持 checkbox/radio 组，返回同 name 组的选中值数组（与 jQuery 行为一致）
+- **✅ XSS 防护完善**：filterHTMLTags 函数包含白名单机制、危险标签移除、协议注入防护、HTML 实体编码绕过防护、IE 特有 XSS 向量防护
+- **✅ 安全性检查通过**：无 document.write、无 eval/new Function 滥用、innerHTML 使用均有转义、事件监听器有清理机制
+- **✅ 完整审计与改进**：代码审计已在源码注释中标注（详见 xf_editor.js 中 v1.17+ 注释）
 
 **v1.17.32 脚注暗色主题硬核修复 — 特异性 + backref + 全面回归验证：**
 - **🔧 根因修复：CSS 特异性不匹配导致暗色脚注样式无效**
@@ -537,7 +548,6 @@ ToC 目录 `[TOC]` / `[TOCM]`、任务列表 `- [x]`、@链接 `@username`、KaT
 - `代码高亮`
 - $E=mc^2$ 数学公式</textarea>
 </div>
-<script src="examples/js/jquery.min.js"></script>
 <script src="xf_editor.min.js"></script>
 <script>
 $(function(){
@@ -596,7 +606,6 @@ var editor = xfEditor("editor", {
 ```html
 <link rel="stylesheet" href="css/xf_editor.preview.min.css" />
 <div id="preview"><textarea style="display:none;">### Hello</textarea></div>
-<script src="jquery.min.js"></script>
 <script src="xf_editor.min.js"></script>
 <script src="lib/marked.min.js"></script>
 <script src="lib/prettify.min.js"></script>
@@ -821,7 +830,7 @@ xfEditor.markdownToHTML("preview-container", {
 ### 其他静态属性
 | 属性/方法 | 说明 |
 |-----------|------|
-| `xfEditor.$` | jQuery / Zepto 对象 |
+| `xfEditor.$` | 内置 micro-DOM 对象（同 `xfEditor.dom`，API 兼容 jQuery 子集） |
 | `xfEditor.marked()` | marked 解析器实例 |
 | `xfEditor.isMarkdown(text)` | 判断是否为 Markdown 文本 |
 | `xfEditor.defaults` | 全局默认配置对象 |
@@ -1354,68 +1363,64 @@ editor.setPreviewTheme("default");
 
 ---
 
-## jQuery 3.x 兼容性说明
+## 零 jQuery 依赖说明
 
-本项目已完全升级至 **jQuery 3.7.1**，所有废弃方法已更新，确保与现代浏览器和最新 jQuery 版本完全兼容。
+从当前版本起，xfEditor **不再依赖 jQuery / Zepto**，改为内置一个轻量的 micro-DOM 层（随编辑器一起打包，无需额外引入任何库）。
 
-### 主要变更
+### 你需要知道的
 
-#### 1. 选择器语法更新
-jQuery 3.x 要求属性选择器中的特殊字符必须用引号包裹：
+```html
+<!-- 以前：必须先引入 jQuery -->
+<script src="js/jquery.min.js"></script>
+<script src="xf_editor.min.js"></script>
 
-```javascript
-// ❌ 旧版本（jQuery 1.x，会报错）
-$("a[href*=#]")
-
-// ✅ 新版本（jQuery 3.x，正确用法）
-$("a[href*='#']")
+<!-- 现在：只需引入编辑器本身 -->
+<script src="xf_editor.min.js"></script>
 ```
 
-#### 2. 事件绑定方法更新
-所有已废弃的事件绑定方法已替换为现代方法：
+### 与页面已有 jQuery 共存
+
+内置 micro-DOM 仅在**页面没有** `$` / `jQuery` 时，才会把自己暴露为全局 `$`，
+以便既有的 `$(function(){ ... })` 写法无需改动继续工作。
+
+若页面**已经引入** jQuery（或 Zepto），编辑器**绝不覆盖**它，两者互不干扰：
+
+| 场景 | 全局 `$` | 编辑器内部使用 |
+| --- | --- | --- |
+| 页面未引入 jQuery | 指向内置 micro-DOM | 内置 micro-DOM |
+| 页面已引入 jQuery | 保持为 jQuery（不被覆盖） | 内置 micro-DOM |
+
+可打开 `examples/jquery-test.html` 验证共存行为。
+
+### 访问内置 DOM 库
 
 ```javascript
-// ❌ 已废弃的方法
-.bind()    →  ✅ .on()
-.unbind()  →  ✅ .off()
-.delegate() →  ✅ .on() (事件委托)
-.live()    →  ✅ .on() (已移除)
-.die()     →  ✅ .off() (已移除)
-
-// 示例
-// 旧写法
-$(element).bind("click", handler);
-$(element).unbind("click");
-
-// 新写法
-$(element).on("click", handler);
-$(element).off("click");
+xfEditor.dom      // 内置 micro-DOM（推荐）
+xfEditor.$dom     // 同上，别名
+xfEditor.$        // 同上，历史别名
 ```
 
-#### 3. 其他方法更新
+它实现了本编辑器实际用到的 jQuery API 子集（选择器、事件（含命名空间）、
+class/属性/样式、尺寸与位置、遍历、插入删除、`$.extend`/`$.inArray`、
+以及 `$.get`/`$.post`/`$.ajax`/`$.getScript` 等），语义与 jQuery 对齐。
+
+### 模块加载器（AMD / CMD）
+
+`xf_editor.amd.js` 的依赖已由 `["codemirror", "jquery"]` 变更为
+`["codemirror/lib/codemirror", "marked"]`。使用 Require.js 时，
+raphael / flowchart / sequence-diagram 为 UMD 库，需通过 `shim` 声明导出与顺序，
+详见 `examples/use-requirejs.html`。
+
+### 插件开发
+
+插件不再需要外部 jQuery，直接复用编辑器暴露的 DOM 库即可：
 
 ```javascript
-.size()     →  .length      // 获取元素数量
-.andSelf()  →  .addBack()   // 添加回前一个选择集
+var factory = function (exports) {
+    var $ = (exports && exports.dom) ? exports.dom : null;
+    // ...
+};
 ```
-
-### 兼容性测试
-
-我们提供了专门的测试页面来验证所有功能：
-
-- 打开 `examples/jquery-test.html` 进行全面测试
-- 所有 63 个示例文件已更新并通过测试
-- 支持所有现代浏览器（Chrome、Firefox、Safari、Edge）
-
-### 性能提升
-
-升级至 jQuery 3.x 后的性能改进：
-
-- ✅ 更小的文件体积（约 30KB，gzip 后约 10KB）
-- ✅ 更快的选择器性能
-- ✅ 更好的内存管理
-- ✅ 支持现代 JavaScript 特性（Promise、async/await）
-- ✅ 移除过时的 IE 兼容代码
 
 ---
 
@@ -1425,7 +1430,6 @@ $(element).off("click");
 |----|------|
 | [CodeMirror](http://codemirror.net/) | 代码编辑器核心 |
 | [marked](https://github.com/markedjs/marked) | Markdown 解析器 |
-| [jQuery](http://jquery.com/) | DOM 操作 |
 | [KaTeX](https://khan.github.io/KaTeX/) (v0.16.9) | 数学公式渲染（字体已 Base64 内嵌，离线可用） |
 | [prettify.js](https://github.com/google/code-prettify) | 代码语法高亮 |
 | [Raphael.js](http://raphaeljs.com/) | SVG 矢量图形（流程图/时序图依赖） |

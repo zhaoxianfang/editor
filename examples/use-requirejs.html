@@ -41,21 +41,38 @@
             requirejs.config({
                 baseUrl: "../lib/",
                 paths: {
-                    jquery          : "../examples/js/jquery.min",
                     marked          : "marked.min",
                     prettify        : "prettify.min",
                     raphael         : "raphael.min",
                     underscore      : "underscore.min",
                     flowchart       : "flowchart.min", 
-                    jqueryflowchart : "jquery.flowchart.min", 
                     sequenceDiagram : "sequence-diagram.min",
                     katex           : "../lib/katex/katex.min",
                     xf_editor       : "../xf_editor.amd" // Using xfEditor amd version for Require.js
+                },
+                // 插件/语言包内部按历史模块名 "xfEditor" 声明依赖，
+                // 用 map 把它统一重定向到 xf_editor（保证只实例化一份编辑器模块）。
+                map: {
+                    "*": { xfEditor : "xf_editor" }
+                },
+                // raphael / flowchart / sequence-diagram 均为 UMD：在 AMD 环境下它们会
+                // 注册为匿名模块而不再挂到 window，导致 sequence-diagram 找不到 Raphael。
+                // 用 shim 声明依赖顺序并导出为全局，保证互相可见。
+                shim: {
+                    raphael         : { exports : "Raphael" },
+                    underscore      : { exports : "_" },
+                    flowchart       : { deps : ["raphael"], exports : "flowchart" },
+                    sequenceDiagram : { deps : ["raphael", "underscore"], exports : "Diagram" },
+                    prettify        : { exports : "prettyPrint" }
                 },
                 waitSeconds: 30
             });
             
             var deps = [
+                "raphael",
+                "underscore",
+                "flowchart",
+                "sequenceDiagram",
                 "xf_editor", 
                 "../languages/en", 
                 "../plugins/link-dialog/link-dialog",
@@ -72,13 +89,18 @@
             
             var testEditor;
                 
-            require(deps, function(xfEditor) {
+            require(deps, function(Raphael, _, flowchart, Diagram, xfEditor) {
+
+                // 模块加载器环境下不会走全局导出分支，
+                // 这里直接取编辑器内置的 micro-DOM 作为本页的 $（无需 jQuery）
+                var $ = xfEditor.dom;
                 
                 // if enable codeFold
                 // or <link rel="stylesheet" href="../lib/codemirror/addon/fold/foldgutter.css" />
                 xfEditor.loadCSS("../lib/codemirror/addon/fold/foldgutter");
                 
-                $.get('md/full.md', function(md) {
+                // 使用编辑器内置 micro-DOM 的 AJAX，无需 jQuery
+                xfEditor.dom.get('md/full.md', function(md) {
                     testEditor = xfEditor("test-xfEditor", {
                         width: "90%",
                         height: 640,

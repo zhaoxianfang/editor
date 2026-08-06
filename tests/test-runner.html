@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>xfEditor micro-DOM API 测试</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+        }
+        
+        .test-container {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .test-results {
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        
+        .pass {
+            color: #28a745;
+        }
+        
+        .fail {
+            color: #dc3545;
+        }
+        
+        .summary {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        
+        .summary.success {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .summary.failure {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        
+        button:hover {
+            background: #0056b3;
+        }
+        
+        .performance {
+            margin-top: 20px;
+            padding: 15px;
+            background: #fff3cd;
+            border-radius: 4px;
+            border-left: 4px solid #ffc107;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 xfEditor micro-DOM API 测试套件</h1>
+    
+    <div class="test-container">
+        <h2>测试说明</h2>
+        <p>此测试套件用于验证 xfEditor 的 micro-DOM 层所有 API 的行为是否符合预期。</p>
+        <p>测试覆盖：选择器、DOM 操作、DOM 遍历、DOM 插入、事件、显示/隐藏、工具方法、AJAX 等。</p>
+        
+        <button onclick="runTests()">▶️ 运行测试</button>
+        <button onclick="runPerformanceTests()">⚡ 性能测试</button>
+        <button onclick="exportResults()">💾 导出结果</button>
+    </div>
+    
+    <div class="test-container">
+        <h2>测试结果</h2>
+        <div id="test-results" class="test-results"></div>
+    </div>
+    
+    <div class="test-container">
+        <h2>性能基准</h2>
+        <div id="performance-results" class="performance"></div>
+    </div>
+    
+    <!-- 加载 xfEditor -->
+    <script src="../xf_editor.js"></script>
+    
+    <!-- 加载测试套件 -->
+    <script src="micro-dom-api.test.js"></script>
+    
+    <script>
+        var testOutput = '';
+        var performanceResults = {};
+        
+        // 重写 console.log 以捕获输出
+        var originalLog = console.log;
+        var originalError = console.error;
+        
+        console.log = function() {
+            var args = Array.prototype.slice.call(arguments);
+            var message = args.join(' ');
+            testOutput += '<div class="pass">' + message + '</div>\n';
+            originalLog.apply(console, arguments);
+        };
+        
+        console.error = function() {
+            var args = Array.prototype.slice.call(arguments);
+            var message = args.join(' ');
+            testOutput += '<div class="fail">' + message + '</div>\n';
+            originalError.apply(console, arguments);
+        };
+        
+        function runTests() {
+            testOutput = '';
+            var success = TestRunner.run();
+            
+            var resultsDiv = document.getElementById('test-results');
+            resultsDiv.innerHTML = testOutput;
+            
+            // 添加总结
+            var summaryClass = success ? 'success' : 'failure';
+            var summaryText = success ? 
+                '✅ 所有测试通过！(' + TestRunner.passed + '/' + TestRunner.tests.length + ')' :
+                '❌ 有测试失败！通过: ' + TestRunner.passed + ', 失败: ' + TestRunner.failed;
+            
+            resultsDiv.innerHTML += '<div class="summary ' + summaryClass + '">' + summaryText + '</div>';
+        }
+        
+        function runPerformanceTests() {
+            var perfDiv = document.getElementById('performance-results');
+            perfDiv.innerHTML = '<h3>正在运行性能测试...</h3>';
+            
+            setTimeout(function() {
+                var results = {};
+                
+                // 测试 1: 选择器性能
+                var start = performance.now();
+                for (var i = 0; i < 10000; i++) {
+                    var $div = $('<div class="test"></div>');
+                }
+                var end = performance.now();
+                results['创建元素 (10000次)'] = (end - start).toFixed(2) + 'ms';
+                
+                // 测试 2: DOM 操作性能
+                var $container = $('<div></div>');
+                start = performance.now();
+                for (var i = 0; i < 1000; i++) {
+                    $container.append('<span>' + i + '</span>');
+                }
+                end = performance.now();
+                results['追加元素 (1000次)'] = (end - start).toFixed(2) + 'ms';
+                
+                // 测试 3: 类操作性能
+                var $div = $('<div></div>');
+                start = performance.now();
+                for (var i = 0; i < 10000; i++) {
+                    $div.addClass('test');
+                    $div.removeClass('test');
+                }
+                end = performance.now();
+                results['类操作 (10000次)'] = (end - start).toFixed(2) + 'ms';
+                
+                // 测试 4: 事件绑定性能
+                var $div = $('<div></div>');
+                var handler = function() {};
+                start = performance.now();
+                for (var i = 0; i < 1000; i++) {
+                    $div.on('click', handler);
+                    $div.off('click', handler);
+                }
+                end = performance.now();
+                results['事件绑定/解绑 (1000次)'] = (end - start).toFixed(2) + 'ms';
+                
+                // 测试 5: 遍历性能
+                var $divs = $('<div></div><div></div><div></div><div></div><div></div>');
+                start = performance.now();
+                for (var i = 0; i < 10000; i++) {
+                    $divs.each(function() {});
+                }
+                end = performance.now();
+                results['遍历 (10000次)'] = (end - start).toFixed(2) + 'ms';
+                
+                // 测试 6: 工具方法性能
+                var obj = { a: 1, b: 2, c: 3 };
+                start = performance.now();
+                for (var i = 0; i < 10000; i++) {
+                    $.extend({}, obj);
+                }
+                end = performance.now();
+                results['对象扩展 (10000次)'] = (end - start).toFixed(2) + 'ms';
+                
+                // 显示结果
+                performanceResults = results;
+                var html = '<h3>性能基准结果</h3><table style="width: 100%; border-collapse: collapse;">';
+                for (var key in results) {
+                    html += '<tr><td style="padding: 8px; border: 1px solid #ddd;">' + key + '</td>';
+                    html += '<td style="padding: 8px; border: 1px solid #ddd; text-align: right;">' + results[key] + '</td></tr>';
+                }
+                html += '</table>';
+                
+                perfDiv.innerHTML = html;
+            }, 100);
+        }
+        
+        function exportResults() {
+            var data = {
+                timestamp: new Date().toISOString(),
+                testResults: {
+                    passed: TestRunner.passed,
+                    failed: TestRunner.failed,
+                    total: TestRunner.tests.length
+                },
+                performanceResults: performanceResults
+            };
+            
+            var blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            var url = URL.createObjectURL(blob);
+            
+            var a = document.createElement('a');
+            a.href = url;
+            a.download = 'micro-dom-test-results-' + Date.now() + '.json';
+            a.click();
+            
+            URL.revokeObjectURL(url);
+        }
+        
+        // 页面加载后自动运行测试
+        window.addEventListener('DOMContentLoaded', function() {
+            setTimeout(runTests, 500);
+        });
+    </script>
+</body>
+</html>

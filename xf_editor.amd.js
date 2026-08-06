@@ -1,10 +1,19 @@
-define([
-	"codemirror/lib/codemirror",
-	"jquery"
-], function (CodeMirror, $) {
-	"use strict";
-	var module = { exports: {} };
-	(function(){
+/*! xfEditor v1.17.38 */
+
+(function(root, factory) {
+    if (typeof define === 'function' && define.amd) {
+        // AMD: register as named module
+        define('xfEditor', [], function() { return factory.call(root); });
+    } else if (typeof module === 'object' && module.exports) {
+        // CommonJS
+        module.exports = factory.call(root);
+    } else {
+        // Browser global: attach to window
+        var lib = factory.call(root);
+        if (typeof window !== 'undefined') { window.xfEditor = lib; }
+    }
+}(typeof self !== 'undefined' ? self : this, function() {
+'use strict';
 ;(function(factory) {
     "use strict";
 
@@ -38,12 +47,19 @@ define([
         } 
         else 
         {
-		    define(["jquery"], factory);  // Sea.js CMD 加载
+		    define(factory);  // Sea.js CMD 加载
         }
 	} 
 	else
 	{ 
         window.xfEditor = factory();
+
+        // ★ v1.17.38: 条件暴露全局 $ —— 仅在页面没有自带 $（如 jQuery/Zepto）时，
+        //   自动将内置 XfDom 赋给 window.$，确保旧版示例/代码无需修改即可运行。
+        //   若页面已加载 jQuery/Zepto，则保留其 $，避免冲突。
+        if (typeof window.$ === "undefined") {
+            window.$ = window.xfEditor.dom;
+        }
 	}
     
 }(function() {    
@@ -70,12 +86,1534 @@ define([
             return pad.substring(0, targetLength - this.length) + String(this);
         };
     }
+    // ★ v1.17.38: Element.prototype.matches polyfill（IE/旧浏览器兼容）
+    if (!Element.prototype.matches) {
+        Element.prototype.matches = Element.prototype.msMatchesSelector || Element.prototype.webkitMatchesSelector;
+    }
+    // ★ v1.17.38: Element.prototype.closest polyfill（IE 兼容）
+    if (!Element.prototype.closest) {
+        Element.prototype.closest = function(selector) {
+            var el = this;
+            while (el && el.nodeType === 1) {
+                if (el.matches && el.matches(selector)) return el;
+                el = el.parentNode;
+            }
+            return null;
+        };
+    }
+    // ★ v1.17.38: Object.assign polyfill（IE 兼容）
+    if (typeof Object.assign !== "function") {
+        Object.assign = function(target) {
+            if (target === null || target === undefined) throw new TypeError("Cannot convert undefined or null to object");
+            var to = Object(target);
+            for (var i = 1; i < arguments.length; i++) {
+                var source = arguments[i];
+                if (source !== null && source !== undefined) {
+                    for (var key in source) {
+                        if (Object.prototype.hasOwnProperty.call(source, key)) to[key] = source[key];
+                    }
+                }
+            }
+            return to;
+        };
+    }
+    // ★ v1.17.38: TextEncoder / TextDecoder polyfill（旧浏览器兼容）
+    if (typeof TextEncoder === "undefined") {
+        (function() {
+            var encoder = function() {};
+            encoder.prototype.encode = function(str) {
+                str = String(str === null || str === undefined ? "" : str);
+                var bytes = [];
+                var i, c, len = str.length;
+                for (i = 0; i < len; i++) {
+                    c = str.charCodeAt(i);
+                    if (c < 0x80) { bytes.push(c); }
+                    else if (c < 0x800) { bytes.push(0xc0 | (c >> 6), 0x80 | (c & 0x3f)); }
+                    else if (c < 0xd800 || c >= 0xe000) { bytes.push(0xe0 | (c >> 12), 0x80 | ((c >> 6) & 0x3f), 0x80 | (c & 0x3f)); }
+                    else { i++; if (i >= len) break; var c2 = str.charCodeAt(i); c = 0x10000 + ((c & 0x3ff) << 10) + (c2 & 0x3ff); bytes.push(0xf0 | (c >> 18), 0x80 | ((c >> 12) & 0x3f), 0x80 | ((c >> 6) & 0x3f), 0x80 | (c & 0x3f)); }
+                }
+                return new Uint8Array(bytes);
+            };
+            var decoder = function() {};
+            decoder.prototype.decode = function(bytes) {
+                var str = "", i = 0, len = bytes.length;
+                while (i < len) {
+                    var b1 = bytes[i++], c;
+                    if (b1 < 0x80) { c = b1; }
+                    else if ((b1 & 0xe0) === 0xc0 && i < len) { c = ((b1 & 0x1f) << 6) | (bytes[i++] & 0x3f); }
+                    else if ((b1 & 0xf0) === 0xe0 && i + 1 < len) { c = ((b1 & 0x0f) << 12) | ((bytes[i++] & 0x3f) << 6) | (bytes[i++] & 0x3f); }
+                    else if ((b1 & 0xf8) === 0xf0 && i + 2 < len) { c = ((b1 & 0x07) << 18) | ((bytes[i++] & 0x3f) << 12) | ((bytes[i++] & 0x3f) << 6) | (bytes[i++] & 0x3f); if (c > 0x10ffff) c = 0xfffd; }
+                    else { c = 0xfffd; if (b1 >= 0x80) i++; }
+                    if (c < 0x10000) { str += String.fromCharCode(c); }
+                    else { c -= 0x10000; str += String.fromCharCode(0xd800 | (c >> 10)) + String.fromCharCode(0xdc00 | (c & 0x3ff)); }
+                }
+                return str;
+            };
+            window.TextEncoder = encoder;
+            window.TextDecoder = decoder;
+        })();
+    }
     
-    var $ = (typeof (jQuery) !== "undefined") ? jQuery : Zepto;
+    /* ==================================================================
+     * 原生工具函数 - 替代 $.extend / $.isArray 等 jQuery 工具方法
+     * ================================================================== */
+    var deepMerge = (function() {
+        function isPlainObject(obj) {
+            if (obj === null || typeof obj !== "object") return false;
+            if (obj.nodeType || obj === window) return false;
+            try { return obj.constructor === Object || Object.getPrototypeOf(obj) === null || (obj.constructor.prototype === undefined); }
+            catch (e) { return false; }
+        }
+        return function deepMerge(target) {
+            var i = 1, len = arguments.length;
+            for (; i < len; i++) {
+                var src = arguments[i];
+                if (!src) continue;
+                for (var key in src) {
+                    if (Object.prototype.hasOwnProperty.call(src, key)) {
+                        var sv = src[key], tv = target[key];
+                        if (isPlainObject(tv) && isPlainObject(sv)) deepMerge(tv, sv);
+                        else if (sv !== undefined) target[key] = sv;
+                    }
+                }
+            }
+            return target;
+        };
+    })();
 
-	if (typeof ($) === "undefined") {
-		return ;
-	}
+    /**
+     * 原生 fetch 封装 - 替代 $.ajax / $.get / $.post / $.getJSON
+     */
+    var nativeFetch = (function() {
+        function fetchJSON(method, url, data, _opts) {
+            var opts = Object.assign({ method: method, headers: { "Content-Type": "application/json" }, credentials: "same-origin" }, _opts || {});
+            if (data) opts.body = JSON.stringify(data);
+            return fetch(url, opts).then(function(r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); });
+        }
+        return {
+            get: function(url, data, opts) { return fetchJSON("GET", url, data, opts); },
+            post: function(url, data, opts) { return fetchJSON("POST", url, data, opts); },
+            getJSON: function(url, opts) {
+                return fetch(url, Object.assign({ method: "GET", credentials: "same-origin" }, opts || {})).then(function(r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); });
+            },
+            ajax: function(opts) {
+                var o = Object.assign({ method: "GET", headers: {}, credentials: "same-origin", cache: true }, opts || {});
+                if (!o.cache) o.headers["Cache-Control"] = "no-cache";
+                if (o.data) o.body = typeof o.data === "string" ? o.data : JSON.stringify(o.data);
+                return fetch(o.url, o).then(function(r) {
+                    if (!r.ok) throw new Error("HTTP " + r.status);
+                    var ct = r.headers.get("content-type") || "";
+                    return ct.indexOf("application/json") >= 0 ? r.json() : r.text();
+                });
+            }
+        };
+    })();
+
+    /* ==================================================================
+     * xfDom - 内置零依赖 micro-DOM 库（原生 JS 封装）
+     * ------------------------------------------------------------------
+     * 目的：移除对 jQuery / Zepto 的外部依赖，编辑器自包含运行。
+     * 覆盖：选择/遍历/属性/样式/类名/DOM操作/尺寸位置/事件(含命名空间与委托)/data。
+     * 说明：兼容 jQuery 子集 API，纯原生实现。
+     * ================================================================== */
+    var dom = (function(window, document) {
+        "use strict";
+
+        var rquickHtml = /^\s*<([\w:-]+)[\s\S]*>/;
+        var rsingleTag = /^<([\w:-]+)\s*\/?>(?:<\/\1>|)$/;
+        // 需要特定父容器才能被 innerHTML 正确解析的标签
+        var wrapMap = {
+            option: [1, "<select multiple='multiple'>", "</select>"],
+            optgroup: [1, "<select multiple='multiple'>", "</select>"],
+            legend: [1, "<fieldset>", "</fieldset>"],
+            thead: [1, "<table>", "</table>"],
+            tbody: [1, "<table>", "</table>"],
+            tfoot: [1, "<table>", "</table>"],
+            colgroup: [1, "<table>", "</table>"],
+            caption: [1, "<table>", "</table>"],
+            tr: [2, "<table><tbody>", "</tbody></table>"],
+            td: [3, "<table><tbody><tr>", "</tr></tbody></table>"],
+            th: [3, "<table><tbody><tr>", "</tr></tbody></table>"],
+            col: [2, "<table><colgroup>", "</colgroup></table>"]
+        };
+        // 数值型 CSS 属性（赋值时不自动追加 px）
+        var cssNumber = {
+            "columnCount": 1, "fillOpacity": 1, "flexGrow": 1, "flexShrink": 1,
+            "fontWeight": 1, "lineHeight": 1, "opacity": 1, "order": 1,
+            "orphans": 1, "widows": 1, "zIndex": 1, "zoom": 1
+        };
+        var rdashAlpha = /-([a-z])/g;
+        // data-* 存储：DOM 节点 -> 任意 JS 值（含对象/定时器句柄）
+        var dataStore = (typeof WeakMap !== "undefined") ? new WeakMap() : null;
+        var dataFallbackKey = "__xfDomData__";
+        // 事件注册表：DOM 节点 -> 已绑定的 handler 记录（支持命名空间/委托解绑）
+        var eventStore = (typeof WeakMap !== "undefined") ? new WeakMap() : null;
+        var eventFallbackKey = "__xfDomEvents__";
+        var guid = 1;
+
+        function isFn(v) { return typeof v === "function"; }
+        function isStr(v) { return typeof v === "string"; }
+        function isObj(v) { return v !== null && typeof v === "object"; }
+        function isWindow(v) { return v !== null && v === v.window; }
+        function isNode(v) { return v && (v.nodeType === 1 || v.nodeType === 9 || v.nodeType === 11); }
+        function camel(s) { return s.replace(rdashAlpha, function(m, c) { return c.toUpperCase(); }); }
+
+        // 类数组 -> 真数组
+        function toArr(v) {
+            if (v === null || v === undefined) return [];
+            if (Array.isArray(v)) return v;
+            if (isWindow(v) || v.nodeType || isFn(v)) return [v];
+            if (typeof v.length === "number") return Array.prototype.slice.call(v);
+            return [v];
+        }
+
+        function getStore(store, node, fallbackKey) {
+            if (store) {
+                var m = store.get(node);
+                if (!m) { m = {}; store.set(node, m); }
+                return m;
+            }
+            if (!node[fallbackKey]) {
+                try {
+                    Object.defineProperty(node, fallbackKey, { value: {}, enumerable: false, writable: true, configurable: true });
+                } catch (e) { node[fallbackKey] = {}; }
+            }
+            return node[fallbackKey];
+        }
+        function peekStore(store, node, fallbackKey) {
+            return store ? store.get(node) : node[fallbackKey];
+        }
+
+        // HTML 字符串 -> 节点数组
+        function parseHTML(html, ctx) {
+            var doc = ctx || document;
+            var single = rsingleTag.exec(html);
+            if (single) return [doc.createElement(single[1])];
+            var tagMatch = /<([\w:-]+)/.exec(html);
+            var tag = tagMatch ? tagMatch[1].toLowerCase() : "";
+            var wrap = wrapMap[tag];
+            var container = doc.createElement("div");
+            if (wrap) {
+                container.innerHTML = wrap[1] + html + wrap[2];
+                var depth = wrap[0];
+                while (depth--) container = container.lastChild;
+            } else {
+                container.innerHTML = html;
+            }
+            return Array.prototype.slice.call(container.childNodes);
+        }
+
+        // ---------- 构造 ----------
+        function XfDom(sel, ctx) {
+            var nodes = [];
+            if (!sel) {
+                // 空集合
+            } else if (sel instanceof XfDom) {
+                return sel;
+            } else if (isFn(sel)) {
+                // $(fn) => DOM ready
+                if (document.readyState === "loading") {
+                    document.addEventListener("DOMContentLoaded", function() { sel(XfDom.fn.init); });
+                } else {
+                    window.setTimeout(function() { sel(XfDom.fn.init); }, 0);
+                }
+            } else if (isStr(sel)) {
+                var s = sel.trim();
+                if (rquickHtml.test(s)) {
+                    nodes = parseHTML(s, ctx && ctx.ownerDocument ? ctx.ownerDocument : document);
+                } else {
+                    var root = ctx ? (ctx instanceof XfDom ? ctx[0] : ctx) : document;
+                    if (root && root.querySelectorAll) {
+                        try { nodes = Array.prototype.slice.call(root.querySelectorAll(s)); }
+                        catch (e) { nodes = []; }
+                    }
+                }
+            } else {
+                nodes = toArr(sel);
+            }
+            for (var i = 0; i < nodes.length; i++) this[i] = nodes[i];
+            this.length = nodes.length;
+        }
+
+        function $(sel, ctx) { return new XfDom(sel, ctx); }
+        XfDom.prototype = $.fn = {};
+        $.fn.init = $;
+        XfDom.fn = $.fn;
+
+        function make(nodes) {
+            var o = new XfDom(null);
+            var arr = toArr(nodes);
+            for (var i = 0; i < arr.length; i++) o[i] = arr[i];
+            o.length = arr.length;
+            return o;
+        }
+        // 去重（保持顺序）
+        function unique(arr) {
+            var out = [], seen = [];
+            for (var i = 0; i < arr.length; i++) {
+                if (arr[i] && seen.indexOf(arr[i]) === -1) { seen.push(arr[i]); out.push(arr[i]); }
+            }
+            return out;
+        }
+        function matches(el, sel) {
+            if (!el || el.nodeType !== 1 || !sel) return false;
+            if (sel === "*") return true;
+            // 支持 :visible / :hidden 伪类（jQuery 扩展，原生 matches 不支持）
+            if (sel === ":visible") return isVisible(el);
+            if (sel === ":hidden") return !isVisible(el);
+            var fn = el.matches || el.webkitMatchesSelector || el.msMatchesSelector || el.mozMatchesSelector;
+            if (!fn) return false;
+            try { return fn.call(el, sel); } catch (e) { return false; }
+        }
+        function isVisible(el) {
+            if (!el || el.nodeType !== 1) return false;
+            return !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length);
+        }
+
+        $.fn.length = 0;
+        $.fn.splice = Array.prototype.splice;
+        if (typeof Symbol !== "undefined" && Symbol.iterator) {
+            $.fn[Symbol.iterator] = Array.prototype[Symbol.iterator];
+        }
+
+        $.fn.each = function(fn) {
+            for (var i = 0; i < this.length; i++) {
+                if (fn.call(this[i], i, this[i]) === false) break;
+            }
+            return this;
+        };
+        $.fn.map = function(fn) {
+            var out = [];
+            for (var i = 0; i < this.length; i++) {
+                var r = fn.call(this[i], i, this[i]);
+                if (r !== null && r !== undefined) out.push(r);
+            }
+            return make(out);
+        };
+        $.fn.get = function(i) {
+            if (i === undefined) return Array.prototype.slice.call(this);
+            return i < 0 ? this[this.length + i] : this[i];
+        };
+        $.fn.toArray = function() { return Array.prototype.slice.call(this); };
+        $.fn.eq = function(i) {
+            var n = i < 0 ? this.length + i : i;
+            return make(this[n] ? [this[n]] : []);
+        };
+        $.fn.first = function() { return this.eq(0); };
+        $.fn.last = function() { return this.eq(-1); };
+        $.fn.slice = function() {
+            return make(Array.prototype.slice.apply(this, arguments));
+        };
+
+        // ---------- 遍历 ----------
+        function pushStack(self, nodes) {
+            var o = make(nodes);
+            o.prevObject = self;
+            return o;
+        }
+        $.fn.end = function() { return this.prevObject || make([]); };
+        $.fn.addBack = function(sel) {
+            var prev = this.prevObject ? this.prevObject.toArray() : [];
+            if (sel) prev = prev.filter(function(el) { return matches(el, sel); });
+            return make(unique(prev.concat(this.toArray())));
+        };
+
+        $.fn.find = function(sel) {
+            var out = [];
+            if (!sel) return pushStack(this, out);
+            if (sel instanceof XfDom || isNode(sel)) {
+                // $(el).find(node) —— 判断包含关系
+                var targets = sel instanceof XfDom ? sel.toArray() : [sel];
+                for (var a = 0; a < this.length; a++) {
+                    for (var b = 0; b < targets.length; b++) {
+                        if (this[a] !== targets[b] && this[a].contains && this[a].contains(targets[b])) out.push(targets[b]);
+                    }
+                }
+                return pushStack(this, unique(out));
+            }
+            for (var i = 0; i < this.length; i++) {
+                var el = this[i];
+                if (!el || !el.querySelectorAll) continue;
+                try { out = out.concat(Array.prototype.slice.call(el.querySelectorAll(sel))); }
+                catch (e) { /* 非法选择器：忽略 */ }
+            }
+            return pushStack(this, unique(out));
+        };
+
+        $.fn.children = function(sel) {
+            var out = [];
+            for (var i = 0; i < this.length; i++) {
+                var c = this[i] ? this[i].children : null;
+                if (!c) continue;
+                for (var j = 0; j < c.length; j++) {
+                    if (!sel || matches(c[j], sel)) out.push(c[j]);
+                }
+            }
+            return pushStack(this, unique(out));
+        };
+        $.fn.contents = function() {
+            var out = [];
+            for (var i = 0; i < this.length; i++) {
+                var el = this[i];
+                if (!el) continue;
+                if (el.tagName && el.tagName.toLowerCase() === "iframe" && el.contentDocument) out.push(el.contentDocument);
+                else out = out.concat(Array.prototype.slice.call(el.childNodes));
+            }
+            return pushStack(this, out);
+        };
+        $.fn.parent = function(sel) {
+            var out = [];
+            for (var i = 0; i < this.length; i++) {
+                var p = this[i] ? this[i].parentNode : null;
+                if (p && p.nodeType !== 11 && (!sel || matches(p, sel))) out.push(p);
+            }
+            return pushStack(this, unique(out));
+        };
+        $.fn.parents = function(sel) {
+            var out = [];
+            for (var i = 0; i < this.length; i++) {
+                var p = this[i] ? this[i].parentNode : null;
+                while (p && p.nodeType === 1) {
+                    if (!sel || matches(p, sel)) out.push(p);
+                    p = p.parentNode;
+                }
+            }
+            return pushStack(this, unique(out));
+        };
+        $.fn.closest = function(sel) {
+            var out = [];
+            for (var i = 0; i < this.length; i++) {
+                var el = this[i];
+                while (el && el.nodeType === 1) {
+                    if (matches(el, sel)) { out.push(el); break; }
+                    el = el.parentNode;
+                }
+            }
+            return pushStack(this, unique(out));
+        };
+        $.fn.next = function(sel) {
+            var out = [];
+            for (var i = 0; i < this.length; i++) {
+                var n = this[i] ? this[i].nextElementSibling : null;
+                if (n && (!sel || matches(n, sel))) out.push(n);
+            }
+            return pushStack(this, out);
+        };
+        $.fn.nextAll = function(sel) {
+            var out = [];
+            for (var i = 0; i < this.length; i++) {
+                var n = this[i] ? this[i].nextElementSibling : null;
+                while (n) { if (!sel || matches(n, sel)) out.push(n); n = n.nextElementSibling; }
+            }
+            return pushStack(this, unique(out));
+        };
+        $.fn.prev = function(sel) {
+            var out = [];
+            for (var i = 0; i < this.length; i++) {
+                var p = this[i] ? this[i].previousElementSibling : null;
+                if (p && (!sel || matches(p, sel))) out.push(p);
+            }
+            return pushStack(this, out);
+        };
+        $.fn.prevAll = function(sel) {
+            var out = [];
+            for (var i = 0; i < this.length; i++) {
+                var p = this[i] ? this[i].previousElementSibling : null;
+                while (p) { if (!sel || matches(p, sel)) out.push(p); p = p.previousElementSibling; }
+            }
+            return pushStack(this, unique(out));
+        };
+        $.fn.siblings = function(sel) {
+            var out = [];
+            for (var i = 0; i < this.length; i++) {
+                var el = this[i];
+                if (!el || !el.parentNode) continue;
+                var c = el.parentNode.children;
+                for (var j = 0; j < c.length; j++) {
+                    if (c[j] !== el && (!sel || matches(c[j], sel))) out.push(c[j]);
+                }
+            }
+            return pushStack(this, unique(out));
+        };
+        $.fn.filter = function(sel) {
+            var out = [];
+            for (var i = 0; i < this.length; i++) {
+                var keep = isFn(sel) ? !!sel.call(this[i], i, this[i]) : matches(this[i], sel);
+                if (keep) out.push(this[i]);
+            }
+            return pushStack(this, out);
+        };
+        $.fn.not = function(sel) {
+            var excl = (sel instanceof XfDom) ? sel.toArray() : (isNode(sel) ? [sel] : null);
+            var out = [];
+            for (var i = 0; i < this.length; i++) {
+                var drop = excl ? (excl.indexOf(this[i]) !== -1)
+                                : (isFn(sel) ? !!sel.call(this[i], i, this[i]) : matches(this[i], sel));
+                if (!drop) out.push(this[i]);
+            }
+            return pushStack(this, out);
+        };
+        $.fn.has = function(sel) {
+            var out = [];
+            for (var i = 0; i < this.length; i++) {
+                if (isNode(sel)) { if (this[i].contains(sel)) out.push(this[i]); }
+                else if (this[i].querySelector && this[i].querySelector(sel)) out.push(this[i]);
+            }
+            return pushStack(this, out);
+        };
+        $.fn.is = function(sel) {
+            if (!sel) return false;
+            for (var i = 0; i < this.length; i++) {
+                if (isFn(sel)) { if (sel.call(this[i], i, this[i])) return true; }
+                else if (sel instanceof XfDom) { if (sel.toArray().indexOf(this[i]) !== -1) return true; }
+                else if (isNode(sel)) { if (this[i] === sel) return true; }
+                else if (matches(this[i], sel)) return true;
+            }
+            return false;
+        };
+        $.fn.index = function(el) {
+            if (el === undefined) {
+                var n = this[0];
+                if (!n || !n.parentNode) return -1;
+                return Array.prototype.indexOf.call(n.parentNode.children, n);
+            }
+            var target = (el instanceof XfDom) ? el[0] : el;
+            return this.toArray().indexOf(target);
+        };
+        $.fn.add = function(sel, ctx) {
+            return make(unique(this.toArray().concat($(sel, ctx).toArray())));
+        };
+        $.fn.offsetParent = function() {
+            var out = [];
+            for (var i = 0; i < this.length; i++) {
+                if (this[i].offsetParent) out.push(this[i].offsetParent);
+            }
+            return pushStack(this, unique(out));
+        };
+
+        // ---------- 类名 ----------
+        function eachClass(str, fn) {
+            String(str).split(/\s+/).forEach(function(c) { if (c) fn(c); });
+        }
+        $.fn.addClass = function(cls) {
+            if (!cls) return this;
+            return this.each(function(i, el) {
+                if (el.nodeType !== 1) return;
+                var v = isFn(cls) ? cls.call(el, i, el.className) : cls;
+                eachClass(v, function(c) { el.classList.add(c); });
+            });
+        };
+        $.fn.removeClass = function(cls) {
+            return this.each(function(i, el) {
+                if (el.nodeType !== 1) return;
+                if (cls === undefined) { el.className = ""; return; }
+                var v = isFn(cls) ? cls.call(el, i, el.className) : cls;
+                eachClass(v, function(c) { el.classList.remove(c); });
+            });
+        };
+        $.fn.toggleClass = function(cls, state) {
+            return this.each(function(i, el) {
+                if (el.nodeType !== 1) return;
+                var v = isFn(cls) ? cls.call(el, i, el.className, state) : cls;
+                eachClass(v, function(c) {
+                    if (state === undefined) el.classList.toggle(c);
+                    else if (state) el.classList.add(c);
+                    else el.classList.remove(c);
+                });
+            });
+        };
+        $.fn.hasClass = function(cls) {
+            for (var i = 0; i < this.length; i++) {
+                if (this[i].nodeType === 1 && this[i].classList.contains(cls)) return true;
+            }
+            return false;
+        };
+
+        // ---------- 属性 ----------
+        var boolAttrs = { checked: 1, selected: 1, disabled: 1, readonly: 1, multiple: 1, required: 1, autofocus: 1 };
+        $.fn.attr = function(name, value) {
+            if (isObj(name)) {
+                for (var k in name) if (Object.prototype.hasOwnProperty.call(name, k)) this.attr(k, name[k]);
+                return this;
+            }
+            if (value === undefined) {
+                var el = this[0];
+                if (!el || el.nodeType !== 1) return undefined;
+                // 布尔属性：与 jQuery 一致，返回 name 或 undefined
+                if (boolAttrs[name.toLowerCase()] && el[name] !== undefined) {
+                    return el[name] ? name.toLowerCase() : undefined;
+                }
+                var v = el.getAttribute(name);
+                return v === null ? undefined : v;
+            }
+            return this.each(function(i, el) {
+                if (el.nodeType !== 1) return;
+                var v = isFn(value) ? value.call(el, i, el.getAttribute(name)) : value;
+                if (v === null || v === undefined) el.removeAttribute(name);
+                else el.setAttribute(name, v);
+            });
+        };
+        $.fn.removeAttr = function(name) {
+            return this.each(function(i, el) {
+                if (el.nodeType === 1) eachClass(name, function(n) { el.removeAttribute(n); });
+            });
+        };
+        $.fn.prop = function(name, value) {
+            if (isObj(name)) {
+                for (var k in name) if (Object.prototype.hasOwnProperty.call(name, k)) this.prop(k, name[k]);
+                return this;
+            }
+            if (value === undefined) return this[0] ? this[0][name] : undefined;
+            return this.each(function(i, el) {
+                el[name] = isFn(value) ? value.call(el, i, el[name]) : value;
+            });
+        };
+        $.fn.removeProp = function(name) {
+            return this.each(function(i, el) { try { delete el[name]; } catch (e) {} });
+        };
+        $.fn.val = function(value) {
+            if (value === undefined) {
+                var el = this[0];
+                if (!el) return undefined;
+                
+                // 处理 SELECT multiple
+                if (el.tagName === "SELECT" && el.multiple) {
+                    return Array.prototype.filter.call(el.options, function(o) { return o.selected; })
+                        .map(function(o) { return o.value; });
+                }
+                
+                // ★ v1.17.27: 处理 checkbox/radio 组
+                // 当元素是 checkbox 或 radio 且有 name 属性时，返回同 name 组的选中值数组
+                if ((el.type === "checkbox" || el.type === "radio") && el.name) {
+                    var name = el.name;
+                    var checked = [];
+                    // 遍历当前集合中同 name 的元素
+                    this.each(function(i, e) {
+                        if (e.name === name && e.checked) {
+                            checked.push(e.value);
+                        }
+                    });
+                    // radio 只能单选，返回单个值；checkbox 可能多选，返回数组
+                    return el.type === "radio" ? (checked[0] || undefined) : (checked.length > 0 ? checked : undefined);
+                }
+                
+                return el.value;
+            }
+            return this.each(function(i, el) {
+                var v = isFn(value) ? value.call(el, i, el.value) : value;
+                if (v === null || v === undefined) v = "";
+                if (el.tagName === "SELECT" && el.multiple && Array.isArray(v)) {
+                    Array.prototype.forEach.call(el.options, function(o) { o.selected = v.indexOf(o.value) !== -1; });
+                } else {
+                    el.value = v;
+                }
+            });
+        };
+
+        // ---------- data ----------
+        function readDataAttrs(el) {
+            var m = getStore(dataStore, el, dataFallbackKey);
+            if (m.__attrsParsed) return m;
+            m.__attrsParsed = true;
+            if (el.attributes) {
+                for (var i = 0; i < el.attributes.length; i++) {
+                    var a = el.attributes[i];
+                    if (a.name.indexOf("data-") === 0) {
+                        var key = camel(a.name.slice(5));
+                        if (!(key in m)) m[key] = convertData(a.value);
+                    }
+                }
+            }
+            return m;
+        }
+        function convertData(v) {
+            if (v === "true") return true;
+            if (v === "false") return false;
+            if (v === "null") return null;
+            if (v === +v + "") return +v;
+            if (/^(?:\{[\s\S]*\}|\[[\s\S]*\])$/.test(v)) { try { return JSON.parse(v); } catch (e) {} }
+            return v;
+        }
+        $.fn.data = function(key, value) {
+            if (key === undefined) {
+                if (!this[0]) return undefined;
+                var all = readDataAttrs(this[0]), copy = {};
+                for (var k in all) if (k !== "__attrsParsed") copy[k] = all[k];
+                return copy;
+            }
+            if (isObj(key)) {
+                for (var kk in key) if (Object.prototype.hasOwnProperty.call(key, kk)) this.data(kk, key[kk]);
+                return this;
+            }
+            var ckey = camel(key);
+            if (value === undefined) {
+                if (!this[0]) return undefined;
+                var m = readDataAttrs(this[0]);
+                if (ckey in m) return m[ckey];
+                // 回退读取 data-* 属性
+                var attr = this[0].getAttribute && this[0].getAttribute("data-" + key);
+                return attr === null || attr === undefined ? undefined : convertData(attr);
+            }
+            return this.each(function(i, el) {
+                var mm = getStore(dataStore, el, dataFallbackKey);
+                mm[ckey] = value;
+            });
+        };
+        $.fn.removeData = function(key) {
+            return this.each(function(i, el) {
+                var m = peekStore(dataStore, el, dataFallbackKey);
+                if (!m) return;
+                if (key === undefined) {
+                    if (dataStore) dataStore["delete"](el); else el[dataFallbackKey] = {};
+                } else {
+                    eachClass(key, function(k) { delete m[camel(k)]; });
+                }
+            });
+        };
+
+        // ---------- 样式 ----------
+        function setStyle(el, name, val) {
+            if (el.nodeType !== 1) return;
+            var prop = camel(name);
+            if (val === null || val === "") { el.style[prop] = ""; return; }
+            if (typeof val === "number" && !cssNumber[prop]) val = val + "px";
+            if (name.indexOf("--") === 0) el.style.setProperty(name, val);
+            else if (prop in el.style) el.style[prop] = val;
+            else el.style.setProperty(name, val);
+        }
+        $.fn.css = function(name, value) {
+            if (isObj(name)) {
+                for (var k in name) if (Object.prototype.hasOwnProperty.call(name, k)) {
+                    for (var i = 0; i < this.length; i++) setStyle(this[i], k, name[k]);
+                }
+                return this;
+            }
+            if (value === undefined) {
+                var el = this[0];
+                if (!el || el.nodeType !== 1) return undefined;
+                if (Array.isArray(name)) {
+                    var out = {}, cs0 = window.getComputedStyle(el, null);
+                    name.forEach(function(n) { out[n] = cs0.getPropertyValue(n) || cs0[camel(n)]; });
+                    return out;
+                }
+                var cs = window.getComputedStyle(el, null);
+                if (!cs) return undefined;
+                var v = name.indexOf("--") === 0 ? cs.getPropertyValue(name) : (cs[camel(name)] !== undefined ? cs[camel(name)] : cs.getPropertyValue(name));
+                return v;
+            }
+            return this.each(function(i, el) {
+                var v = isFn(value) ? value.call(el, i, $(el).css(name)) : value;
+                setStyle(el, name, v);
+            });
+        };
+
+        // ---------- 显隐 ----------
+        var defaultDisplayCache = {};
+        function defaultDisplay(tag) {
+            if (defaultDisplayCache[tag]) return defaultDisplayCache[tag];
+            var el = document.createElement(tag);
+            document.body.appendChild(el);
+            var d = window.getComputedStyle(el, null).display;
+            el.parentNode.removeChild(el);
+            if (!d || d === "none") d = "block";
+            defaultDisplayCache[tag] = d;
+            return d;
+        }
+        $.fn.show = function() {
+            return this.each(function(i, el) {
+                if (el.nodeType !== 1) return;
+                if (el.style.display === "none") el.style.display = "";
+                // 若样式表本身设为 none，则回填默认 display
+                if (window.getComputedStyle(el, null).display === "none") {
+                    el.style.display = (el.getAttribute("data-xf-olddisplay") || defaultDisplay(el.tagName.toLowerCase()));
+                }
+            });
+        };
+        $.fn.hide = function() {
+            return this.each(function(i, el) {
+                if (el.nodeType !== 1) return;
+                var d = window.getComputedStyle(el, null).display;
+                if (d && d !== "none") el.setAttribute("data-xf-olddisplay", d);
+                el.style.display = "none";
+            });
+        };
+        $.fn.toggle = function(state) {
+            if (typeof state === "boolean") return state ? this.show() : this.hide();
+            return this.each(function(i, el) {
+                if (isVisible(el)) $(el).hide(); else $(el).show();
+            });
+        };
+        // fadeIn/fadeOut：CSS 过渡实现（内联 HTML 的 onload 里被调用）
+        $.fn.fadeIn = function(dur, cb) {
+            var d = typeof dur === "number" ? dur : 400;
+            if (isFn(dur)) { cb = dur; }
+            return this.each(function(i, el) {
+                if (el.nodeType !== 1) return;
+                el.style.opacity = "0";
+                $(el).show();
+                el.style.transition = "opacity " + d + "ms";
+                window.requestAnimationFrame(function() {
+                    window.requestAnimationFrame(function() { el.style.opacity = "1"; });
+                });
+                window.setTimeout(function() {
+                    el.style.transition = "";
+                    if (isFn(cb)) cb.call(el);
+                }, d + 20);
+            });
+        };
+        $.fn.fadeOut = function(dur, cb) {
+            var d = typeof dur === "number" ? dur : 400;
+            if (isFn(dur)) { cb = dur; }
+            return this.each(function(i, el) {
+                if (el.nodeType !== 1) return;
+                el.style.transition = "opacity " + d + "ms";
+                el.style.opacity = "0";
+                window.setTimeout(function() {
+                    el.style.display = "none";
+                    el.style.transition = "";
+                    if (isFn(cb)) cb.call(el);
+                }, d + 20);
+            });
+        };
+
+        // ---------- 内容 ----------
+        $.fn.html = function(value) {
+            if (value === undefined) return this[0] ? this[0].innerHTML : undefined;
+            return this.each(function(i, el) {
+                if (el.nodeType !== 1) return;
+                var v = isFn(value) ? value.call(el, i, el.innerHTML) : value;
+                cleanupTree(el, false);
+                el.innerHTML = v === null || v === undefined ? "" : v;
+            });
+        };
+        $.fn.text = function(value) {
+            if (value === undefined) {
+                var s = "";
+                for (var i = 0; i < this.length; i++) {
+                    if (this[i]) s += (this[i].textContent || "");
+                }
+                return s;
+            }
+            return this.each(function(i, el) {
+                var v = isFn(value) ? value.call(el, i, el.textContent) : value;
+                el.textContent = v === null || v === undefined ? "" : v;
+            });
+        };
+        $.fn.empty = function() {
+            return this.each(function(i, el) {
+                cleanupTree(el, false);
+                if (el.nodeType === 1) el.innerHTML = "";
+            });
+        };
+
+        // ---------- DOM 插入 ----------
+        function toNodes(v, ctx) {
+            if (v instanceof XfDom) return v.toArray();
+            if (isStr(v)) return rquickHtml.test(v.trim()) ? parseHTML(v, ctx) : [document.createTextNode(v)];
+            if (isNode(v) || (v && v.nodeType)) return [v];
+            if (v && typeof v.length === "number") return toArr(v);
+            return [document.createTextNode(String(v))];
+        }
+        function insert(self, args, fn) {
+            var all = [];
+            for (var a = 0; a < args.length; a++) all = all.concat(toNodes(args[a]));
+            for (var i = 0; i < self.length; i++) {
+                for (var j = 0; j < all.length; j++) {
+                    // 多目标时克隆（首个目标用原节点）
+                    var node = (i === self.length - 1) ? all[j] : all[j].cloneNode(true);
+                    fn(self[i], node);
+                }
+            }
+            return self;
+        }
+        $.fn.append = function() {
+            return insert(this, arguments, function(t, n) { t.appendChild(n); });
+        };
+        $.fn.prepend = function() {
+            return insert(this, arguments, function(t, n) { t.insertBefore(n, t.firstChild); });
+        };
+        $.fn.before = function() {
+            return insert(this, arguments, function(t, n) { if (t.parentNode) t.parentNode.insertBefore(n, t); });
+        };
+        $.fn.after = function() {
+            return insert(this, arguments, function(t, n) { if (t.parentNode) t.parentNode.insertBefore(n, t.nextSibling); });
+        };
+        $.fn.appendTo = function(target) { $(target).append(this); return this; };
+        $.fn.prependTo = function(target) { $(target).prepend(this); return this; };
+        $.fn.insertBefore = function(target) { $(target).before(this); return this; };
+        $.fn.insertAfter = function(target) { $(target).after(this); return this; };
+        $.fn.replaceWith = function(content) {
+            return this.each(function(i, el) {
+                if (!el.parentNode) return;
+                var nodes = toNodes(content);
+                for (var j = 0; j < nodes.length; j++) {
+                    el.parentNode.insertBefore(j === 0 ? nodes[j] : nodes[j], el);
+                }
+                cleanupTree(el, true);
+                el.parentNode.removeChild(el);
+            });
+        };
+        $.fn.wrap = function(wrapper) {
+            return this.each(function(i, el) {
+                var w = isFn(wrapper) ? wrapper.call(el, i) : wrapper;
+                var wNode = toNodes(w)[0];
+                if (!wNode || !el.parentNode) return;
+                wNode = wNode.cloneNode(true);
+                el.parentNode.insertBefore(wNode, el);
+                // 深入到最内层子节点
+                var inner = wNode;
+                while (inner.firstElementChild) inner = inner.firstElementChild;
+                inner.appendChild(el);
+            });
+        };
+        $.fn.unwrap = function() {
+            this.parent().each(function(i, p) {
+                if (p.tagName !== "BODY") {
+                    var frag = document.createDocumentFragment();
+                    while (p.firstChild) frag.appendChild(p.firstChild);
+                    if (p.parentNode) { p.parentNode.insertBefore(frag, p); p.parentNode.removeChild(p); }
+                }
+            });
+            return this;
+        };
+        $.fn.clone = function(withEvents) {
+            var out = [];
+            for (var i = 0; i < this.length; i++) out.push(this[i].cloneNode(true));
+            return make(out);
+        };
+        // 移除节点时清理事件/data，避免内存泄漏
+        function cleanupTree(el, includeSelf) {
+            if (!el || el.nodeType !== 1) return;
+            var list = Array.prototype.slice.call(el.querySelectorAll ? el.querySelectorAll("*") : []);
+            if (includeSelf) list.push(el);
+            for (var i = 0; i < list.length; i++) {
+                var n = list[i];
+                var ev = peekStore(eventStore, n, eventFallbackKey);
+                if (ev && ev.handlers) {
+                    for (var j = 0; j < ev.handlers.length; j++) {
+                        n.removeEventListener(ev.handlers[j].type, ev.handlers[j].proxy, ev.handlers[j].capture);
+                    }
+                    ev.handlers.length = 0;
+                }
+                if (dataStore) dataStore["delete"](n); else if (n[dataFallbackKey]) n[dataFallbackKey] = {};
+            }
+        }
+        $.fn.remove = function() {
+            return this.each(function(i, el) {
+                cleanupTree(el, true);
+                if (el.parentNode) el.parentNode.removeChild(el);
+            });
+        };
+        $.fn.detach = function() {
+            return this.each(function(i, el) {
+                if (el.parentNode) el.parentNode.removeChild(el);
+            });
+        };
+
+        // ---------- 尺寸 / 位置 ----------
+        function getWH(el, name) {
+            if (isWindow(el)) return el.document.documentElement["client" + name];
+            if (el.nodeType === 9) {
+                var d = el.documentElement;
+                return Math.max(el.body["scroll" + name], d["scroll" + name], el.body["offset" + name], d["offset" + name], d["client" + name]);
+            }
+            var cs = window.getComputedStyle(el, null);
+            var v = parseFloat(cs[name.toLowerCase()]);
+            if (isNaN(v)) {
+                // display:none 等场景回退到 box 尺寸
+                var box = name === "Width" ? el.offsetWidth : el.offsetHeight;
+                return box || 0;
+            }
+            return v;
+        }
+        function dimension(name) {
+            var lower = name.toLowerCase();
+            $.fn[lower] = function(value) {
+                if (value === undefined) {
+                    if (!this[0]) return undefined;
+                    return getWH(this[0], name);
+                }
+                return this.each(function(i, el) {
+                    var v = isFn(value) ? value.call(el, i, getWH(el, name)) : value;
+                    setStyle(el, lower, v);
+                });
+            };
+            $.fn["inner" + name] = function() {
+                var el = this[0];
+                if (!el) return undefined;
+                if (isWindow(el) || el.nodeType === 9) return getWH(el, name);
+                return name === "Width" ? el.clientWidth : el.clientHeight;
+            };
+            $.fn["outer" + name] = function(includeMargin) {
+                var el = this[0];
+                if (!el) return undefined;
+                if (isWindow(el) || el.nodeType === 9) return getWH(el, name);
+                var v = name === "Width" ? el.offsetWidth : el.offsetHeight;
+                if (includeMargin) {
+                    var cs = window.getComputedStyle(el, null);
+                    v += name === "Width"
+                        ? (parseFloat(cs.marginLeft) || 0) + (parseFloat(cs.marginRight) || 0)
+                        : (parseFloat(cs.marginTop) || 0) + (parseFloat(cs.marginBottom) || 0);
+                }
+                return v;
+            };
+        }
+        dimension("Width");
+        dimension("Height");
+
+        $.fn.offset = function(coords) {
+            if (coords !== undefined) {
+                return this.each(function(i, el) {
+                    var $el = $(el);
+                    if ($el.css("position") === "static") el.style.position = "relative";
+                    var cur = $el.offset();
+                    if (coords.top !== undefined) el.style.top = (parseFloat($el.css("top")) || 0) + (coords.top - cur.top) + "px";
+                    if (coords.left !== undefined) el.style.left = (parseFloat($el.css("left")) || 0) + (coords.left - cur.left) + "px";
+                });
+            }
+            var el0 = this[0];
+            if (!el0 || !el0.getBoundingClientRect) return { top: 0, left: 0 };
+            var r = el0.getBoundingClientRect();
+            return {
+                top: r.top + (window.pageYOffset || document.documentElement.scrollTop || 0),
+                left: r.left + (window.pageXOffset || document.documentElement.scrollLeft || 0),
+                width: r.width, height: r.height
+            };
+        };
+        $.fn.position = function() {
+            var el = this[0];
+            if (!el) return { top: 0, left: 0 };
+            return { top: el.offsetTop, left: el.offsetLeft };
+        };
+        // ★ v1.17.24: 补齐 jQuery 同名方法 —— XfDom 缺少 outerWidth/outerHeight，
+        // 导致 showTooltip 中 $tooltip.outerWidth() 抛出 TypeError，tooltip 完全不可用。
+        $.fn.outerWidth = function(includeMargin) {
+            var el = this[0];
+            if (!el) return null;
+            var width = el.offsetWidth;
+            if (includeMargin) {
+                var s = window.getComputedStyle(el);
+                width += parseFloat(s.marginLeft || 0) + parseFloat(s.marginRight || 0);
+            }
+            return width;
+        };
+        $.fn.outerHeight = function(includeMargin) {
+            var el = this[0];
+            if (!el) return null;
+            var height = el.offsetHeight;
+            if (includeMargin) {
+                var s = window.getComputedStyle(el);
+                height += parseFloat(s.marginTop || 0) + parseFloat(s.marginBottom || 0);
+            }
+            return height;
+        };
+        function scrollFn(prop, winProp, docProp) {
+            $.fn[prop] = function(value) {
+                if (value === undefined) {
+                    var el = this[0];
+                    if (!el) return undefined;
+                    if (isWindow(el)) return el[winProp] !== undefined ? el[winProp] : el.document.documentElement[docProp];
+                    if (el.nodeType === 9) return el.documentElement[docProp];
+                    return el[docProp];
+                }
+                return this.each(function(i, el) {
+                    if (isWindow(el)) el.scrollTo(prop === "scrollTop" ? el.pageXOffset : value, prop === "scrollTop" ? value : el.pageYOffset);
+                    else if (el.nodeType === 9) el.documentElement[docProp] = value;
+                    else el[docProp] = value;
+                });
+            };
+        }
+        scrollFn("scrollTop", "pageYOffset", "scrollTop");
+        scrollFn("scrollLeft", "pageXOffset", "scrollLeft");
+
+        // ---------- 事件（支持命名空间 + 委托） ----------
+        function parseType(t) {
+            var p = t.split(".");
+            return { type: p[0], ns: p.slice(1).filter(Boolean).sort() };
+        }
+        // 为原生 Event 补齐 jQuery 风格 API
+        function normalizeEvent(e, delegateTarget) {
+            if (!e) return e;
+            if (!("isDefaultPrevented" in e)) {
+                e.isDefaultPrevented = function() { return !!e.defaultPrevented; };
+                var _sp = e.stopPropagation, _spi = e.stopImmediatePropagation, _pd = e.preventDefault;
+                var propStopped = false, immStopped = false;
+                e.stopPropagation = function() { propStopped = true; _sp.call(e); };
+                e.stopImmediatePropagation = function() { immStopped = true; propStopped = true; if (_spi) _spi.call(e); };
+                e.isPropagationStopped = function() { return propStopped; };
+                e.isImmediatePropagationStopped = function() { return immStopped; };
+                try { e.preventDefault = function() { _pd.call(e); }; } catch (err) {}
+            }
+            if (delegateTarget !== undefined) e.delegateTarget = delegateTarget;
+            if (e.which === undefined && (e.keyCode !== undefined || e.button !== undefined)) {
+                try { e.which = e.keyCode !== undefined ? e.keyCode : e.button; } catch (err) {}
+            }
+            return e;
+        }
+        // 只读事件属性（如 target/type）无法直接赋值，用代理对象覆盖
+        function makeFakeEvent(type, props) {
+            var e;
+            try { e = new window.CustomEvent(type, { bubbles: true, cancelable: true, detail: props && props.detail }); }
+            catch (err) { e = document.createEvent("Event"); e.initEvent(type, true, true); }
+            if (props) for (var k in props) { if (k !== "detail") { try { e[k] = props[k]; } catch (er) {} } }
+            return e;
+        }
+
+        function addEvent(el, types, selector, data, fn, one) {
+            if (!el || !el.addEventListener) return;
+            var store = getStore(eventStore, el, eventFallbackKey);
+            if (!store.handlers) store.handlers = [];
+            String(types).split(/\s+/).forEach(function(t) {
+                if (!t) return;
+                var info = parseType(t);
+                if (!info.type) return;
+                var handler = fn;
+                var rec = {
+                    type: info.type, ns: info.ns, selector: selector || null,
+                    origFn: fn, data: data, guid: fn.__xfGuid || (fn.__xfGuid = guid++),
+                    capture: false, one: !!one
+                };
+                rec.proxy = function(e) {
+                    var ret;
+                    if (rec.selector) {
+                        // 事件委托：从 target 向上找到匹配 selector 的祖先
+                        var node = e.target;
+                        while (node && node !== el) {
+                            if (node.nodeType === 1 && matches(node, rec.selector)) {
+                                normalizeEvent(e, el);
+                                if (data !== undefined && e.data === undefined) { try { e.data = data; } catch (er) {} }
+                                if (rec.one) removeRec(el, rec);
+                                ret = handler.call(node, e);
+                                if (ret === false) { e.preventDefault(); e.stopPropagation(); }
+                                return ret;
+                            }
+                            node = node.parentNode;
+                        }
+                        return;
+                    }
+                    normalizeEvent(e, el);
+                    if (data !== undefined && e.data === undefined) { try { e.data = data; } catch (er) {} }
+                    if (rec.one) removeRec(el, rec);
+                    ret = handler.call(el, e);
+                    if (ret === false) { e.preventDefault(); e.stopPropagation(); }
+                    return ret;
+                };
+                // mouseenter/mouseleave 无冒泡，委托时用 mouseover/mouseout 模拟
+                var nativeType = rec.type;
+                if (rec.selector && (rec.type === "mouseenter" || rec.type === "mouseleave")) {
+                    nativeType = rec.type === "mouseenter" ? "mouseover" : "mouseout";
+                    var inner = rec.proxy;
+                    rec.proxy = function(e) {
+                        var rel = e.relatedTarget;
+                        var node = e.target;
+                        while (node && node !== el) {
+                            if (node.nodeType === 1 && matches(node, rec.selector)) {
+                                if (rel && (node === rel || node.contains(rel))) return;
+                                return inner.call(this, e);
+                            }
+                            node = node.parentNode;
+                        }
+                    };
+                }
+                rec.nativeType = nativeType;
+                store.handlers.push(rec);
+                el.addEventListener(nativeType, rec.proxy, rec.capture);
+            });
+        }
+        function removeRec(el, rec) {
+            var store = peekStore(eventStore, el, eventFallbackKey);
+            if (!store || !store.handlers) return;
+            var idx = store.handlers.indexOf(rec);
+            if (idx !== -1) {
+                el.removeEventListener(rec.nativeType || rec.type, rec.proxy, rec.capture);
+                store.handlers.splice(idx, 1);
+            }
+        }
+        function removeEvent(el, types, selector, fn) {
+            var store = peekStore(eventStore, el, eventFallbackKey);
+            if (!store || !store.handlers) return;
+            if (types === undefined) {
+                // 解绑全部
+                store.handlers.slice().forEach(function(r) { removeRec(el, r); });
+                return;
+            }
+            String(types).split(/\s+/).forEach(function(t) {
+                if (!t) return;
+                var info = parseType(t);
+                store.handlers.slice().forEach(function(r) {
+                    // 类型匹配（空类型表示仅按命名空间匹配，如 ".ns"）
+                    if (info.type && r.type !== info.type) return;
+                    // 命名空间：要求 rec 包含请求的所有 ns
+                    if (info.ns.length) {
+                        for (var i = 0; i < info.ns.length; i++) {
+                            if (r.ns.indexOf(info.ns[i]) === -1) return;
+                        }
+                    }
+                    if (selector !== undefined && selector !== null && r.selector !== selector) return;
+                    if (fn && r.origFn !== fn && r.origFn.__xfGuid !== fn.__xfGuid) return;
+                    removeRec(el, r);
+                });
+            });
+        }
+
+        $.fn.on = function(types, selector, data, fn, one) {
+            // 参数重载归一化
+            if (isObj(types) && !isStr(types)) {
+                for (var t in types) if (Object.prototype.hasOwnProperty.call(types, t)) {
+                    this.on(t, selector, data, types[t], one);
+                }
+                return this;
+            }
+            if (data === undefined && fn === undefined) { fn = selector; data = undefined; selector = undefined; }
+            else if (fn === undefined) {
+                if (isStr(selector)) { fn = data; data = undefined; }
+                else { fn = data; data = selector; selector = undefined; }
+            }
+            if (!isFn(fn)) return this;
+            for (var i = 0; i < this.length; i++) addEvent(this[i], types, selector, data, fn, one);
+            return this;
+        };
+        $.fn.one = function(types, selector, data, fn) {
+            return this.on(types, selector, data, fn, true);
+        };
+        $.fn.off = function(types, selector, fn) {
+            if (isObj(types) && !isStr(types)) {
+                for (var t in types) if (Object.prototype.hasOwnProperty.call(types, t)) this.off(t, selector, types[t]);
+                return this;
+            }
+            if (isFn(selector)) { fn = selector; selector = undefined; }
+            for (var i = 0; i < this.length; i++) removeEvent(this[i], types, selector, fn);
+            return this;
+        };
+        $.fn.trigger = function(type, extraData) {
+            var info = isStr(type) ? parseType(type) : { type: type.type, ns: [] };
+            var nativeType = info.type;
+            return this.each(function(i, el) {
+                // 注意：不优先调用原生方法（如 el.click()），原因有二：
+                //   1) 自定义事件名若与 DOM 方法同名（remove/before/after/append/prepend 等）
+                //      会错误执行 DOM 操作而非派发事件；
+                //   2) 原生分支会丢弃 extraData，违背 jQuery "trigger(type, data)" 的语义。
+                // 统一用 dispatchEvent 派发，并通过事件系统的 rec.proxy 把 extraData 作为
+                // handler 的第二个参数传入；命名空间事件仅手动派发一次（避免与 dispatchEvent 重复）。
+                var e = makeFakeEvent(nativeType, isObj(type) ? type : null);
+                if (extraData !== undefined) { try { e.detail = extraData; } catch (er) {} }
+                var store = peekStore(eventStore, el, eventFallbackKey);
+                var handled = false;
+                if (store && store.handlers) {
+                    store.handlers.forEach(function(r) {
+                        if (r.type !== nativeType) return;
+                        if (info.ns.length) {
+                            for (var k = 0; k < info.ns.length; k++) if (r.ns.indexOf(info.ns[k]) === -1) return;
+                        }
+                        handled = true;
+                        r.origFn.call(el, e, extraData);
+                    });
+                }
+                // 仅当没有通过事件系统注册同名 handler 时，才走原生 dispatchEvent，
+                // 避免已注册 handler 被执行两次。
+                if (!handled) {
+                    try { el.dispatchEvent(e); } catch (err) {}
+                }
+            });
+        };
+        // 事件快捷方法
+        ["click", "dblclick", "focus", "blur", "change", "select", "submit", "keydown", "keyup", "keypress",
+         "mousedown", "mouseup", "mousemove", "mouseover", "mouseout", "mouseenter", "mouseleave",
+         "resize", "scroll", "load", "error", "input", "contextmenu", "wheel"].forEach(function(name) {
+            $.fn[name] = function(data, fn) {
+                if (arguments.length === 0) {
+                    // 无参：触发事件
+                    return this.each(function(i, el) {
+                        if (isFn(el[name])) { try { el[name](); return; } catch (e) {} }
+                        $(el).trigger(name);
+                    });
+                }
+                return this.on(name, null, data, fn);
+            };
+        });
+        $.fn.ready = function(fn) { $(fn); return this; };
+        $.fn.scrollIntoView = function(arg) {
+            return this.each(function(i, el) {
+                if (el && isFn(el.scrollIntoView)) el.scrollIntoView(arg);
+            });
+        };
+
+        // ---------- 静态工具 ----------
+        $.extend = function() {
+            var target = arguments[0] || {}, i = 1, deep = false;
+            if (typeof target === "boolean") { deep = target; target = arguments[1] || {}; i = 2; }
+            if (typeof target !== "object" && !isFn(target)) target = {};
+            for (; i < arguments.length; i++) {
+                var src = arguments[i];
+                if (src === null || src === undefined) continue;
+                for (var k in src) {
+                    if (!Object.prototype.hasOwnProperty.call(src, k)) continue;
+                    var v = src[k];
+                    if (v === target) continue;
+                    if (deep && v && (isPlainObject(v) || Array.isArray(v))) {
+                        var clone = target[k];
+                        if (Array.isArray(v)) clone = Array.isArray(clone) ? clone : [];
+                        else clone = isPlainObject(clone) ? clone : {};
+                        target[k] = $.extend(deep, clone, v);
+                    } else if (v !== undefined) {
+                        target[k] = v;
+                    }
+                }
+            }
+            return target;
+        };
+        function isPlainObject(o) {
+            if (!o || typeof o !== "object" || o.nodeType || isWindow(o)) return false;
+            var proto = Object.getPrototypeOf(o);
+            return proto === null || proto === Object.prototype;
+        }
+        $.isPlainObject = isPlainObject;
+        $.isArray = Array.isArray;
+        $.isFunction = isFn;
+        $.isWindow = isWindow;
+        $.isNumeric = function(v) { return !isNaN(parseFloat(v)) && isFinite(v); };
+        $.inArray = function(item, arr, from) {
+            return arr === null || arr === undefined ? -1 : Array.prototype.indexOf.call(arr, item, from);
+        };
+        $.trim = function(s) { return s === null || s === undefined ? "" : String(s).trim(); };
+        $.each = function(obj, fn) {
+            if (!obj) return obj;
+            if (typeof obj.length === "number" && !isFn(obj) && !isWindow(obj)) {
+                for (var i = 0; i < obj.length; i++) if (fn.call(obj[i], i, obj[i]) === false) break;
+            } else {
+                for (var k in obj) if (Object.prototype.hasOwnProperty.call(obj, k)) {
+                    if (fn.call(obj[k], k, obj[k]) === false) break;
+                }
+            }
+            return obj;
+        };
+        $.map = function(obj, fn) {
+            var out = [];
+            $.each(obj, function(i, v) {
+                var r = fn(v, i);
+                if (r !== null && r !== undefined) out.push(r);
+            });
+            return out;
+        };
+        $.grep = function(arr, fn, invert) {
+            return Array.prototype.filter.call(arr, function(v, i) { return !!fn(v, i) !== !!invert; });
+        };
+        $.proxy = function(fn, ctx) {
+            var extra = Array.prototype.slice.call(arguments, 2);
+            if (isStr(ctx)) { var tmp = fn[ctx]; ctx = fn; fn = tmp; }
+            if (!isFn(fn)) return undefined;
+            var bound = function() { return fn.apply(ctx, extra.concat(Array.prototype.slice.call(arguments))); };
+            bound.__xfGuid = fn.__xfGuid || (fn.__xfGuid = guid++);
+            return bound;
+        };
+        $.parseJSON = function(s) { return JSON.parse(s); };
+        $.parseHTML = function(s) { return parseHTML(s, document); };
+        $.contains = function(parent, child) {
+            return !!(parent && child && parent !== child && parent.contains && parent.contains(child));
+        };
+        $.noop = function() {};
+        $.now = Date.now;
+        $.type = function(v) {
+            if (v === null) return "null";
+            if (v === undefined) return "undefined";
+            return Object.prototype.toString.call(v).slice(8, -1).toLowerCase();
+        };
+
+        // ---------- AJAX（基于 XMLHttpRequest，提供 jQuery 兼容的常用子集） ----------
+        function ajaxSettings(url, data, success, dataType) {
+            // 参数重载：url[, data][, success][, dataType]
+            if (isFn(data)) { dataType = success; success = data; data = undefined; }
+            return { url: url, data: data, success: success, dataType: dataType };
+        }
+        function buildQuery(data) {
+            if (!data) return "";
+            if (isStr(data)) return data;
+            var parts = [];
+            for (var k in data) if (Object.prototype.hasOwnProperty.call(data, k)) {
+                parts.push(encodeURIComponent(k) + "=" + encodeURIComponent(data[k]));
+            }
+            return parts.join("&");
+        }
+        $.ajax = function(opts) {
+            opts = opts || {};
+            var type = (opts.type || opts.method || "GET").toUpperCase();
+            var url = opts.url || "";
+            var dataType = (opts.dataType || "").toLowerCase();
+            var query = buildQuery(opts.data);
+            var xhr = new window.XMLHttpRequest();
+            // 简易 Promise/Deferred 兼容（.done/.fail/.always）
+            var callbacks = { done: [], fail: [], always: [] };
+            var promise = {
+                done: function(f) { callbacks.done.push(f); return promise; },
+                fail: function(f) { callbacks.fail.push(f); return promise; },
+                always: function(f) { callbacks.always.push(f); return promise; },
+                then: function(a, b) { if (a) callbacks.done.push(a); if (b) callbacks.fail.push(b); return promise; },
+                abort: function() { xhr.abort(); return promise; }
+            };
+            function fire(list, args) { for (var i = 0; i < list.length; i++) list[i].apply(null, args); }
+
+            if (type === "GET" && query) url += (url.indexOf("?") === -1 ? "?" : "&") + query;
+            xhr.open(type, url, opts.async === false ? false : true);
+            if (type !== "GET" && !opts.contentType) {
+                xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8");
+            } else if (opts.contentType) {
+                xhr.setRequestHeader("Content-Type", opts.contentType);
+            }
+            if (opts.headers) {
+                for (var h in opts.headers) if (Object.prototype.hasOwnProperty.call(opts.headers, h)) {
+                    xhr.setRequestHeader(h, opts.headers[h]);
+                }
+            }
+            
+            // ★ v1.17.27: 添加 timeout 支持
+            if (opts.timeout && opts.timeout > 0) {
+                xhr.timeout = opts.timeout;
+                xhr.ontimeout = function() {
+                    if (isFn(opts.error)) opts.error(xhr, "timeout", "timeout");
+                    fire(callbacks.fail, [xhr, "timeout", "timeout"]);
+                    fire(callbacks.always, [xhr, "timeout"]);
+                    if (isFn(opts.complete)) opts.complete(xhr, "timeout");
+                };
+            }
+            
+            // ★ v1.17.38: 防 XHR 双重回调标记（onerror 后 onreadystatechange 可能再次触发 error 分支）
+            var _xhrHandled = false;
+            
+            // ★ v1.17.27: 添加网络错误处理
+            xhr.onerror = function() {
+                if (_xhrHandled) return;
+                _xhrHandled = true;
+                if (isFn(opts.error)) opts.error(xhr, "error", "Network Error");
+                fire(callbacks.fail, [xhr, "error", "Network Error"]);
+                fire(callbacks.always, [xhr, "error"]);
+                if (isFn(opts.complete)) opts.complete(xhr, "error");
+            };
+            
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState !== 4) return;
+                if (_xhrHandled) return;
+                _xhrHandled = true;
+                var ok = (xhr.status >= 200 && xhr.status < 300) || xhr.status === 304;
+                var resp = xhr.responseText;
+                if (ok) {
+                    if (dataType === "json" || (!dataType && /^\s*[\{\[]/.test(resp) && /json/.test(xhr.getResponseHeader("Content-Type") || ""))) {
+                        try { resp = JSON.parse(resp); } catch (e) {
+                            if (isFn(opts.error)) opts.error(xhr, "parsererror", e);
+                            fire(callbacks.fail, [xhr, "parsererror", e]);
+                            fire(callbacks.always, [xhr, "parsererror"]);
+                            return;
+                        }
+                    }
+                    if (isFn(opts.success)) opts.success(resp, "success", xhr);
+                    fire(callbacks.done, [resp, "success", xhr]);
+                    fire(callbacks.always, [resp, "success"]);
+                } else {
+                    if (isFn(opts.error)) opts.error(xhr, "error", xhr.statusText);
+                    fire(callbacks.fail, [xhr, "error", xhr.statusText]);
+                    fire(callbacks.always, [xhr, "error"]);
+                }
+                if (isFn(opts.complete)) opts.complete(xhr, ok ? "success" : "error");
+            };
+            xhr.send(type === "GET" ? null : (opts.data && !isStr(opts.data) ? query : (opts.data || null)));
+            return promise;
+        };
+        $.get = function(url, data, success, dataType) {
+            var s = ajaxSettings(url, data, success, dataType);
+            return $.ajax({ url: s.url, type: "GET", data: s.data, success: s.success, dataType: s.dataType });
+        };
+        $.post = function(url, data, success, dataType) {
+            var s = ajaxSettings(url, data, success, dataType);
+            return $.ajax({ url: s.url, type: "POST", data: s.data, success: s.success, dataType: s.dataType });
+        };
+        $.getJSON = function(url, data, success) {
+            var s = ajaxSettings(url, data, success, "json");
+            return $.ajax({ url: s.url, type: "GET", data: s.data, success: s.success, dataType: "json" });
+        };
+        $.getScript = function(url, success) {
+            var script = document.createElement("script");
+            script.src = url;
+            script.async = true;
+            var callbacks = { done: [], fail: [], always: [] };
+            var promise = {
+                done: function(f) { callbacks.done.push(f); return promise; },
+                fail: function(f) { callbacks.fail.push(f); return promise; },
+                always: function(f) { callbacks.always.push(f); return promise; }
+            };
+            function fire(list, args) { for (var i = 0; i < list.length; i++) list[i].apply(null, args); }
+            
+            script.onload = function() {
+                if (isFn(success)) success();
+                fire(callbacks.done, []);
+                fire(callbacks.always, []);
+            };
+            
+            // ★ v1.17.27: 添加脚本加载失败的错误处理
+            script.onerror = function() {
+                if (typeof console !== "undefined" && console.error) {
+                    console.error("[xfEditor] Failed to load script: " + url);
+                }
+                fire(callbacks.fail, [null, "error", "Script load failed"]);
+                fire(callbacks.always, [null, "error"]);
+            };
+            
+            (document.head || document.getElementsByTagName("head")[0]).appendChild(script);
+            return promise;
+        };
+
+        // ---------- 内建图表插件（XfDom 插件层封装，下接 Raphael flow/sequence 库；摆脱 jQuery 适配） ----------
+        // flowchart.js / js-sequence-diagrams 本身零 jQuery/XfDom 依赖，
+        // 直接调用 Raphael API 绘制；此处提供 XfDom 插件接口，无需外部适配器。
+        $.fn.flowChart = function(options) {
+            options = options || {};
+            var defaults = {
+                "x": 0, "y": 0, "line-width": 2, "line-length": 50, "text-margin": 10,
+                "font-size": 14, "font-color": "black", "line-color": "black",
+                "element-color": "black", "fill": "white", "yes-text": "yes", "no-text": "no",
+                "arrow-end": "block",
+                "symbols": {
+                    "start":      { "class": "start-element fc-type-start" },
+                    "end":        { "class": "end-element fc-type-end" },
+                    "operation":  { "class": "fc-type-operation" },
+                    "subroutine": { "class": "fc-type-subroutine" },
+                    "condition":  { "class": "fc-type-condition" },
+                    "inputoutput":{ "class": "fc-type-inputoutput" },
+                    "parallel":   { "class": "fc-type-parallel" }
+                },
+                "flowstate": {
+                    "past": { "fill": "#CCCCCC", "font-size": 12 },
+                    "current": { "fill": "black", "font-color": "white", "font-weight": "bold" },
+                    "future": { "fill": "white" },
+                    "request": { "fill": "blue" },
+                    "invalid": { "fill": "#444444" },
+                    "approved": { "fill": "#58C4A3", "font-size": 12, "yes-text": "APPROVED", "no-text": "n/a" },
+                    "rejected": { "fill": "#C45879", "font-size": 12, "yes-text": "n/a", "no-text": "REJECTED" }
+                }
+            };
+            return this.each(function(i, el) {
+                if (typeof window.flowchart === "undefined") return;
+                var $this = $(el);
+                var diagram = window.flowchart.parse($this.text());
+                var settings = deepMerge( {}, defaults, options);
+                $this.html("");
+                diagram.drawSVG(el, settings);
+            });
+        };
+        $.fn.sequenceDiagram = function(options) {
+            return this.each(function(i, el) {
+                var D = window.Diagram;
+                if (typeof D === "undefined") return;
+                var $this = $(el);
+                var diagram = D.parse($this.text());
+                $this.html("");
+                diagram.drawSVG(el, options || {});
+            });
+        };
+
+        return $;
+    })(window, document);
+
+    // 将 micro-DOM 挂载到 xfEditor 上（替代 $ 直接访问）
+    var xfDom = dom; // 内部别名，兼容旧 $ 使用
     
     /**
      * xfEditor
@@ -93,6 +1631,7 @@ define([
     xfEditor.version      = "1.17.28";
     xfEditor.homePage     = "https://github.com/zhaoxianfang/xfeditor";
     xfEditor.classPrefix  = "xf_editor-";
+    xfEditor.dom          = dom; // micro-DOM 实例，替代 $/jQuery
     
     /**
      * HTML 实体转义工具函数
@@ -601,6 +2140,11 @@ define([
     xfEditor.$CodeMirror  = null;
     xfEditor.$prettyPrint = null;
 
+    // 暴露内置 micro-DOM，供插件（plugins/*）使用
+    // xfEditor.$ 为历史别名（原为 jQuery/Zepto 对象），保持向后兼容
+    xfEditor.$dom         = dom;
+    xfEditor.$            = dom;
+
     /**
      * 语言包注册表
      * Language pack registry
@@ -665,11 +2209,11 @@ define([
             
             var _this            = this;
             var classPrefix      = this.classPrefix  = xfEditor.classPrefix; 
-            var settings         = this.settings     = $.extend(true, {}, xfEditor.defaults, options);
+            var settings         = this.settings     = deepMerge( {}, xfEditor.defaults, options);
             
             id                   = (typeof id === "object") ? settings.id : id;
             
-            var editor           = this.editor       = $("#" + id);
+            var editor           = this.editor       = dom("#" + id);
             
             // ★ 幂等初始化保护（根本性修复重复 CodeMirror 问题）：
             //   若同一编辑器容器已被初始化（或正在异步初始化），直接返回已缓存的实例，
@@ -1242,7 +2786,7 @@ define([
             
             if (typeof arguments[0] === "object" && typeof arguments[0].length === "undefined")
             {
-                $.extend(true, this, arguments[0]);
+                deepMerge( this, arguments[0]);
             }
 
             return this;
@@ -1283,7 +2827,7 @@ define([
             
             if (typeof key === "object")
             {
-                settings = $.extend(true, settings, key);
+                settings = deepMerge( settings, key);
             }
             else if (typeof key === "string" && value !== undefined)
             {
@@ -1365,7 +2909,7 @@ define([
             this.toolbar.show();
             this.resize();
             
-            callback || function(){}.call(this);
+            if (typeof callback === "function") callback.call(this);
 
             return this;
         },
@@ -1385,7 +2929,7 @@ define([
             this.toolbar.hide();
             this.resize();
             
-            callback || function(){}.call(this);
+            if (typeof callback === "function") callback.call(this);
 
             return this;
         },
@@ -1410,7 +2954,7 @@ define([
             }
             
             var autoFixedHandle = function(){
-                var $window = $(window);
+                var $window = dom(window);
                 var top     = $window.scrollTop();
                 
                 if (!settings.toolbarAutoFixed)
@@ -1445,7 +2989,7 @@ define([
             
             if (!state.fullscreen && !state.preview && settings.toolbar && settings.toolbarAutoFixed)
             {
-                $(window).on("scroll.xf_editor-autofixed", autoFixedHandle);
+                dom(window).on("scroll.xf_editor-autofixed", autoFixedHandle);
             }
 
             return this;
@@ -1650,7 +3194,7 @@ define([
             
             // 下拉菜单切换事件处理器 — 四方向溢出自动适配
             toolbar.find("." + classPrefix + "toolbar-dropdown > ." + classPrefix + "dropdown-toggle").on(xfEditor.mouseOrTouch("click", "touchend"), function(event) {
-                var $this = $(this);
+                var $this = dom(this);
                 var $dropdown = $this.parent();
                 var $menu = $dropdown.children("." + classPrefix + "dropdown-menu");
                 
@@ -1696,18 +3240,18 @@ define([
                 }
                 
                 var closeDropdown = function(e) {
-                    if (!$(e.target).closest($dropdown).length) {
+                    if (!dom(e.target).closest($dropdown).length) {
                         $dropdown.removeClass("open");
                         // 清理所有内联样式和位置类
                         $menu.css({ right: "", left: "", "max-height": "", top: "", bottom: "" })
                              .removeClass(classPrefix + "dropdown-menu-right")
                              .removeClass(classPrefix + "dropdown-menu-up");
-                        $(document).off("click.xf_editor-dropdown", closeDropdown);
+                        dom(document).off("click.xf_editor-dropdown", closeDropdown);
                     }
                 };
                 
                 if ($dropdown.hasClass("open")) {
-                    $(document).on("click.xf_editor-dropdown", closeDropdown);
+                    dom(document).on("click.xf_editor-dropdown", closeDropdown);
                 }
                 
                 return false;
@@ -1715,7 +3259,7 @@ define([
                 
             toolbarIcons.on(xfEditor.mouseOrTouch("click", "touchend"), function(event) {
 
-                var icon                = $(this).children(".fa").first();
+                var icon                = dom(this).children(".fa").first();
                 var name                = icon.attr("name");
                 var cursor              = cm.getCursor();
                 var selection           = cm.getSelection();
@@ -1750,7 +3294,7 @@ define([
             
             // 下拉菜单项点击事件处理器
             toolbar.find("." + classPrefix + "dropdown-menu > li > a").on(xfEditor.mouseOrTouch("click", "touchend"), function(event) {
-                var icon      = $(this).children(".fa").first();
+                var icon      = dom(this).children(".fa").first();
                 var name      = icon.attr("name");
                 var cursor    = cm.getCursor();
                 var selection = cm.getSelection();
@@ -1760,7 +3304,7 @@ define([
                 }
                 
                 // 关闭下拉菜单
-                $(this).closest("." + classPrefix + "toolbar-dropdown").removeClass("open");
+                dom(this).closest("." + classPrefix + "toolbar-dropdown").removeClass("open");
                 
                 _this.activeIcon = icon;
                 
@@ -1788,7 +3332,7 @@ define([
             // 画布涂鸦：点击预览区图片重新加载到画布操作版进行编辑
             if (this.previewContainer && !settings.previewOnly) {
                 this.previewContainer.off("click.xf_editor-canvas").on("click.xf_editor-canvas", ".xfeditor-canvas-graffiti-img", function() {
-                    var $img = $(this);
+                    var $img = dom(this);
                     var src = $img.attr("src") || "";
                     if (!src) return;
                     // ★ 空守卫：CodeMirror 未就绪时跳过，避免崩溃
@@ -1819,7 +3363,7 @@ define([
          * Creating custom dialogs
          * 
          * @param   {Object} options  配置项键值对 Key/Value
-         * @returns {dialog}          返回创建的dialog的jQuery实例对象
+         * @returns {dialog}          返回创建的dialog的XfDom对象
          */
         
         createDialog : function(options) {            
@@ -1882,14 +3426,15 @@ define([
             
 			var _infoDialogPosition = function() {
 				infoDialog.css({
-					top  : ($(window).height() - infoDialog.height()) / 2 + "px",
-					left : ($(window).width()  - infoDialog.width()) / 2  + "px"
+					top  : (dom(window).height() - infoDialog.height()) / 2 + "px",
+					left : (dom(window).width()  - infoDialog.width()) / 2  + "px"
 				});
 			};
 
 			_infoDialogPosition();
 
-			$(window).resize(_infoDialogPosition);
+			// ★ v1.17.38: 使用命名空间避免多次调用叠加 handler
+			dom(window).off("resize.xf_infoDialog").on("resize.xf_infoDialog", _infoDialogPosition);
             
             return this;
         },
@@ -1903,7 +3448,7 @@ define([
         
         showInfoDialog : function() {
 
-            $("html,body").css("overflow-x", "hidden");
+            dom("html,body").css("overflow-x", "hidden");
             
             var _this       = this;
 			var editor      = this.editor;
@@ -1937,7 +3482,7 @@ define([
          */
         
         hideInfoDialog : function() {            
-            $("html,body").css("overflow-x", "");
+            dom("html,body").css("overflow-x", "");
             this.infoDialog.hide();
             this.mask.hide();
             this.lockScreen(false);
@@ -2022,7 +3567,7 @@ define([
          * Inject a "Copy" button into the top-right corner of every <pre> block
          * in the given container.
          *
-         * @param   {jQuery} $container  The container to search for <pre> blocks
+         * @param   {XfDom} $container  The container to search for <pre> blocks
          * @returns {xfEditor}
          */
         initCodeCopy : function($container) {
@@ -2087,12 +3632,12 @@ define([
             {
                 for (var i in keyMap)
                 {
-                    if ($.inArray(i, disabledKeyMaps) < 0)
+                    if (Object.prototype.hasOwnProperty.call(keyMap, i) && disabledKeyMaps.indexOf(i) < 0)
                     {
                         var map = {};
                         map[i]  = keyMap[i];
 
-                        cm.addKeyMap(keyMap);
+                        cm.addKeyMap(map);
                     }
                 }
             }
@@ -2103,7 +3648,7 @@ define([
                     var _keyMap = xfEditor.keyMaps[k];
                     var handle = (typeof _keyMap === "string") ? toolbarHandlers[_keyMap].bind(_this) : _keyMap.bind(_this);
                     
-                    if ($.inArray(k, ["F9", "F10", "F11"]) < 0 && $.inArray(k, disabledKeyMaps) < 0)
+                    if (["F9", "F10", "F11"].indexOf(k) < 0 && disabledKeyMaps.indexOf(k) < 0)
                     {
                         var _map = {};
                         _map[k] = handle;
@@ -2112,7 +3657,7 @@ define([
                     }
                 }
                 
-                $(window).off("keydown.xf_editor-fkeys").on("keydown.xf_editor-fkeys", function(event) {
+                dom(window).off("keydown.xf_editor-fkeys").on("keydown.xf_editor-fkeys", function(event) {
                     
                     var keymaps = {
                         "120" : "F9",
@@ -2120,7 +3665,7 @@ define([
                         "122" : "F11"
                     };
                     
-                    if ( $.inArray(keymaps[event.keyCode], disabledKeyMaps) < 0 )
+                    if ( disabledKeyMaps.indexOf(keymaps[event.keyCode]) < 0 )
                     {
                         switch (event.keyCode)
                         {
@@ -2192,26 +3737,43 @@ define([
             });
             
             cm.on("paste", function(_cm, e) {
-                // 粘贴的图片自动转 Base64 并以涂鸦语法插入（离线能力，不依赖上传服务器）
-                var cbData = e.clipboardData || window.clipboardData;
-                if (cbData && cbData.files && cbData.files.length)
-                {
-                    if (_this.insertImageFilesAsBase64(cbData.files) > 0)
-                    {
-                        e.preventDefault();
-                        return;
-                    }
-                }
-
                 settings.onpaste.call(_this, _cm, e);
             });
             
             cm.on("drop", function(_cm, e) {
+                // ★ 拖拽图片到编辑器：开启 imageUpload 但无上传地址时，
+                //   将图片读取为 base64 并插入涂鸦块（替代默认插入文件路径的行为）
+                var hasUploadURL = !!(settings.imageUpload && settings.imageUploadURL && String(settings.imageUploadURL).trim() !== "");
+                if (settings.imageUpload && !hasUploadURL && e && e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                    var imgFiles = [];
+                    for (var fi = 0; fi < e.dataTransfer.files.length; fi++) {
+                        if (/^image\//.test(e.dataTransfer.files[fi].type)) {
+                            imgFiles.push(e.dataTransfer.files[fi]);
+                        }
+                    }
+                    if (imgFiles.length > 0) {
+                        if (e.preventDefault) e.preventDefault();
+                        if (typeof _cm !== "undefined" && _cm && typeof _cm.getCursor === "function") {
+                            var dropPos = _cm.coordsChar ? _cm.coordsChar({ left: e.clientX, top: e.clientY }, "page") : _cm.getCursor();
+                            if (typeof _cm.setCursor === "function") _cm.setCursor(dropPos);
+                        }
+                        var pending = imgFiles.length;
+                        imgFiles.forEach(function(f) {
+                            _this.fileToDataURL(f, function(err, dataUri) {
+                                pending--;
+                                if (!err && dataUri) {
+                                    var block = _this._buildCanvasBlock(dataUri, "center", f.name || "");
+                                    _cm.replaceSelection("\n" + block + "\n");
+                                } else if (pending === 0) {
+                                    xfEditor.notify("图片读取失败，请重试。", "error", 5000);
+                                }
+                            });
+                        });
+                        return;
+                    }
+                }
                 settings.ondrop.call(_this, _cm, e);
             });
-
-            // 图片拖拽插入（始终启用，统一转 Base64 涂鸦语法插入）
-            this.bindImageDropEvent();
             
             cm.on("copy", function(_cm, e) {
                 settings.oncopy.call(_this, _cm, e);
@@ -2273,7 +3835,7 @@ define([
             
             // ★ 使用命名空间绑定，避免 recreate() 重复调用 loadedDisplay 时
             //   累积多个 window resize 监听导致 resize() 被重复执行
-            $(window).off("resize.xf_editor-resize").on("resize.xf_editor-resize", function(){
+            dom(window).off("resize.xf_editor-resize").on("resize.xf_editor-resize", function(){
                 _this.resize();
             });
             
@@ -2322,12 +3884,12 @@ define([
             })(this);
 
             // 触发 onPageLoad 事件（当前网页 DOM 加载完成）
-            $(function() {
+            dom(function() {
                 settings.onPageLoad.call(_this);
             });
             
             // 绑定 onPageAllLoad 事件（网页所有资源加载完成，包括图片、iframe 等）
-            $(window).on("load.xf_editor-pageload", function() {
+            dom(window).on("load.xf_editor-pageload", function() {
                 settings.onPageAllLoad.call(_this);
             });
             
@@ -2399,8 +3961,8 @@ define([
             
             var state      = this.state;
             var editor     = this.editor;
-            var preview    = this.preview || $();
-            var toolbar    = this.toolbar || $();
+            var preview    = this.preview || dom();
+            var toolbar    = this.toolbar || dom();
             var settings   = this.settings;
             var codeMirror = this.codeMirror;
             
@@ -2576,11 +4138,16 @@ define([
                     _this._applyingDomChanges = false;
                 }, 100);
 
+                // ★ v1.17.35: 每次预览更新后重新绑定 tooltip 事件（DOM 已完全替换）
+                if (settings && settings.tooltip !== false) {
+                    xfEditor.initTooltips(previewContainer);
+                }
+
                 this.previewCodeHighlight();
                 
                 if (settings.toc) 
                 {
-                    var tocContainer = (settings.tocContainer === "") ? previewContainer : $(settings.tocContainer);
+                    var tocContainer = (settings.tocContainer === "") ? previewContainer : dom(settings.tocContainer);
                     var tocMenu      = tocContainer.find("." + this.classPrefix + "toc-menu");
                     
                     tocContainer.attr("previewContainer", (settings.tocContainer === "") ? "true" : "false");
@@ -2656,9 +4223,7 @@ define([
                                     };
                                     if (hasFlowChart && typeof flowchart === "undefined") {
                                         pending++;
-                                        xfEditor.loadScript(settings.path + "flowchart.min", function() {
-                                            xfEditor.loadScript(settings.path + "jquery.flowchart.min", checkDone);
-                                        });
+                                        xfEditor.loadScript(settings.path + "flowchart.min", checkDone);
                                     }
                                     if (hasSequence && typeof Diagram === "undefined") {
                                         pending++;
@@ -2729,9 +4294,8 @@ define([
                 if (settings.banner) {
                     _this.initBanners();
                 }
-                if (settings.tooltip) {
-                    _this.initTooltips();
-                }
+                // ★ v1.17.35: tooltip 已在上方 xfEditor.initTooltips(previewContainer) 中初始化，
+                //     此处的重复调用已移除（避免双层清理+全量遍历无效迭代）
                 if (settings.syncScroll) {
                     // ★ v1.17.7: 确保首次绑定
                     if (!_this._scrollSyncBound) {
@@ -2769,8 +4333,12 @@ define([
                                         _this._syncState._invalidateAnchors();
                                     }
                                 }
-                            } catch(e) {}
-                        }, 250);
+                        } catch(e) {
+                            if (typeof console !== "undefined" && console.warn) {
+                                console.warn("[xfEditor] Scroll sync error:", e.message);
+                            }
+                        }
+                    }, 250);
                         // 存储 timer 以便清理
                         _this.__lastSyncTimer = _syncTimer;
                     }
@@ -2824,7 +4392,7 @@ define([
             var tableBlockIndex = 0;
             
             previewContainer.find("table").each(function() {
-                var $table = $(this);
+                var $table = dom(this);
                 if ($table.hasClass("xf_editor-table-editable")) {
                     return;
                 }
@@ -2885,7 +4453,7 @@ define([
                 $table.on("click", "th, td", function(e) {
                     e.stopPropagation();
                     e.preventDefault();
-                    currentCell = $(this);
+                    currentCell = dom(this);
                     // 使用相对于包装容器的偏移来正确处理滚动
                     var wrapperOffset = $wrapper.offset();
                     var cellOffset = currentCell.offset();
@@ -2926,7 +4494,7 @@ define([
                     e.preventDefault();
                     if (!currentCell) return;
                     
-                    var action = $(this).data("action");
+                    var action = dom(this).data("action");
                     var row = currentCell.parent();
                     var colIndex = row.children().index(currentCell);
                     var rowIndex = row.parent().children().index(row);
@@ -2940,8 +4508,8 @@ define([
             });
             
             // 点击表格外部时隐藏控制按钮
-            $(document).off("click.xf_editor-table").on("click.xf_editor-table", function(e) {
-                if (!$(e.target).closest(".xf_editor-table-wrapper").length) {
+            dom(document).off("click.xf_editor-table").on("click.xf_editor-table", function(e) {
+                if (!dom(e.target).closest(".xf_editor-table-wrapper").length) {
                     previewContainer.find(".xf_editor-table-col-controls, .xf_editor-table-row-controls").hide();
                 }
             });
@@ -3117,13 +4685,13 @@ define([
             var cm = this.cm;
             
             // ★ v1.17.8: 冲突 prevention — 防止重复绑定文档级事件
-            $(document).off("mousemove.xf_editor-img").off("mouseup.xf_editor-img");
+            dom(document).off("mousemove.xf_editor-img").off("mouseup.xf_editor-img");
             
             var srcOccurrenceCounter = {};
             var _resizeState = null; // { img, wrapper, startX, startY, startWidth, startHeight, imgSrc }
             
             // ★ v1.17.8: 全局文档级事件 — 只绑定一次（避免 .each 循环内累积）
-            $(document).on("mousemove.xf_editor-img", function(e) {
+            dom(document).on("mousemove.xf_editor-img", function(e) {
                 if (!_resizeState) return;
                 var s = _resizeState;
                 var newWidth = s.startWidth + (e.clientX - s.startX);
@@ -3138,7 +4706,7 @@ define([
                 if (newHeight > 20) s.img.css("height", newHeight + "px");
             });
             
-            $(document).on("mouseup.xf_editor-img", function(e) {
+            dom(document).on("mouseup.xf_editor-img", function(e) {
                 if (!_resizeState) return;
                 var s = _resizeState;
                 _resizeState = null;
@@ -3153,7 +4721,7 @@ define([
             });
             
             previewContainer.find("img").each(function() {
-                var $img = $(this);
+                var $img = dom(this);
                 // 画布涂鸦图片不参与图片缩放：点击用于重新编辑，且需保持 p > img + span 结构
                 if ($img.hasClass("xfeditor-canvas-graffiti-img")) {
                     return;
@@ -3173,13 +4741,13 @@ define([
                 srcOccurrenceCounter[srcKey] = (srcOccurrenceCounter[srcKey] || 0) + 1;
                 var occurrence = srcOccurrenceCounter[srcKey];
                 
-                var $wrapper = $('<div class="xf_editor-img-wrapper" style="display:inline-block;position:relative;"></div>');
+                var $wrapper = dom('<div class="xf_editor-img-wrapper" style="display:inline-block;position:relative;"></div>');
                 $img.wrap($wrapper);
                 $wrapper = $img.parent();
                 $wrapper.attr("data-image-occurrence", occurrence);
                 $wrapper.attr("data-image-src", srcKey);
                 
-                var handle = $('<div class="xf_editor-img-resize-handle" title="拖拽调整尺寸"></div>');
+                var handle = dom('<div class="xf_editor-img-resize-handle" title="拖拽调整尺寸"></div>');
                 $wrapper.append(handle);
                 
                 handle.on("mousedown", function(e) {
@@ -3880,9 +5448,9 @@ define([
             var dialogId = "xf_editor-draft-recovery-" + this.id;
             var maskId = dialogId + "-mask";
 
-            $("#" + maskId).remove();
-            if ($("#" + dialogId).length > 0) {
-                $("#" + dialogId).remove();
+            dom("#" + maskId).remove();
+            if (dom("#" + dialogId).length > 0) {
+                dom("#" + dialogId).remove();
             }
 
             // 格式化草稿列表HTML
@@ -3924,8 +5492,8 @@ define([
             }
 
             // 创建遮罩层
-            var $mask = $('<div id="' + maskId + '" class="xf_editor-draft-mask" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:99998;opacity:0;transition:opacity 300ms ease;"></div>');
-            $("body").append($mask);
+            var $mask = dom('<div id="' + maskId + '" class="xf_editor-draft-mask" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:99998;opacity:0;transition:opacity 300ms ease;"></div>');
+            dom("body").append($mask);
 
             var lang = _this.settings.lang;
             var dialogHtml = '<div id="' + dialogId + '" class="xf_editor-dialog xf_editor-draft-dialog" style="display:block;opacity:0;transform:scale(0.9) translate(-50%, -50%);transition:all 300ms cubic-bezier(0.34, 1.56, 0.64, 1);">' +
@@ -3943,14 +5511,14 @@ define([
                 '</div>' +
                 '</div>';
 
-            var $dialog = $(dialogHtml);
-            $("body").append($dialog);
+            var $dialog = dom(dialogHtml);
+            dom("body").append($dialog);
 
             // 计算居中位置
             var dialogWidth = 520;
             var dialogHeight = $dialog.outerHeight() || 400;
-            var windowWidth = $(window).width();
-            var windowHeight = $(window).height();
+            var windowWidth = dom(window).width();
+            var windowHeight = dom(window).height();
             var left = Math.max(20, (windowWidth - dialogWidth) / 2);
             var top = Math.max(40, (windowHeight - dialogHeight) / 2);
 
@@ -3992,8 +5560,8 @@ define([
                     $dialog.remove();
                     $mask.remove();
                 }
-                $(document).off("keydown.xfEditorDraft");
-                $(window).off("resize.xfEditorDraft");
+                dom(document).off("keydown.xfEditorDraft");
+                dom(window).off("resize.xfEditorDraft");
             };
 
             $dialog.find(".xf_editor-dialog-close, .xf_editor-draft-cancel").on("click", function() {
@@ -4010,7 +5578,7 @@ define([
             });
 
             $dialog.find(".xf_editor-draft-item").on("click", function() {
-                var $item = $(this);
+                var $item = dom(this);
                 var idx = parseInt($item.data("index"), 10);
                 
                 // 添加选中效果
@@ -4044,16 +5612,16 @@ define([
                 closeDialog(true);
             });
 
-            $(document).on("keydown.xfEditorDraft", function(e) {
+            dom(document).on("keydown.xfEditorDraft", function(e) {
                 if (e.keyCode === 27) {
                     closeDialog(true);
                 }
             });
 
             // 窗口大小改变时重新居中
-            $(window).on("resize.xfEditorDraft", function() {
-                var newWindowWidth = $(window).width();
-                var newWindowHeight = $(window).height();
+            dom(window).on("resize.xfEditorDraft", function() {
+                var newWindowWidth = dom(window).width();
+                var newWindowHeight = dom(window).height();
                 var newLeft = Math.max(20, (newWindowWidth - dialogWidth) / 2);
                 var newTop = Math.max(40, (newWindowHeight - ($dialog.outerHeight() || 400)) / 2);
                 $dialog.css({
@@ -4113,7 +5681,7 @@ define([
             }
             options = options || {};
             
-            var opts = $.extend({
+            var opts = Object.assign({
                 includeStyles    : true,
                 includeScripts   : true,
                 minify           : true,
@@ -4135,9 +5703,9 @@ define([
 
             // ★ 规范化外部资源数组
             if (typeof opts.externalStyles === 'string') { opts.externalStyles = [opts.externalStyles]; }
-            if (!$.isArray(opts.externalStyles)) { opts.externalStyles = []; }
+            if (!Array.isArray(opts.externalStyles)) { opts.externalStyles = []; }
             if (typeof opts.externalScripts === 'string') { opts.externalScripts = [opts.externalScripts]; }
-            if (!$.isArray(opts.externalScripts)) { opts.externalScripts = []; }
+            if (!Array.isArray(opts.externalScripts)) { opts.externalScripts = []; }
             if (typeof opts.customMeta !== 'object' || opts.customMeta === null) { opts.customMeta = {}; }
 
             // ★ toBrowser（浏览器下载文件名）：为非空字符串时强制 wrap=true，确保导出的是「完整可保存文档」。
@@ -4192,7 +5760,7 @@ define([
             // 移除旧版代码复制按钮（仅简单 span，避免破坏嵌套结构）
             rawHTML = rawHTML.replace(/<span\b[^>]*?\bxf_editor-code-copy-btn\b[^>]*>[^]*?<\/span>/gi, '');
             
-            // 移除所有 jQuery .data() 留下的 attr 数据标记（独立页面不需要）
+            // ★ v1.17.38: 清理由 XfDom/外部 DOM 库 .data() 留下的 attr 数据标记（独立页面不需要）
             rawHTML = rawHTML
                 .replace(/\sdata-_copyBtnReady="true"/g, '')
                 .replace(/\sdata-_originalCode="[^"]*"/g, '')
@@ -4586,7 +6154,7 @@ define([
          * @returns {Object} 特性标记对象，无调用记录时返回空对象
          */
         getDetectedFeatures : function() {
-            return $.extend({}, this._lastFeatureFlags || {});
+            return Object.assign({}, this._lastFeatureFlags || {});
         },
 
         /**
@@ -4951,7 +6519,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             s.push('var _doc=document,_win=window;');
             s.push('');
             // --- 通用工具函数 ---
-            s.push('function $$(sel,ctx){if(!ctx)ctx=_doc;if(sel&&sel.charAt(0)===">")sel=":scope "+sel;return ctx.querySelectorAll(sel);}');
+            s.push('function $dom(sel,ctx){if(!ctx)ctx=_doc;if(sel&&sel.charAt(0)===">")sel=":scope "+sel;return ctx.querySelectorAll(sel);}');
             s.push('function $1(sel,ctx){if(!ctx)ctx=_doc;if(sel&&sel.charAt(0)===">")sel=":scope "+sel;return ctx.querySelector(sel);}');
             s.push('function addEvt(el,evt,fn){el.addEventListener(evt,fn);}');
             s.push('function hasCls(el,c){return el.classList.contains(c);}');
@@ -4965,7 +6533,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             if (f.echarts) {
             s.push('function initECharts(container){');
             s.push('  if(!container||typeof echarts==="undefined")return;');
-            s.push('  var charts=$$(".xf_editor-echarts",container);');
+            s.push('  var charts=$dom(".xf_editor-echarts",container);');
             s.push('  if(charts.length===0)return;');
             s.push('  for(var i=0;i<charts.length;i++){');
             s.push('    var c=charts[i];');
@@ -5016,7 +6584,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             if (f.tabs) {
             s.push('function initTabs(container){');
             s.push('  if(!container)return;');
-            s.push('  var tabs=$$(".xf_editor-tabs",container);');
+            s.push('  var tabs=$dom(".xf_editor-tabs",container);');
             s.push('  for(var i=0;i<tabs.length;i++){');
             s.push('    try{');
             s.push('      var tb=tabs[i];');
@@ -5024,7 +6592,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             s.push('      var nav=$1(">.xf_editor-tab-nav",tb);');
             s.push('      var body=$1(">.xf_editor-tab-body",tb);');
             s.push('      if(!nav||!body)continue;');
-            s.push('      var lis=$$(">li",nav);');
+            s.push('      var lis=$dom(">li",nav);');
             s.push('      if(!lis||lis.length===0)continue;');
             s.push('      for(var j=0;j<lis.length;j++){');
             s.push('        (function(li,idx,lisRef,bodyRef){');
@@ -5033,7 +6601,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             s.push('            try{');
             s.push('              for(var k=0;k<lisRef.length;k++){rmCls(lisRef[k],"active");}');
             s.push('              addCls(li,"active");');
-            s.push('              var panels=$$(">.xf_editor-tab-panel",bodyRef);');
+            s.push('              var panels=$dom(">.xf_editor-tab-panel",bodyRef);');
             s.push('              for(var k=0;k<panels.length;k++){rmCls(panels[k],"active");}');
             s.push('              var panel=$1(\'>.xf_editor-tab-panel[data-index="\'+idx+\'"]\',bodyRef);');
             s.push('              if(panel){addCls(panel,"active");if(typeof initECharts==="function")initECharts(panel);}');
@@ -5051,7 +6619,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             if (f.banner) {
             s.push('function initBanners(container){');
             s.push('  if(!container)return;');
-            s.push('  var banners=$$(".xf_editor-banner",container);');
+            s.push('  var banners=$dom(".xf_editor-banner",container);');
             s.push('  for(var i=0;i<banners.length;i++){');
             s.push('    (function(bn){');
             s.push('      try{');
@@ -5059,7 +6627,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             s.push('        setAttr(bn,"data-initialized","true");');
             s.push('        var wrap=$1(">.xf_editor-banner-slides",bn);');
             s.push('        if(!wrap)return;');
-            s.push('        var slides=$$(">.xf_editor-banner-slide",wrap);');
+            s.push('        var slides=$dom(">.xf_editor-banner-slide",wrap);');
             s.push('        var count=slides.length;');
             s.push('        if(count===0)return;');
             s.push('        if(!hasCls(bn,"xf_editor-banner-fixed")){');
@@ -5071,7 +6639,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             s.push('        function goTo(n){');
             s.push('          index=(n+count)%count;');
             s.push('          wrap.style.transform="translateX(-"+(index*100)+"%)";');
-            s.push('          var dots=$$(".xf_editor-banner-dot",bn);');
+            s.push('          var dots=$dom(".xf_editor-banner-dot",bn);');
             s.push('          for(var d=0;d<dots.length;d++){if(getAttr(dots[d],"data-index")==String(index)){addCls(dots[d],"active");}else{rmCls(dots[d],"active");}}');
             s.push('        }');
             s.push('        function stop(){if(timer){clearInterval(timer);timer=null;}}');
@@ -5080,7 +6648,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             s.push('          var prev=$1(".xf_editor-banner-prev",bn),next=$1(".xf_editor-banner-next",bn);');
             s.push('          if(prev)addEvt(prev,"click",function(e){e.preventDefault();e.stopPropagation();goTo(index-1);play();});');
             s.push('          if(next)addEvt(next,"click",function(e){e.preventDefault();e.stopPropagation();goTo(index+1);play();});');
-            s.push('          var dots=$$(".xf_editor-banner-dot",bn);');
+            s.push('          var dots=$dom(".xf_editor-banner-dot",bn);');
             s.push('          for(var d=0;d<dots.length;d++){(function(dot){addEvt(dot,"click",function(e){e.preventDefault();e.stopPropagation();goTo(parseInt(getAttr(dot,"data-index"),10)||0);play();});})(dots[d]);}');
             s.push('          addEvt(bn,"mouseenter",stop);');
             s.push('          addEvt(bn,"mouseleave",play);');
@@ -5089,7 +6657,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             s.push('          addEvt(bn,"touchend",function(e){var dx=e.changedTouches[0].clientX-startX;if(Math.abs(dx)>40){moved=true;goTo(dx<0?index+1:index-1);}play();});');
             s.push('          play();');
             s.push('        }');
-            s.push('        var links=$$("a.xf_editor-banner-link",bn);');
+            s.push('        var links=$dom("a.xf_editor-banner-link",bn);');
             s.push('        for(var li2=0;li2<links.length;li2++){addEvt(links[li2],"click",function(e){if(moved){e.preventDefault();moved=false;}});}');
             s.push('      }catch(e){}');
             s.push('    })(banners[i]);');
@@ -5101,7 +6669,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             if (f.codeBlock) {
             s.push('function initCodeCopy(container){');
             s.push('  if(!container||typeof navigator==="undefined")return;');
-            s.push('  var pres=$$("pre",container);');
+            s.push('  var pres=$dom("pre",container);');
             s.push('  for(var i=0;i<pres.length;i++){');
             s.push('    var pre=pres[i];');
             s.push('    var cs=_win.getComputedStyle(pre);');
@@ -5194,12 +6762,12 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             if (f.columns) {
             s.push('function initColumns(container){');
             s.push('  if(!container)return;');
-            s.push('  var cols=$$(".xf_editor-columns",container);');
+            s.push('  var cols=$dom(".xf_editor-columns",container);');
             s.push('  for(var i=0;i<cols.length;i++){');
             s.push('    var c=cols[i];');
             s.push('    if(getAttr(c,"data-initialized")==="true")continue;');
             s.push('    var count=parseInt(getAttr(c,"data-count"),10)||2;');
-            s.push('    var divs=$$(".xf_editor-column-divider",c);');
+            s.push('    var divs=$dom(".xf_editor-column-divider",c);');
             s.push('    for(var d=0;d<divs.length;d++){divs[d].parentNode.removeChild(divs[d]);}');
             s.push('    c.style.position="relative";');
             s.push('    for(var j=1;j<count;j++){');
@@ -5234,7 +6802,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             s.push('        }');
             s.push('        if(target){');
             s.push('          // 清除旧高亮');
-            s.push('          var old=$$(".xf_editor-footnote-highlight");');
+            s.push('          var old=$dom(".xf_editor-footnote-highlight");');
             s.push('          for(var k=0;k<old.length;k++){rmCls(old[k],"xf_editor-footnote-highlight");}');
             s.push('          addCls(target,"xf_editor-footnote-highlight");');
             s.push('          target.scrollIntoView({behavior:"smooth",block:"center"});');
@@ -5261,11 +6829,11 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             s.push('}');
             } // end if (f.footnotes)
             s.push('');
-            // --- Tooltip 悬浮提示（纯 JS 实现，不依赖 jQuery/xfEditor）---
+            // --- Tooltip 悬浮提示（纯 JS 实现，自包含，不依赖 xfEditor/XfDom）---
             if (f.tooltip) {
             s.push('function base64Decode(str){try{return decodeURIComponent(Array.prototype.map.call(atob(str),function(c){return"%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2);}).join(""));}catch(e){return"";}}');
             s.push('function escapeHTML(s){if(s==null||typeof s!=="string")return"";var d=document.createElement("div");d.textContent=s;return d.innerHTML;}');
-            s.push('function escapeAttr(s){return String(s).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\x27/g,"&#39;");}');
+            s.push('function escapeAttr(s){if(s==null)return"";return String(s).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\x27/g,"&#39;");}');
             s.push('');
             s.push('function buildIframeHTML(code,langCls){');
             s.push('  if(!code||!code.trim())return"<!DOCTYPE html><html><body></body></html>";');
@@ -5293,7 +6861,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             s.push('');
             s.push('function initTooltips(container){');
             s.push('  if(!container)return;');
-            s.push('  var triggers=$$(".xf_editor-tooltip-trigger",container);');
+            s.push('  var triggers=$dom(".xf_editor-tooltip-trigger",container);');
             s.push('  for(var i=0;i<triggers.length;i++){');
             s.push('    (function(trigger){');
             s.push('      if(getAttr(trigger,"data-tooltip-initialized")==="true")return;');
@@ -5559,7 +7127,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
          * @returns {String} 预览区 HTML 源码（纯内容，无包裹）
          */
         getPreviewedHTML : function(options) {
-            var opts = $.extend({
+            var opts = Object.assign({
                 rawMarkdown : false
             }, options || {});
 
@@ -5603,7 +7171,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
         watch : function(callback) {     
             var settings        = this.settings;
             
-            if ($.inArray(settings.mode, ["gfm", "markdown"]) < 0)
+            if (["gfm", "markdown"].indexOf(settings.mode) < 0)
             {
                 return this;
             }
@@ -5869,7 +7437,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             }
             
             var cmScrollEl = cm.getScrollerElement();
-            var $cmScroll  = $(cmScrollEl);
+            var $cmScroll  = dom(cmScrollEl);
             
             previewDom.css("overflow", "hidden");
             
@@ -5890,11 +7458,11 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             };
             
             // ★★ Wheel 事件追踪 — 谁在用鼠标滚轮滚动，谁就是主控区 ★★
-            $(cmScrollEl).off("wheel.xf_editor-master").on("wheel.xf_editor-master", function(e) {
+            dom(cmScrollEl).off("wheel.xf_editor-master").on("wheel.xf_editor-master", function(e) {
                 if (state.programmaticScroll) return;
                 _setMasterZone("editor");
             });
-            $(scrollEl).off("wheel.xf_editor-master").on("wheel.xf_editor-master", function(e) {
+            dom(scrollEl).off("wheel.xf_editor-master").on("wheel.xf_editor-master", function(e) {
                 if (state.programmaticScroll) return;
                 _setMasterZone("preview");
             });
@@ -5911,7 +7479,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
                 }).on("mouseleave.xf_editor-sync", function() {
                     if (state.mouseTarget === "editor") state.mouseTarget = null;
                 });
-            $(scrollEl).off("mouseenter.xf_editor-sync mouseleave.xf_editor-sync")
+            dom(scrollEl).off("mouseenter.xf_editor-sync mouseleave.xf_editor-sync")
                 .on("mouseenter.xf_editor-sync", function() {
                     state.mouseTarget = "preview";
                     // ★ v1.17.9 fix: 鼠标进入预览区立即清除反向主控区，防止旧 masterZone 阻断同步
@@ -6351,9 +7919,9 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
                 } catch(e) {}
             };
     
-            $(scrollEl).off("scroll.xf_editor-sync-v3").on("scroll.xf_editor-sync-v3", _previewScrollHandler);
+            dom(scrollEl).off("scroll.xf_editor-sync-v3").on("scroll.xf_editor-sync-v3", _previewScrollHandler);
             
-            $(scrollEl).off("wheel.xf_editor-anim").on("wheel.xf_editor-anim", function() {
+            dom(scrollEl).off("wheel.xf_editor-anim").on("wheel.xf_editor-anim", function() {
                 if (state.editorAnimTimer) {
                     cancelAnimationFrame(state.editorAnimTimer);
                     state.editorAnimTimer = null;
@@ -6363,7 +7931,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
                 state.programmaticScroll = false;
                 _invalidatePositionMap();
             });
-            $(cmScrollEl).off("wheel.xf_editor-anim").on("wheel.xf_editor-anim", function() {
+            dom(cmScrollEl).off("wheel.xf_editor-anim").on("wheel.xf_editor-anim", function() {
                 if (state.editorAnimTimer) {
                     cancelAnimationFrame(state.editorAnimTimer);
                     state.editorAnimTimer = null;
@@ -6374,7 +7942,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
                 _invalidatePositionMap();
             });
             
-            $(scrollEl).off("mousedown.xf_editor-sync").on("mousedown.xf_editor-sync", function(e) {
+            dom(scrollEl).off("mousedown.xf_editor-sync").on("mousedown.xf_editor-sync", function(e) {
                 var sw = scrollEl.offsetWidth - scrollEl.clientWidth;
                 if (sw > 0 && e.offsetX > scrollEl.clientWidth) {
                     if (state.editorAnimTimer) {
@@ -6392,7 +7960,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             // ★ v1.17.8: TOC 链接点击处理
             // ================================================================
             previewDom.off("click.xf_editor-toc").on("click.xf_editor-toc", ".markdown-toc-list a[href^='#']", function(e) {
-                var href = $(this).attr("href");
+                var href = dom(this).attr("href");
                 if (!href || href === "#") return;
                 var targetId = decodeURIComponent(href.substring(1));
                 var targetEl = null;
@@ -6424,7 +7992,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             // ★ v1.17.8: 脚注引用链接点击处理
             // ================================================================
             previewDom.off("click.xf_editor-footnote").on("click.xf_editor-footnote", ".xf_editor-footnote-ref-wrapper a[href^='#xf_editor-fn-'], .xf_editor-copybook-footnote a[href^='#xf_editor-fn-'], .xf_editor-footnote-backref[href^='#xf_editor-fnref-']", function(e) {
-                var href = $(this).attr("href");
+                var href = dom(this).attr("href");
                 if (!href || href === "#") return;
                 
                 var targetId = decodeURIComponent(href.substring(1));
@@ -6447,7 +8015,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
                     state.programmaticScroll = true;
                     scrollEl.scrollTo({ top: targetScrollTop, behavior: "smooth" });
                     
-                    var $target = $(targetEl);
+                    var $target = dom(targetEl);
                     $target.addClass("xf_editor-footnote-highlight");
                     setTimeout(function() {
                         $target.removeClass("xf_editor-footnote-highlight");
@@ -6462,7 +8030,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             });
             
             var _resizeTimer = null;
-            $(window).off("resize.xf_editor-sync").on("resize.xf_editor-sync", function() {
+            dom(window).off("resize.xf_editor-sync").on("resize.xf_editor-sync", function() {
                 clearTimeout(_resizeTimer);
                 _resizeTimer = setTimeout(function() {
                     _invalidatePositionMap();
@@ -6552,10 +8120,10 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
                 var preview = this.preview && this.preview[0];
                 
                 if (cmScrollEl) {
-                    $(cmScrollEl).off("scroll.xf_editor-sync wheel.xf_editor-master wheel.xf_editor-anim");
+                    dom(cmScrollEl).off("scroll.xf_editor-sync wheel.xf_editor-master wheel.xf_editor-anim");
                 }
                 if (preview) {
-                    $(preview).off("scroll.xf_editor-sync-v3 wheel.xf_editor-master wheel.xf_editor-anim mousedown.xf_editor-sync mouseenter.xf_editor-sync mouseleave.xf_editor-sync");
+                    dom(preview).off("scroll.xf_editor-sync-v3 wheel.xf_editor-master wheel.xf_editor-anim mousedown.xf_editor-sync mouseenter.xf_editor-sync mouseleave.xf_editor-sync");
                 }
                 if (this.previewContainer) {
                     this.previewContainer.off("click.xf_editor-toc click.xf_editor-footnote");
@@ -6563,7 +8131,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
                 if (this.editor) {
                     this.editor.off("mouseenter.xf_editor-sync mouseleave.xf_editor-sync");
                 }
-                $(window).off("resize.xf_editor-sync");
+                dom(window).off("resize.xf_editor-sync");
                 if (this.cm) {
                     this.cm.off("changes.xfsync cursorActivity.xfsync focus.xf_editor-sync");
                 }
@@ -6743,7 +8311,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             var codeMirror       = this.codeMirror;
             var previewContainer = this.previewContainer;
             
-            if ($.inArray(settings.mode, ["gfm", "markdown"]) < 0) {
+            if (["gfm", "markdown"].indexOf(settings.mode) < 0) {
                 return this;
             }
             
@@ -6790,7 +8358,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
                 }
 
                 // 使用命名空间绑定 ESC 事件（Shift+ESC 退出预览模式）
-                $(document).on("keyup.xf_editor-preview", function(event) {
+                dom(document).on("keyup.xf_editor-preview", function(event) {
                     if (event.shiftKey && event.keyCode === 27) {
                         _this.previewed();
                     }
@@ -6821,7 +8389,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             this.state.preview   = false;
 
             // 移除 ESC 键监听（使用命名空间精确解绑）
-            $(document).off("keyup.xf_editor-preview");
+            dom(document).off("keyup.xf_editor-preview");
             
             this.codeMirror.show();
             
@@ -6884,7 +8452,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
                 // 保存当前尺寸，用于退出时恢复
                 editor.data("oldWidth", editor.width()).data("oldHeight", editor.height());
 
-                $("html,body").css("overflow", "hidden");
+                dom("html,body").css("overflow", "hidden");
                 
                 // 添加 fullscreen CSS class（CSS 中已用 !important 控制尺寸）
                 editor.addClass(fullscreenClass);
@@ -6894,7 +8462,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
                 settings.onfullscreen.call(this);
 
                 // 使用命名空间绑定 ESC 事件，便于精确解绑
-                $(document).on("keyup.xf_editor-fs", function(event) {
+                dom(document).on("keyup.xf_editor-fs", function(event) {
                     if (!event.shiftKey && event.keyCode === 27) 
                     {
                         if (_this.state.fullscreen)
@@ -6929,13 +8497,13 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             this.state.fullscreen = false;
             
             // 移除 ESC 键监听（使用命名空间精确解绑）
-            $(document).off("keyup.xf_editor-fs");
+            dom(document).off("keyup.xf_editor-fs");
             
             if (toolbar) {
                 toolbar.find(".fa[name=fullscreen]").parent().removeClass("active"); 
             }
 
-            $("html,body").css("overflow", "");
+            dom("html,body").css("overflow", "");
 
             // 恢复保存的原始尺寸
             var oldWidth = editor.data("oldWidth");
@@ -7209,7 +8777,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
                 path += ".js";
             }
             
-            if (typeof xfEditor.loadFiles === "object" && $.inArray(path, xfEditor.loadFiles.plugin) < 0) {
+            if (typeof xfEditor.loadFiles === "object" && xfEditor.loadFiles.plugin.indexOf(path) < 0) {
                 xfEditor.loadPlugin(path, function() {
                     if (typeof _this[name] !== "function") {
                         xfEditor.notify("插件加载失败：" + name + "，请检查插件路径", "error");
@@ -7292,8 +8860,8 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             var toolbar = this.toolbar;
             
             // 移除已存在的颜色选择面板
-            $(".xf_editor-color-picker-panel").remove();
-            $(document).off("mousedown.xf_editor-colorpicker");
+            dom(".xf_editor-color-picker-panel").remove();
+            dom(document).off("mousedown.xf_editor-colorpicker");
             
             // 常用颜色：2行×4列，前7个为预设颜色，第8个为自定义选择器
             var commonColors = [
@@ -7341,7 +8909,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             
             panelHTML.push('</div>');
             
-            var $panel = $(panelHTML.join(""));
+            var $panel = dom(panelHTML.join(""));
             
             // 相对于工具栏按钮定位
             if (this.activeIcon && this.activeIcon.length) {
@@ -7350,11 +8918,11 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
                 $panel.css({
                     position: "absolute",
                     top: iconOffset.top + iconHeight + 4,
-                    left: Math.min(iconOffset.left, $(window).width() - 310)
+                    left: Math.min(iconOffset.left, dom(window).width() - 310)
                 });
             }
             
-            $("body").append($panel);
+            dom("body").append($panel);
             
             // 保存上下文信息用于应用颜色
             this._colorPickerSelection = this.cm ? this.cm.getSelection() : "";
@@ -7362,10 +8930,10 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             
             // 预设颜色块点击
             $panel.on("click", ".xf_editor-color-picker-swatch:not(.xf_editor-color-picker-custom)", function() {
-                var color = $(this).data("color");
+                var color = dom(this).data("color");
                 _this.applyColor(color);
                 $panel.remove();
-                $(document).off("mousedown.xf_editor-colorpicker");
+                dom(document).off("mousedown.xf_editor-colorpicker");
             });
             
             // 自定义颜色选择器点击
@@ -7385,13 +8953,13 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             
             // 原生颜色选择器值变化
             $panel.on("input change", ".xf_editor-color-picker-native", function() {
-                var val = $(this).val();
+                var val = dom(this).val();
                 $panel.find(".xf_editor-color-picker-hex-input").val(val);
             });
             
             // 16进制颜色值输入校验
             $panel.on("input", ".xf_editor-color-picker-hex-input", function() {
-                var input = $(this);
+                var input = dom(this);
                 var val = input.val() || "";
                 if (val && val.charAt(0) !== "#") {
                     val = "#" + val;
@@ -7408,17 +8976,17 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
                 if (hexVal.length === 4 || hexVal.length === 7) {
                     _this.applyColor(hexVal);
                     $panel.remove();
-                    $(document).off("mousedown.xf_editor-colorpicker");
+                    dom(document).off("mousedown.xf_editor-colorpicker");
                 }
             });
             
             // 点击面板外部时关闭
             setTimeout(function() {
-                $(document).on("mousedown.xf_editor-colorpicker", function(e) {
-                    if (!$(e.target).closest(".xf_editor-color-picker-panel").length &&
-                        !$(e.target).closest("." + _this.classPrefix + "menu > li > a").length) {
+                dom(document).on("mousedown.xf_editor-colorpicker", function(e) {
+                    if (!dom(e.target).closest(".xf_editor-color-picker-panel").length &&
+                        !dom(e.target).closest("." + _this.classPrefix + "menu > li > a").length) {
                         $panel.remove();
-                        $(document).off("mousedown.xf_editor-colorpicker");
+                        dom(document).off("mousedown.xf_editor-colorpicker");
                     }
                 });
             }, 50);
@@ -7466,27 +9034,29 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             }
 
             // 2. 解绑所有文档级事件（xfEditor 命名空间）
-            $(document).off("click.xf_editor-table");
-            $(document).off("mousemove.xf_editor-img mouseup.xf_editor-img");
-            $(document).off("keydown.xfEditorDraft");
-            $(document).off("mousedown.xf_editor-colorpicker");
-            $(document).off("keyup.xf_editor-fs keyup.xf_editor-preview");
+            dom(document).off("click.xf_editor-table");
+            dom(document).off("mousemove.xf_editor-img mouseup.xf_editor-img");
+            dom(document).off("keydown.xfEditorDraft");
+            dom(document).off("mousedown.xf_editor-colorpicker");
+            dom(document).off("keyup.xf_editor-fs keyup.xf_editor-preview");
 
             // 3. 解绑所有窗口事件（使用命名空间批量清理）
-            $(window).off("load.xf_editor-pageload");
-            $(window).off("resize.xf_editor-resize");   // 解绑 loadedDisplay 中命名空间化的 resize 监听
-            $(window).off(".xf_editor-echarts");  // 匹配所有子命名空间如 resize.xf_editor-echarts.xxx
-            $(window).off("resize.xf_editor-echarts-md");
-            $(window).off("resize.xfEditorDraft");
-            $(window).off("scroll.xf_editor-autofixed");
-            $(window).off("keydown.xf_editor-fkeys");
-            $(window).off("resize.xf_editor-dialog");
-            $(window).off(".xf_editor-auto");  // 匹配 xf_editor-auto 命名空间的元素级事件
+            dom(window).off("load.xf_editor-pageload");
+            dom(window).off("resize.xf_editor-resize");   // 解绑 loadedDisplay 中命名空间化的 resize 监听
+            dom(window).off(".xf_editor-echarts");  // 匹配所有子命名空间如 resize.xf_editor-echarts.xxx
+            dom(window).off("resize.xf_editor-echarts-md");
+            dom(window).off("resize.xfEditorDraft");
+            dom(window).off("scroll.xf_editor-autofixed");
+            dom(window).off("keydown.xf_editor-fkeys");
+            dom(window).off("resize.xf_editor-dialog");
+            dom(window).off(".xf_editor-auto");  // 匹配 xf_editor-auto 命名空间的元素级事件
 
             // 3b. 销毁所有 ECharts 实例并解绑其 resize 事件
             // ★ v1.17.27: 修复 _echarts_instance 属性名不匹配导致 dispose 不生效
             if (this.previewContainer && typeof echarts !== "undefined") {
                 this.previewContainer.find(".xf_editor-echarts").each(function() {
+                    // ★ v1.17.38: 先断开 ResizeObserver 再 dispose（避免内存泄漏）
+                    if (this._ro && this._ro.disconnect) { this._ro.disconnect(); this._ro = null; }
                     // echarts 4.x 在 DOM 上存储实例的属性为 _echarts_instance_（尾下划线）
                     if (echarts.getInstanceByDom && echarts.getInstanceByDom(this)) {
                         try { echarts.dispose(this); } catch(ex) {}
@@ -7495,8 +9065,8 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             }
 
             // 解绑未命名空间的全局文档事件
-            $(document).off("click.xf_editor-dropdown");
-            $(document).off("click.tooltip keydown.tooltip");
+            dom(document).off("click.xf_editor-dropdown");
+            dom(document).off("click.tooltip keydown.tooltip");
             
             // 清理对话框拖拽残留（防止幽灵拖拽）
             if (document.onmousemove) {
@@ -7513,7 +9083,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
 
             // 5. 销毁 CodeMirror 并恢复原始 textarea
             if (this.cm) {
-                var cmElement = $(this.cm.getWrapperElement());
+                var cmElement = dom(this.cm.getWrapperElement());
                 this.cm.toTextArea();
                 cmElement.remove();
                 this.cm = null;
@@ -7548,8 +9118,8 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             try { editor.removeData("xfEditorInstance"); } catch (e) {}
 
             // 9. 清理所有悬浮提示 popup 元素及其 Blob URL
-            $("body").children(".xf_editor-tooltip-popup").each(function() {
-                var $popup = $(this);
+            dom("body").children(".xf_editor-tooltip-popup").each(function() {
+                var $popup = dom(this);
                 var blobUrl = $popup.attr("data-blob-url");
                 if (blobUrl) {
                     try { (window.URL || window.webkitURL).revokeObjectURL(blobUrl); } catch(ex) {}
@@ -7597,7 +9167,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             
             // 合并语言包到当前设置
             if (langObj && typeof langObj === "object") {
-                $.extend(true, settings.lang, langObj);
+                deepMerge( settings.lang, langObj);
             }
             
             // 确保 this.lang 和 settings.lang 指向同一对象
@@ -7737,11 +9307,11 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
                         } else if (cm) {
                             cm.replaceSelection("\n" + block + "\n");
                         }
-                        $(window).off("resize.xf_cg_cursor", onWinResize);
+                        dom(window).off("resize.xf_cg_cursor", onWinResize);
                         dialog.hide().lockScreen(false).hideMask().remove();
                     }],
                     cancelBtn: ["取消", function() {
-                        $(window).off("resize.xf_cg_cursor", onWinResize);
+                        dom(window).off("resize.xf_cg_cursor", onWinResize);
                         dialog.hide().lockScreen(false).hideMask().remove();
                     }]
                 }
@@ -7829,7 +9399,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             }
             layout();
             render();
-            $maxBtn = $('<a href="javascript:;" class="xf-cg-max-btn fa fa-expand" title="最大化"></a>');
+            $maxBtn = dom('<a href="javascript:;" class="xf-cg-max-btn fa fa-expand" title="最大化"></a>');
             $maxBtn.insertBefore(dialog.children(".xf_editor-dialog-close"));
             $maxBtn.on(xfEditor.mouseOrTouch("click", "touchend"), function(e) { e.preventDefault(); e.stopPropagation(); toggleMaximize(); });
 
@@ -8262,10 +9832,10 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
                 render();
             }
             var onWinResize = function() {
-                if (!dialog.is(":visible") || !dialog.parent().length) { $(window).off("resize.xf_cg_cursor", onWinResize); return; }
+                if (!dialog.is(":visible") || !dialog.parent().length) { dom(window).off("resize.xf_cg_cursor", onWinResize); return; }
                 updateCursor(); layout(); render();
             };
-            $(window).on("resize.xf_cg_cursor", onWinResize);
+            dom(window).on("resize.xf_cg_cursor", onWinResize);
 
             dialog.find('[data-act="undo"]').on(xfEditor.mouseOrTouch("click", "touchend"), doUndo);
             dialog.find('[data-act="redo"]').on(xfEditor.mouseOrTouch("click", "touchend"), doRedo);
@@ -8306,17 +9876,17 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
                 dialog.find(".xf-cg-zoomval").text(Math.round(state.scale * 100) + "%");
             });
             dialog.find(".xf-cg-color").on("input", function() {
-                state.color = $(this).val();
+                state.color = dom(this).val();
                 if (state.eraser) setPenMode();
                 syncSwatch();
             });
             dialog.find(".xf-cg-size").on("input", function() {
-                state.size = parseInt($(this).val(), 10) || 4;
-                $(this).next(".xf-cg-rangeval").text(state.size);
+                state.size = parseInt(dom(this).val(), 10) || 4;
+                dom(this).next(".xf-cg-rangeval").text(state.size);
             });
             dialog.find(".xf-cg-esize").on("input", function() {
-                state.eraserSize = parseInt($(this).val(), 10) || 20;
-                $(this).next(".xf-cg-rangeval").text(state.eraserSize);
+                state.eraserSize = parseInt(dom(this).val(), 10) || 20;
+                dom(this).next(".xf-cg-rangeval").text(state.eraserSize);
                 if (state.eraser) updateCursor();
             });
 
@@ -8324,11 +9894,11 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             var $presets = dialog.find(".xf-cg-presets");
             function syncSwatch() {
                 $presets.children(".xf-cg-swatch").each(function() {
-                    $(this).toggleClass("xf-cg-active", $(this).data("c") === state.color);
+                    dom(this).toggleClass("xf-cg-active", dom(this).data("c") === state.color);
                 });
             }
             presets.forEach(function(c) {
-                $('<span class="xf-cg-swatch" style="background:' + c + '" data-c="' + c + '"></span>').appendTo($presets).on(xfEditor.mouseOrTouch("click", "touchend"), function() {
+                dom('<span class="xf-cg-swatch" style="background:' + c + '" data-c="' + c + '"></span>').appendTo($presets).on(xfEditor.mouseOrTouch("click", "touchend"), function() {
                     state.color = c;
                     dialog.find(".xf-cg-color").val(c);
                     if (state.eraser) setPenMode();
@@ -8382,345 +9952,40 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
         },
 
         /**
-         * 绑定图片拖拽事件
-         *
-         * CodeMirror 的 dragDrop 选项被显式关闭（避免文本拖动），因此它不会绑定
-         * dragover/drop，cm.on("drop") 也不会触发；这里直接在编辑区 DOM 上监听原生事件。
-         *
-         * 拖入的图片始终以 Base64 涂鸦语法插入（离线能力，不依赖上传服务器），
-         * 因此无论当前处于上传模式还是 Base64 模式都会接管图片拖拽。
-         *
-         * @returns {xfEditor} 返回 xfEditor 的实例对象
+         * 将图片（File/Blob 对象或远程 URL）读取/下载为 data URI (base64)。
+         * @param {File|Blob|string} input File/Blob 或 http(s) 图片地址
+         * @param {function} cb 回调 (err, dataUri)
          */
-        bindImageDropEvent : function() {
-            var _this  = this;
-            var editor = this.editor;
-            
-            if (!editor || !editor.length) return this;
-            
-            var ns     = ".xf_editor-image-drop";
-            var target = editor.find(".CodeMirror");
-            
-            if (!target.length) target = editor;
-            
-            // 判断本次拖拽是否携带文件（拖动编辑器内文本时不应高亮）
-            var hasFiles = function(dt) {
-                if (!dt) return false;
-                if (dt.files && dt.files.length) return true;
-                if (dt.types)
-                {
-                    for (var i = 0; i < dt.types.length; i++)
-                    {
-                        if (dt.types[i] === "Files") return true;
-                    }
+        fileToDataURL: function(input, cb) {
+            cb = cb || function() {};
+            try {
+                if (input && (typeof File !== "undefined" && input instanceof File || typeof Blob !== "undefined" && input instanceof Blob)) {
+                    var reader = new FileReader();
+                    reader.onload = function(e) { cb(null, e.target.result); };
+                    reader.onerror = function() { cb(new Error("read file failed")); };
+                    reader.readAsDataURL(input);
+                    return;
                 }
-                return false;
-            };
-            
-            target.off(ns);
-            
-            target.on("dragover" + ns + " dragenter" + ns, function(e) {
-                var dt = e.originalEvent ? e.originalEvent.dataTransfer : e.dataTransfer;
-                
-                if (!hasFiles(dt)) return;
-                
-                // 必须阻止默认行为，浏览器才会派发 drop 事件
-                e.preventDefault();
-                e.stopPropagation();
-                
-                try { dt.dropEffect = "copy"; } catch (ex) {}
-                
-                target.addClass("xf_editor-drag-over");
-            });
-            
-            target.on("dragleave" + ns + " dragend" + ns, function(e) {
-                target.removeClass("xf_editor-drag-over");
-            });
-            
-            target.on("drop" + ns, function(e) {
-                var oe = e.originalEvent || e;
-                var dt = oe.dataTransfer;
-                
-                if (!dt) return;
-                
-                target.removeClass("xf_editor-drag-over");
-                
-                var cm = _this.cm;
-                
-                // 拖入的是本地图片文件
-                if (dt.files && dt.files.length)
-                {
-                    var images = [];
-                    
-                    for (var i = 0; i < dt.files.length; i++)
-                    {
-                        if (/^image\//i.test(dt.files[i].type || "")) images.push(dt.files[i]);
-                    }
-                    
-                    if (images.length)
-                    {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        
-                        // 把光标移动到鼠标释放的位置，保证插入点符合预期
-                        if (cm && typeof cm.coordsChar === "function")
-                        {
-                            try {
-                                var pos = cm.coordsChar({ left : oe.clientX, top : oe.clientY });
-                                if (pos) cm.setCursor(pos);
-                            } catch (ex) {}
-                        }
-                        
-                        _this.insertImageFilesAsBase64(images);
-                        
-                        return false;
-                    }
-                }
-                
-                // 拖入的是图片地址（例如从其它网页把图片拖进来）
-                var url = "";
-                
-                try {
-                    url = dt.getData("text/uri-list") || dt.getData("text/plain") || "";
-                } catch (ex) {}
-                
-                url = (url || "").trim();
-                
-                if (/^https?:\/\/.+/i.test(url) || /^data:image\//i.test(url))
-                {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    
-                    if (cm && typeof cm.coordsChar === "function")
-                    {
-                        try {
-                            var dropPos = cm.coordsChar({ left : oe.clientX, top : oe.clientY });
-                            if (dropPos) cm.setCursor(dropPos);
-                        } catch (ex2) {}
-                    }
-                    
-                    var title = "图片";
-                    
-                    if (!/^data:/i.test(url))
-                    {
-                        title = (url.split("?")[0].split("/").pop() || "图片").replace(/\.[^.]+$/, "") || "图片";
-                    }
-                    
-                    _this.imageUrlToBase64(url, function(dataUri) {
-                        _this.insertBase64Canvas(dataUri, title);
-                        xfEditor.notify("图片已转换为 Base64 并插入。", "success");
+                if (typeof input === "string" && !/^data:/.test(input)) {
+                    // 远程图片：尝试 fetch 转 base64（同源或允许跨域时有效）
+                    if (typeof fetch !== "function") { cb(new Error("fetch not supported")); return; }
+                    fetch(input).then(function(resp) {
+                        if (!resp.ok) throw new Error("http " + resp.status);
+                        return resp.blob();
+                    }).then(function(blob) {
+                        var reader = new FileReader();
+                        reader.onload = function(e) { cb(null, e.target.result); };
+                        reader.onerror = function() { cb(new Error("read blob failed")); };
+                        reader.readAsDataURL(blob);
+                    }).catch(function(err) {
+                        cb(err || new Error("fetch failed"));
                     });
-                    
-                    return false;
+                    return;
                 }
-            });
-            
-            return this;
-        },
-
-        /**
-         * 获取当前图片处理模式
-         *
-         * - "upload" : 已开启 imageUpload 且配置了非空的 imageUploadURL，
-         *              本地图片/文件会被上传到 imageUploadURL 指向的服务器地址。
-         * - "base64" : 其余所有情况（未开启 imageUpload，或开启了但 imageUploadURL
-         *              未配置 / 配置为空），图片统一转成 Base64 并以涂鸦语法插入，
-         *              不依赖任何服务器上传能力。
-         *
-         * 无论处于哪种模式，「添加图片」对话框都始终可用，并且本地上传按钮始终显示，
-         * 用户既可以通过图片地址插入，也可以选择本地文件。
-         *
-         * @returns {String} "upload" | "base64"
-         */
-        getImageMode : function() {
-            var settings = this.settings || {};
-            var url      = settings.imageUploadURL;
-            var hasUrl   = (typeof url === "string") && url.trim() !== "";
-            return (settings.imageUpload && hasUrl) ? "upload" : "base64";
-        },
-
-        /**
-         * 判断当前是否处于「本地 Base64 图片模式」
-         * 即未开启 imageUpload，或虽开启但未配置有效的 imageUploadURL。
-         *
-         * 兼容历史调用方：原实现要求必须开启 imageUpload 才返回 true，
-         * 新版调整为「未配置有效上传地址即视为 Base64 降级模式」，
-         * 保证未开启 imageUpload 时也能通过本地文件/地址转 Base64 插入图片。
-         *
-         * @returns {Boolean}
-         */
-        isImageBase64Fallback : function() {
-            return this.getImageMode() === "base64";
-        },
-
-        /**
-         * 把 File / Blob 对象转换为 Base64 Data URI
-         * 涂鸦语法渲染时仅接受 png/jpeg/webp，其它格式（gif/bmp 等）统一转码为 png
-         *
-         * @param   {File|Blob} file     图片文件对象
-         * @param   {Function}  callback 成功回调 function(dataUri, file)
-         * @param   {Function}  [onError] 失败回调 function(errorMessage)
-         * @returns {void}
-         */
-        imageFileToBase64 : function(file, callback, onError) {
-            var _this = this;
-            var fail  = onError || function(msg) { xfEditor.notify(msg, "error", 5000); };
-
-            if (!file) { fail("图片文件为空。"); return; }
-            if (typeof FileReader === "undefined") { fail("当前浏览器不支持 FileReader，无法转换 Base64。"); return; }
-            if (!/^image\//i.test(file.type || "")) { fail("只允许插入图片文件。"); return; }
-
-            var reader = new FileReader();
-            reader.onerror = function() { fail("图片读取失败，请重试。"); };
-            reader.onload  = function(e) {
-                var dataUri = e.target.result;
-                // 渲染器只放行 png/jpeg/webp，其它格式转码为 png
-                if (/^data:image\/(png|jpeg|webp);base64,/i.test(dataUri)) {
-                    callback.call(_this, dataUri, file);
-                } else {
-                    _this._transcodeToPng(dataUri, function(pngUri) {
-                        callback.call(_this, pngUri, file);
-                    }, fail);
-                }
-            };
-            reader.readAsDataURL(file);
-        },
-
-        /**
-         * 把任意图片地址（远程 URL / data URI / blob URL）转换为 Base64 Data URI
-         * 远程图片依赖目标服务器的 CORS 响应头，跨域失败时回调 onError
-         *
-         * @param   {String}   url       图片地址
-         * @param   {Function} callback  成功回调 function(dataUri)
-         * @param   {Function} [onError] 失败回调 function(errorMessage)
-         * @returns {void}
-         */
-        imageUrlToBase64 : function(url, callback, onError) {
-            var _this = this;
-            var fail  = onError || function(msg) { xfEditor.notify(msg, "error", 5000); };
-
-            if (!url) { fail("图片地址不能为空。"); return; }
-
-            // 已经是合规 Base64，直接返回
-            if (/^data:image\/(png|jpeg|webp);base64,/i.test(url)) { callback.call(_this, url); return; }
-            // 其它类型 data URI（gif/bmp/svg 等）走转码
-            if (/^data:image\//i.test(url)) { _this._transcodeToPng(url, function(u){ callback.call(_this, u); }, fail); return; }
-
-            _this._transcodeToPng(url, function(dataUri) {
-                callback.call(_this, dataUri);
-            }, function() {
-                fail("远程图片转换 Base64 失败（可能是目标服务器未开启跨域 CORS 支持）。");
-            });
-        },
-
-        /**
-         * 通过 canvas 把图片转码为 PNG Data URI（内部方法）
-         *
-         * @param   {String}   src       图片地址或 data URI
-         * @param   {Function} callback  成功回调 function(pngDataUri)
-         * @param   {Function} onError   失败回调 function(errorMessage)
-         * @returns {void}
-         */
-        _transcodeToPng : function(src, callback, onError) {
-            var img = new Image();
-            // 远程图片需要匿名跨域才能避免 canvas 被污染（toDataURL 会抛安全错误）
-            if (!/^data:/i.test(src)) img.crossOrigin = "anonymous";
-            img.onload = function() {
-                try {
-                    var canvas = document.createElement("canvas");
-                    canvas.width  = img.naturalWidth  || img.width;
-                    canvas.height = img.naturalHeight || img.height;
-                    if (!canvas.width || !canvas.height) { onError("图片尺寸无效，转换失败。"); return; }
-                    canvas.getContext("2d").drawImage(img, 0, 0);
-                    callback(canvas.toDataURL("image/png"));
-                } catch (err) {
-                    onError("图片转换 Base64 失败：" + (err && err.message ? err.message : "画布被跨域数据污染"));
-                }
-            };
-            img.onerror = function() { onError("图片加载失败，请检查地址是否有效。"); };
-            img.src = src;
-        },
-
-        /**
-         * 以涂鸦语法把 Base64 图片插入编辑器
-         * [[canvas:center title="图片名称"]]
-         * (data:image/png;base64,xxxx)
-         * [[/canvas]]
-         *
-         * @param   {String} dataUri 图片 Base64 Data URI
-         * @param   {String} [title] 图片名称
-         * @param   {String} [align] 对齐方式 left|center|right，默认 center
-         * @returns {xfEditor}       返回 xfEditor 的实例对象
-         */
-        insertBase64Canvas : function(dataUri, title, align) {
-            var cm = this.cm;
-            if (!cm || !dataUri) return this;
-
-            align = align || "center";
-
-            // 标题会写进 [[canvas ... title="xxx"]] 开标签，其解析正则为 [^\]]*
-            // 因此需要剔除 ] 与换行，避免文件名把开标签截断导致渲染失败
-            var safeTitle = String(title || "").replace(/[\]\r\n]/g, " ").trim();
-
-            var block  = this._buildCanvasBlock(dataUri, align, safeTitle);
-            var cursor = cm.getCursor();
-            // 涂鸦语法必须独占整行，光标不在行首时先补换行
-            var prefix = (cursor.ch > 0) ? "\n" : "";
-
-            cm.focus();
-            cm.replaceSelection(prefix + block + "\n");
-
-            return this;
-        },
-
-        /**
-         * 把图片文件转换为 Base64 并以涂鸦语法插入（供拖拽 / 粘贴 / 对话框复用）
-         *
-         * @param   {File}   file    图片文件对象
-         * @param   {String} [align] 对齐方式，默认 center
-         * @returns {void}
-         */
-        insertImageFileAsBase64 : function(file, align) {
-            var _this    = this;
-            var settings = this.settings || {};
-
-            // 校验扩展名白名单
-            var formats = settings.imageFormats || ["jpg", "jpeg", "gif", "png", "bmp", "webp"];
-            var isImage = new RegExp("(\\.(" + formats.join("|") + "))$", "i");
-            var name    = file.name || "";
-            if (name && !isImage.test(name)) {
-                xfEditor.notify("只允许插入图片文件，允许的格式有：" + formats.join(", "), "warning");
-                return;
+                cb(new Error("invalid input"));
+            } catch (e) {
+                cb(e);
             }
-
-            // 去掉扩展名作为图片名称
-            var title = name.replace(/\.[^.]+$/, "") || "图片";
-
-            this.imageFileToBase64(file, function(dataUri) {
-                _this.insertBase64Canvas(dataUri, title, align);
-                xfEditor.notify("图片已转换为 Base64 并插入。", "success");
-            });
-        },
-
-        /**
-         * 处理拖拽 / 粘贴进来的文件列表，逐个转 Base64 插入
-         *
-         * @param   {FileList|Array} files 文件列表
-         * @returns {Number}               实际处理的图片数量
-         */
-        insertImageFilesAsBase64 : function(files) {
-            if (!files || !files.length) return 0;
-
-            var count = 0;
-            for (var i = 0; i < files.length; i++) {
-                var file = files[i];
-                if (file && /^image\//i.test(file.type || "")) {
-                    this.insertImageFileAsBase64(file);
-                    count++;
-                }
-            }
-
-            return count;
         }
     };
     xfEditor.fn.init.prototype = xfEditor.fn; 
@@ -8737,7 +10002,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
         
         if (settings.dialogLockScreen) 
         {            
-            $("html,body").css("overflow", "hidden");
+            dom("html,body").css("overflow", "hidden");
             this.resize();
         }
     };
@@ -8746,7 +10011,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
      * 显示透明背景层
      * Display mask layer when dialog opening
      * 
-     * @param   {Object}     dialog    dialog jQuery object
+     * @param   {Object}     dialog    dialog XfDom object
      * @returns {void}
      */
     
@@ -8755,8 +10020,8 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
         var settings = this.settings || {dialogShowMask : true};
         
         dialog.css({
-            top  : ($(window).height() - dialog.height()) / 2 + "px",
-            left : ($(window).width()  - dialog.width())  / 2 + "px"
+            top  : (dom(window).height() - dialog.height()) / 2 + "px",
+            left : (dom(window).width()  - dialog.width())  / 2 + "px"
         });
 
         if (settings.dialogShowMask) {
@@ -9558,7 +10823,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
                 for (var fi = 0; fi < cat2.formulas.length; fi++) {
                     var f = cat2.formulas[fi];
                     // HTML 属性 + KaTeX 容器统一使用完整 HTML 实体转义
-                    // jQuery .text() / DOM textContent 会自动解码回原始字符，KaTeX 得到正确的 LaTeX
+                    // DOM textContent 会自动解码回原始字符，KaTeX 得到正确的 LaTeX
                     var escLatex = f.latex.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
                     var blockAttr = f.block ? ' data-block="1"' : '';
                     dialogHTML += '<div class="' + classPrefix + 'formula-item" data-latex="' + escLatex + '"' + blockAttr + ' title="' + escLatex + '">';
@@ -9620,7 +10885,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             var renderedTabs = {};
             
             function renderPanelFormulas(panel) {
-                var $p = $(panel);
+                var $p = dom(panel);
                 var catIdx = $p.data("cat");
                 if (renderedTabs[catIdx]) return;
                 renderedTabs[catIdx] = true;
@@ -9635,7 +10900,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
                         if (!latexText) continue;
                         // 根据公式的 block 属性决定 displayMode，块级公式（矩阵、行列式等）需要 displayMode: true
                         var $item = $el.closest("." + classPrefix + "formula-item");
-                        var isBlock = $item.length && $item.data("block") == "1";
+                        var isBlock = $item.length && $item.data("block") === "1";
                         try {
                             xfEditor.$katex.render(latexText, $el[0], { throwOnError: false, displayMode: isBlock });
                         } catch(e) {
@@ -9661,9 +10926,9 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             $tabs.off("click").on("click", function(e) {
                 e.preventDefault();
                 e.stopPropagation();
-                var catIdx = $(this).data("cat");
+                var catIdx = dom(this).data("cat");
                 $tabs.removeClass("active");
-                $(this).addClass("active");
+                dom(this).addClass("active");
                 $panels.hide();
                 var $targetPanel = $dialog.find('.' + classPrefix + 'formula-category-panel[data-cat="' + catIdx + '"]').show();
                 // 切换 Tab 时按需渲染该面板的公式
@@ -9681,9 +10946,9 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             $formulaItems.off("click").on("click", function(e) {
                 e.preventDefault();
                 e.stopPropagation();
-                var latex = $(this).data("latex"); // data() 自动解码 HTML 实体
+                var latex = dom(this).data("latex"); // data() 自动解码 HTML 实体
                 var isBlockMode = getFormulaMode() === "block";
-                var hasBlockData = $(this).data("block") == "1";
+                var hasBlockData = dom(this).data("block") === "1";
                 var useBlock = isBlockMode || hasBlockData;
                 var isBlockSyntax = latex && (latex.indexOf("\\begin") !== -1 || latex.indexOf("\\end") !== -1);
                 var toInsert;
@@ -10281,6 +11546,16 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             return "<!--" + id + "-->";
         });
         
+        // 2.5) 处理 tooltip 尺寸语法 [text](tooltip:...)<width,height>
+        //      marked.js 标准不解析 ) 之后的 <> 作为 title，需提前转为 "title" 格式
+        //      示例：[查看](tooltip:iframe:pre#id)<420,280> → [查看](tooltip:iframe:pre#id "<420,280>")
+        markdown = markdown.replace(
+            /\[([^\]]*?)\]\(tooltip:([^)\n]*)\)\s*<(\d+),(\d+)>/gi,
+            function(match, text, content, width, height) {
+                return "[" + text + "](tooltip:" + content.trim() + ' "<' + width + ',' + height + '>")';
+            }
+        );
+
         // 3) 处理链接 target 语法 [text](url){target=value}
         //    ★ 使用捕获组检查前一个字符，排除图片语法 ![alt](url){target=...}
         //    ES5 兼容：不使用 (?<!!) 负向后瞻（ES2018+），改用捕获组 + 回调检查
@@ -11957,7 +13232,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             tooltip              : true,           // 启用悬浮提示 [text](tooltip:content) 语法
             copybook             : true        };
         
-        var settings        = $.extend(defaults, options || {});    
+        var settings        = Object.assign(defaults, options || {});    
         var marked          = xfEditor.$marked;
         var markedRenderer  = new marked.Renderer();
         markdownToC         = markdownToC || [];        
@@ -11989,7 +13264,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
                 if (settings.emailLink)
                 {
                     text = text.replace(emailLinkReg, function($1, $2, $3, $4, $5) {
-                        return (!$2 && $.inArray($5, "jpg|jpeg|png|gif|webp|ico|icon|pdf".split("|")) < 0) ? "<a href=\"mailto:" + $1 + "\">"+$1+"</a>" : $1;
+                        return (!$2 && "jpg|jpeg|png|gif|webp|ico|icon|pdf".split("|").indexOf($5) < 0) ? "<a href=\"mailto:" + $1 + "\">"+$1+"</a>" : $1;
                     });
                 }
 
@@ -12616,7 +13891,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
      * @param   {Array}    toc             从marked获取的TOC数组列表
      * @param   {Element}  container       插入TOC的容器元素
      * @param   {Integer}  startLevel      Hx 起始层级
-     * @returns {Object}   tocContainer    返回ToC列表容器层的jQuery对象元素
+     * @returns {Object}   tocContainer    返回ToC列表容器层的XfDom对象
      */
     
     xfEditor.markdownToCRenderer = function(toc, container, tocDropdown, startLevel) {
@@ -12681,7 +13956,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
      * 生成TOC下拉菜单
      * Creating ToC dropdown menu
      * 
-     * @param   {Object}   container       插入TOC的容器jQuery对象元素
+     * @param   {Object}   container       插入TOC的容器XfDom对象
      * @param   {String}   tocTitle        ToC title
      * @returns {Object}                   return toc-menu object
      */
@@ -12694,7 +13969,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
         var tocMenus  = container.find("." + this.classPrefix + "toc-menu");
 
         tocMenus.each(function() {
-            var $this  = $(this);
+            var $this  = dom(this);
             var toc    = $this.children(".markdown-toc");
             var icon   = "<i class=\"fa fa-angle-down\"></i>";
             var btn    = "<a href=\"javascript:;\" class=\"toc-menu-btn\">" + icon + tocTitle + "</a>";
@@ -12709,7 +13984,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
                 menu.show();
 
                 list.each(function(){
-                    var li = $(this);
+                    var li = dom(this);
                     var ul = li.children("ul");
 
                     if (ul.html() === "")
@@ -12723,7 +13998,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
 
                         if (firstA.children(".fa").length < 1)
                         {
-                            firstA.append( $(icon).css({ float:"right", paddingTop:"4px" }) );
+                            firstA.append( dom(icon).css({ float:"right", paddingTop:"4px" }) );
                         }
                     }
 
@@ -12870,7 +14145,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
         //   el[0].outerHTML + text 方式重建 DOM，会错误拆解嵌套层级，丢失/错位内容，
         //   最终导致预览从该处被截断、显示不完整。DOM 遍历天然支持任意嵌套层级，彻底修复该问题。
         try {
-            var $wrap = $("<div></div>").html(html);
+            var $wrap = dom("<div></div>").html(html);
 
             // 1) 移除指定标签（连同其内容），DOM 精确匹配，支持嵌套
             for (var i = 0, len = filterTags.length; i < len; i++) {
@@ -12906,7 +14181,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
                     // 移除逗号分隔的指定属性
                     var filterAttrs = attrs.split(",");
                     $wrap.find("*").each(function () {
-                        var $el = $(this);
+                        var $el = dom(this);
                         for (var a = 0; a < filterAttrs.length; a++) {
                             var an = filterAttrs[a].trim();
                             if (an) $el.removeAttr(an);
@@ -12926,13 +14201,16 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
      * ★ v1.17.16: 从 &lt;code&gt; 元素可靠提取原始代码文本（保留缩进/空格/换行）
      * 使用 innerHTML + 实体解码，比 textContent 更可靠（textContent 在 DOM 结构复杂时可能丢失空白）
      *
-     * @param   {HTMLElement|jQuery} el  code 元素
+     * @param   {HTMLElement|XfDom} el  code 元素
      * @returns {string}                  解码后的原始代码文本
      */
     xfEditor.extractCodeText = function(el) {
         if (!el) return "";
-        // ★ v1.17.20: 支持 jQuery 多元素集合 — 逐个提取后合并（如 pre 内嵌多个 code 元素）
-        if (el.jquery && el.length > 1) {
+        // ★ v1.17.35: 支持 XfDom 多元素集合 — 逐个提取后合并
+        //     原检查 el.jquery 会漏掉 XfDom 实例（没有 .jquery），
+        //     $pre.find("code") 返回 XfDom 时落入 else 分支后被当作 DOM 元素传给
+        //     _extractSingleCodeText，导致 el.innerHTML=undefined→code 为空→iframe:pre 白屏。
+        if (el.length > 1 && el[0] && el[0].nodeType) {
             var parts = [];
             for (var i = 0; i < el.length; i++) {
                 var part = xfEditor._extractSingleCodeText(el[i]);
@@ -12940,7 +14218,8 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             }
             return parts.join("\n");
         }
-        var dom = (el.jquery) ? el[0] : el;
+        // ★ 从 XfDom 包装器提取原生 DOM 元素
+        var dom = (el.nodeType) ? el : (el[0] || el);
         return xfEditor._extractSingleCodeText(dom);
     };
 
@@ -13007,7 +14286,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
      * Places a floating copy button at the top-right corner of each pre.
      * The button is absolute-positioned and does not scroll with code content.
      *
-     * @param {jQuery} $container  The container element (jQuery object)
+     * @param {XfDom} $container  The container element (XfDom object)
      */
     xfEditor.initCodeCopy = function($container) {
         var classPrefix = xfEditor.defaults ? xfEditor.defaults.classPrefix || "xf_editor-" : "xf_editor-";
@@ -13016,7 +14295,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
         var failedText  = "复制失败";
 
         $container.find("pre").each(function() {
-            var $pre = $(this);
+            var $pre = dom(this);
 
             // 跳过隐藏的 pre 代码块（hidden 属性），避免无意义的 DOM 操作
             if ($pre[0] && $pre[0].style && $pre[0].style.display === "none") return;
@@ -13030,7 +14309,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
                 $pre.css("position", "relative");
             }
 
-            var $btn = $("<span>")
+            var $btn = dom("<span>")
                 .addClass(classPrefix + "code-copy-btn")
                 .text(copyText)
                 .attr("title", copyText);
@@ -13078,7 +14357,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
      * 将指定容器内的所有 <table> 统一包裹在横向滚动容器中，防止移动端溢出。
      * Wrap every table in a scrollable container to avoid breaking small screens.
      *
-     * @param {jQuery} $container  容器元素（jQuery 对象）
+     * @param {XfDom} $container  容器元素（XfDom 对象）
      */
     xfEditor.initTableScroll = function($container) {
         var classPrefix = xfEditor.defaults ? xfEditor.defaults.classPrefix || "xf_editor-" : "xf_editor-";
@@ -13086,7 +14365,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
         var wrapperClass = classPrefix + "table-wrapper";
 
         $container.find("table").each(function() {
-            var $table = $(this);
+            var $table = dom(this);
             // 跳过已包裹的表格
             if ($table.closest("." + scrollClass + ", ." + wrapperClass).length) {
                 return;
@@ -13099,16 +14378,32 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
      * 初始化指定容器内的所有悬浮提示（Tooltip）
      * Initialize all tooltips within a given container (static method)
      * 
-     * @param {jQuery} $container  容器元素（jQuery 对象）
+     * @param {XfDom} $container  容器元素（XfDom 对象）
      * @returns {void}
      */
     xfEditor.initTooltips = function($container) {
         if (!$container || $container.length === 0) return;
         
+        // ★ v1.17.35: 全局注册 pagehide 清理（仅一次）—— 确保页面切换/关闭时释放 Blob URL
+        if (!xfEditor.___tooltip_pagehide_registered) {
+            xfEditor.___tooltip_pagehide_registered = true;
+            // ★ 组合 pagehide + beforeunload 确保跨浏览器（Safari pagehide 不稳定）
+            var cleanupBlobs = function() {
+                dom("body").children(".xf_editor-tooltip-popup").each(function() {
+                    var blobUrl = dom(this).attr("data-blob-url");
+                    if (blobUrl) {
+                        try { (window.URL || window.webkitURL).revokeObjectURL(blobUrl); } catch(e) {}
+                    }
+                });
+            };
+            dom(window).on("pagehide", cleanupBlobs);
+            dom(window).on("beforeunload", cleanupBlobs);
+        }
+        
         // Clean up orphaned tooltip popups from previous renders before re-initializing
-        $("body").children(".xf_editor-tooltip-popup").each(function() {
+        dom("body").children(".xf_editor-tooltip-popup").each(function() {
             // 释放 Blob URL（iframe:pre 类型会创建 Blob URL）
-            var $popup = $(this);
+            var $popup = dom(this);
             var blobUrl = $popup.attr("data-blob-url");
             if (blobUrl) {
                 try { (window.URL || window.webkitURL).revokeObjectURL(blobUrl); } catch(e) {}
@@ -13116,7 +14411,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
         }).remove();
         
         $container.find(".xf_editor-tooltip-trigger").each(function() {
-            var $trigger = $(this);
+            var $trigger = dom(this);
             if ($trigger.attr("data-tooltip-initialized") === "true") {
                 return;
             }
@@ -13143,7 +14438,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
                 if (tooltipHeight) imgStyle += 'height:' + tooltipHeight + 'px;max-height:' + tooltipHeight + 'px;';
                 else imgStyle += 'max-height:220px;';
                 if (tooltipWidth || tooltipHeight) imgStyle += 'object-fit:contain;';
-                tooltipHtml = '<div class="xf_editor-tooltip-loading"><span>加载中...</span></div><img src="' + xfEditor.escapeAttr(tooltipContent) + '" alt="" style="' + imgStyle + '" onload="$(this).prev().hide();$(this).fadeIn(200);" onerror="$(this).prev().html(\'<span>图片加载失败</span>\');" />';
+                tooltipHtml = '<div class="xf_editor-tooltip-loading"><span>加载中...</span></div><img src="' + xfEditor.escapeAttr(tooltipContent) + '" alt="" style="' + imgStyle + '" onload="var p=this.previousElementSibling;if(p){p.style.display=\'none\';}this.style.display=\'\';var e=this;e.style.opacity=0;e.style.transition=\'opacity 200ms\';requestAnimationFrame(function(){e.style.opacity=1;});" onerror="var p=this.previousElementSibling;if(p){p.innerHTML=\'<span>图片加载失败</span>\';}" />';
             } else if (tooltipType === "iframe") {
                 // 新增 iframe:pre 类型：提取页面中指定 pre 元素内容并以 iframe 展示
                 // 语法：[text](tooltip:iframe:pre#id) 或 [text](tooltip:iframe:pre.class)
@@ -13151,15 +14446,15 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
                 // 提取的原始文本内容在 Blob 中独立渲染，不受原 pre 的 display:none!important 影响
                 var iframeSrc = tooltipContent;
                 var isPreContent = false;
-                // 安全校验：确保 pre 选择器后必须有至少一个有效 CSS 标识符字符，防止 $("pre#") / $("pre.") 报错
+                // 安全校验：确保 pre 选择器后必须有至少一个有效 CSS 标识符字符，防止 dom("pre#") / dom("pre.") 报错
                 // 允许连字符开头（CSS 规范合法但少用），如 pre.--my-class
                 if (tooltipContent && /^pre[#.][a-zA-Z_\-][\w\-]*$/.test(tooltipContent)) {
                     var preSelector = tooltipContent; // 如 "pre#test_id_dom" 或 "pre.test_class_dom"
                     var $pre;
                     try {
-                        $pre = $(preSelector);
+                        $pre = dom(preSelector);
                     } catch(e) {
-                        $pre = $([]);
+                        $pre = dom([]);
                     }
                     if ($pre.length > 0) {
                         isPreContent = true;
@@ -13177,14 +14472,14 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
                 else iframeStyle += 'height:210px;';
                 if (isPreContent) {
                     // iframe:pre 类型：初始 src 留空，在 showTooltip 时动态注入 Blob URL
-                    tooltipHtml = '<div class="xf_editor-tooltip-loading"><span>加载中...</span></div><iframe src="about:blank" frameborder="0" style="' + iframeStyle + '" onload="$(this).prev().hide();$(this).fadeIn(200);"></iframe>';
+                    tooltipHtml = '<div class="xf_editor-tooltip-loading"><span>加载中...</span></div><iframe src="about:blank" frameborder="0" style="' + iframeStyle + '" onload="var p=this.previousElementSibling;if(p){p.style.display=\'none\';}this.style.display=\'\';var e=this;e.style.opacity=0;e.style.transition=\'opacity 200ms\';requestAnimationFrame(function(){e.style.opacity=1;});"></iframe>';
                 } else if (tooltipContent && /^pre[#.][a-zA-Z_\-][\w\-]*$/.test(tooltipContent)) {
                     // pre 选择器模式匹配但 DOM 中未找到对应元素（如元素尚未渲染、选择器拼写错误等）
                     // 防御性处理：使用 about:blank 避免将 "pre.xxx" 当作相对 URL 发起 404 请求
                     console.warn('iframe:pre tooltip: 未找到 pre 元素 "' + tooltipContent + '"，请检查选择器是否正确。');
-                    tooltipHtml = '<div class="xf_editor-tooltip-loading" style="display:flex;align-items:center;justify-content:center;color:#888;font-size:12px;"><span>Pre 元素不存在</span></div><iframe src="about:blank" frameborder="0" style="' + iframeStyle + '" onload="$(this).prev().hide();$(this).fadeIn(200);"></iframe>';
+                    tooltipHtml = '<div class="xf_editor-tooltip-loading" style="display:flex;align-items:center;justify-content:center;color:#888;font-size:12px;"><span>Pre 元素不存在</span></div><iframe src="about:blank" frameborder="0" style="' + iframeStyle + '" onload="var p=this.previousElementSibling;if(p){p.style.display=\'none\';}this.style.display=\'\';var e=this;e.style.opacity=0;e.style.transition=\'opacity 200ms\';requestAnimationFrame(function(){e.style.opacity=1;});"></iframe>';
                 } else {
-                    tooltipHtml = '<div class="xf_editor-tooltip-loading"><span>加载中...</span></div><iframe src="' + xfEditor.escapeAttr(tooltipContent) + '" frameborder="0" style="' + iframeStyle + '" onload="$(this).prev().hide();$(this).fadeIn(200);"></iframe>';
+                    tooltipHtml = '<div class="xf_editor-tooltip-loading"><span>加载中...</span></div><iframe src="' + xfEditor.escapeAttr(tooltipContent) + '" frameborder="0" style="' + iframeStyle + '" onload="var p=this.previousElementSibling;if(p){p.style.display=\'none\';}this.style.display=\'\';var e=this;e.style.opacity=0;e.style.transition=\'opacity 200ms\';requestAnimationFrame(function(){e.style.opacity=1;});"></iframe>';
                 }
             } else if (tooltipType === "html") {
                     // ★ v1.17.22 XSS 防护：将 HTML 内容转为纯文本后重新包裹，防止 XSS 注入
@@ -13197,7 +14492,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
                 tooltipHtml = '<div class="xf_editor-tooltip-text-content">' + xfEditor.escapeHTML(tooltipContent) + '</div>';
             }
             
-            var $tooltip = $('<div class="xf_editor-tooltip-popup xf_editor-tooltip-' + tooltipType + '">' + tooltipHtml + '</div>');
+            var $tooltip = dom('<div class="xf_editor-tooltip-popup xf_editor-tooltip-' + tooltipType + '">' + tooltipHtml + '</div>');
             
             // iframe:pre 类型：存储原始代码内容，每次 hover 时动态创建 Blob URL
             if (isPreContent && _rawPreCode) {
@@ -13235,9 +14530,9 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             
             if (tooltipType !== "text") {
                 // 最大化按钮 — 使用 □ (最大化) / ❐ (还原) 图标
-                $maxBtn = $('<button class="xf_editor-tooltip-max-btn" title="最大化">□</button>');
+                $maxBtn = dom('<button class="xf_editor-tooltip-max-btn" title="最大化">□</button>');
                 // 关闭按钮
-                $closeBtn = $('<button class="xf_editor-tooltip-close-btn" title="关闭">✕</button>');
+                $closeBtn = dom('<button class="xf_editor-tooltip-close-btn" title="关闭">✕</button>');
                 
                 // 将按钮添加到 tooltip
                 $tooltip.append($maxBtn).append($closeBtn);
@@ -13270,7 +14565,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
                     // 保存内部内容元素的原始样式
                     _origCss._innerStyles = [];
                     $tooltip.children("img,iframe,div.xf_editor-tooltip-html-content,div.xf_editor-tooltip-text-content,.xf_editor-tooltip-loading").each(function() {
-                        var $el = $(this);
+                        var $el = dom(this);
                         _origCss._innerStyles.push({
                             el: this,
                             width: $el.css("width"),
@@ -13369,7 +14664,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
                 });
             }
             
-            $("body").append($tooltip);
+            dom("body").append($tooltip);
             
             /**
              * 显示 tooltip —— 使用 viewport-relative 定位，使 tooltip 显示在触发元素上方
@@ -13392,12 +14687,14 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
                         var newBlobUrl = (window.URL || window.webkitURL).createObjectURL(newBlob);
                         $tooltip.attr("data-blob-url", newBlobUrl);
                         // 显示 loading，隐藏 iframe，设置新 src 触发 onload
-                        $tooltip.find(".xf_editor-tooltip-loading").show();
-                        $tooltip.find("iframe").hide().attr("src", newBlobUrl);
+                        // ★ v1.17.24: 用 .css() 代替 .show()/.hide() —— 避免 XfDom
+                        // olddisplay 缓存导致 loading div 的 flex 被错误恢复为 block
+                        $tooltip.find(".xf_editor-tooltip-loading").css("display", "flex");
+                        $tooltip.find("iframe").css("display", "none").attr("src", newBlobUrl);
                     } catch(ex) {
                         // 降级：使用 data: URI
-                        $tooltip.find(".xf_editor-tooltip-loading").show();
-                        $tooltip.find("iframe").hide().attr("src", 'data:text/html;charset=utf-8,' + encodeURIComponent(iframePreCode));
+                        $tooltip.find(".xf_editor-tooltip-loading").css("display", "flex");
+                        $tooltip.find("iframe").css("display", "none").attr("src", 'data:text/html;charset=utf-8,' + encodeURIComponent(iframePreCode));
                     }
                 }
                 
@@ -13405,7 +14702,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
                 if (tooltipType === "html-selector") {
                     // 查找页面中的DOM元素
                     var selector = tooltipContent;
-                    var $target = $(selector);
+                    var $target = dom(selector);
                     
                     if ($target.length > 0) {
                         // 克隆目标元素，移除隐藏属性（如display:none, visibility:hidden, opacity:0等）
@@ -13501,6 +14798,20 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
                 var triggerRect = $trigger[0].getBoundingClientRect();
                 var tooltipW   = $tooltip.outerWidth();
                 var tooltipH   = $tooltip.outerHeight();
+                // ★ v1.17.24: image/iframe 类型在 onload 前 img/iframe 为 display:none，
+                // 测量值仅含 loading 文本尺寸（极小），导致定位不准。
+                // 直接检查 img/iframe 的 inline style.display 是否仍为 "none"。
+                if (tooltipType === "image" || tooltipType === "iframe") {
+                    var _contentEl = $tooltip[0] && ($tooltip[0].querySelector("img, iframe"));
+                    var _stillLoading = _contentEl && _contentEl.style.display === "none";
+                    if (_stillLoading || tooltipW < 100 || tooltipH < 50) {
+                        var _estW = tooltipWidth ? parseInt(tooltipWidth, 10) : 340;
+                        var _defH = tooltipType === "iframe" ? 210 : 220;
+                        var _estH = tooltipHeight ? parseInt(tooltipHeight, 10) : _defH;
+                        tooltipW = _estW;
+                        tooltipH = _estH;
+                    }
+                }
                 
                 // 水平居中于触发元素，垂直置于触发元素上方 8px
                 var left = triggerRect.left + (triggerRect.width / 2) - (tooltipW / 2);
@@ -13596,7 +14907,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
     /**
      * 静态代码高亮 + 复制按钮（供编辑器预览和纯预览模式共用）
      * @private
-     * @param {jQuery} $container  预览容器
+     * @param {XfDom} $container  预览容器
      * @param {Object} settings    设置对象
      */
     xfEditor._previewCodeHighlight = function($container, settings) {
@@ -13608,7 +14919,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
         var $allPre = $container.find("pre");
         // 使用 extractCodeText 提取原始代码（保留缩进/换行/空格）
         $allPre.each(function() {
-            var $pre = $(this);
+            var $pre = dom(this);
             var $code = $pre.find("code");
             if ($code.length > 0 && $pre.data("_originalCode") === undefined) {
                 $pre.data("_originalCode", xfEditor.extractCodeText($code));
@@ -13625,7 +14936,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
      * 静态 KaTeX 渲染（供编辑器预览和纯预览模式共用）
      * 纯预览模式不包含双击编辑定位功能
      * @private
-     * @param {jQuery}  $container  预览容器
+     * @param {XfDom}  $container  预览容器
      * @param {Object}  settings    设置对象
      * @param {boolean} isEditor    是否为编辑器模式（true 时启用双击编辑定位）
      * @param {Object}  editorRef   编辑器实例引用（仅 editor 模式需要）
@@ -13634,7 +14945,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
         if (!settings.tex || typeof xfEditor.$katex === "undefined") return;
         var texSel = "." + xfEditor.classNames.tex;
         $container.find(texSel).each(function() {
-            var tex  = $(this);
+            var tex  = dom(this);
             var texCode = tex.text().trim();
             if (!texCode) return;
             // 修复 KaTeX 对 &amp; 等实体处理
@@ -13668,7 +14979,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
     /**
      * 静态流程图/时序图渲染（供编辑器预览和纯预览模式共用）
      * @private
-     * @param {jQuery} $container  预览容器
+     * @param {XfDom} $container  预览容器
      * @param {Object} settings    设置对象
      */
     xfEditor._renderFlowChart = function($container, settings) {
@@ -13676,23 +14987,111 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
         if (!$container || !$container.length) return;
         if (settings.flowChart) {
             $container.find(".flowchart").each(function() {
-                var $fc = $(this);
+                var $fc = dom(this);
                 if ($fc.attr("data-fc-initialized") === "true") return;
                 if ($fc.is(":hidden") || $fc.width() === 0) return;
                 try {
                     $fc.flowChart();
+
+                    // ★ v1.17.37: 全面流程图后处理 ——
+                    //   ① 将 fc-type-* class 从 shape 传播到父 <g> 组（使 CSS 父子选择器生效）
+                    //   ② operation 节点补 inner rect（对齐 subroutine 的双矩形风格）
+                    //   ③ 确保所有节点拥有可见边框
+                    var fcSvg = $fc.find("svg")[0];
+                    if (fcSvg) {
+                        var FC_TEXT_MARGIN = 10; // 默认 text-margin，与 $.fn.flowChart defaults 一致
+
+                        // 遍历每个符号组（<svg> 的直系子 <g>）
+                        var groups = Array.prototype.filter.call(
+                            fcSvg.childNodes,
+                            function(n) { return n.nodeType === 1 && n.tagName.toLowerCase() === "g"; }
+                        );
+
+                        groups.forEach(function(group) {
+                            // 定位该组内的首个 shape（rect 或 path）
+                            var shape = null;
+                            var childNodes = group.childNodes;
+                            for (var ci = 0; ci < childNodes.length; ci++) {
+                                var cn = childNodes[ci];
+                                if (cn.nodeType !== 1) continue;
+                                var tag = cn.tagName.toLowerCase();
+                                if (tag === "rect" || tag === "path") { shape = cn; break; }
+                            }
+                            if (!shape) return;
+
+                            var shapeClass = shape.getAttribute("class") || "";
+
+                            // ① 提取 fc-type-* class 并同步到父 <g>（让 CSS 父子选择器 .fc-type-start rect 生效）
+                            var typeMatch = shapeClass.match(/\bfc-type-(\w+)\b/);
+                            if (typeMatch) {
+                                group.setAttribute("class", (group.getAttribute("class")||"") + " fc-type-" + typeMatch[1]);
+
+                                // ② operation → subroutine 风格：补 inner rect + 宽化 outer rect + 文本右移
+                                if (typeMatch[1] === "operation") {
+                                    var outerW = parseFloat(shape.getAttribute("width")) || 0;
+                                    var outerH = parseFloat(shape.getAttribute("height")) || 0;
+
+                                    // 宽化 outer rect（对齐 subroutine: w = text.w + 4*margin）
+                                    shape.setAttribute("width", outerW + 2 * FC_TEXT_MARGIN);
+
+                                    // 创建 inner rect（对齐 subroutine: x=margin, w=text.w+2*margin, h=text.h+2*margin,
+                                    //   stroke=element-color, stroke-width=line-width, fill=fill）
+                                    var ir = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+                                    ir.setAttribute("x", FC_TEXT_MARGIN);
+                                    ir.setAttribute("y", 0);
+                                    ir.setAttribute("width", outerW - 2 * FC_TEXT_MARGIN);
+                                    ir.setAttribute("height", outerH);
+                                    ir.setAttribute("fill", shape.getAttribute("fill") || "white");
+                                    ir.setAttribute("stroke", "#555");
+                                    ir.setAttribute("stroke-width", "1.5px");
+                                    ir.setAttribute("class", "fc-operation-inner");
+
+                                    // 文本右移（从 textMargin → 2*textMargin，对齐 subroutine）
+                                    var txt = group.querySelector("text");
+                                    if (txt) {
+                                        txt.setAttribute("x", String(2 * FC_TEXT_MARGIN));
+                                        group.insertBefore(ir, txt);
+                                    } else {
+                                        group.appendChild(ir);
+                                    }
+                                }
+                            }
+
+                            // ③ 强制可见边框：stroke 缺失/隐藏 → 补 #555 1.5px
+                            var strokeVal = shape.getAttribute("stroke");
+                            if (!strokeVal || strokeVal === "none" || strokeVal === "transparent") {
+                                shape.setAttribute("stroke", "#555");
+                                shape.setAttribute("stroke-width", "1.5px");
+                            }
+
+                            // ★ start 对齐 end：确保 start-element class 存在（end 通过 defaults 已有 end-element）
+                            //   为 start 元素的 group 也补上 start-element（供亮色主题使用）
+                            if (typeMatch && typeMatch[1] === "start") {
+                                group.setAttribute("class", (group.getAttribute("class")||"") + " start-element");
+                            }
+                        });
+                    }
+
                     $fc.attr("data-fc-initialized", "true");
-                } catch(e) {}
+                } catch(e) {
+                    if (typeof console !== "undefined" && console.warn) {
+                        console.warn("[xfEditor] FlowChart render error:", e.message || e);
+                    }
+                }
             });
         }
         if (settings.sequenceDiagram) {
             $container.find(".sequence-diagram").each(function() {
-                var $sd = $(this);
+                var $sd = dom(this);
                 if ($sd.attr("data-sd-initialized") === "true") return;
                 try {
                     $sd.sequenceDiagram({theme: "simple"});
                     $sd.attr("data-sd-initialized", "true");
-                } catch(e) {}
+                } catch(e) {
+                    if (typeof console !== "undefined" && console.warn) {
+                        console.warn("[xfEditor] SequenceDiagram render error:", e.message || e);
+                    }
+                }
             });
         }
     };
@@ -13700,11 +15099,11 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
     /**
      * 静态 ECharts 初始化（供编辑器预览和纯预览模式共用）
      * @private
-     * @param {jQuery} $container      预览容器
+     * @param {XfDom} $container      预览容器
      * @param {Object} settings        设置对象
      * @param {Object} [extraTheme]    额外主题设置（编辑器实例 theme）
      */
-    xfEditor._initECharts = function($container, settings, extraTheme) {
+    xfEditor._initECharts = function($container, settings, extraTheme, forceResize) {
         if (typeof echarts === "undefined") return;
         var editorTheme = extraTheme || settings.theme;
         // 自动检测主题：优先从 options.theme，其次从 div 上溯查找 theme-* class
@@ -13718,7 +15117,18 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             }
         }
         $container.find(".xf_editor-echarts").each(function() {
-            var $chart = $(this);
+            var $chart = dom(this);
+            // ★ v1.17.38: forceResize 模式 —— 对已初始化但尺寸可能因 tab 切换变化的图表重新 resize
+            if (forceResize) {
+                if ($chart.is(":hidden") || $chart.width() === 0 || $chart.height() === 0) return;
+                if ($chart.attr("data-initialized") === "true") {
+                    var inst = echarts.getInstanceByDom && echarts.getInstanceByDom(this);
+                    if (inst) {
+                        try { inst.resize(); } catch(e) {}
+                    }
+                    return;
+                }
+            }
             if ($chart.attr("data-initialized") === "true") return;
             if ($chart.is(":hidden") || $chart.width() === 0 || $chart.height() === 0) return;
             var config = {};
@@ -13755,7 +15165,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
                     $chart.attr("data-resize-bound", "true");
                     var resizeTimer = null;
                     var ecNsId = $chart.attr("id") || ("ec-" + Math.random().toString(36).slice(2, 9));
-                    $(window).on("resize.xf_editor-echarts." + ecNsId, function() {
+                    dom(window).on("resize.xf_editor-echarts." + ecNsId, function() {
                         if (resizeTimer) clearTimeout(resizeTimer);
                         resizeTimer = setTimeout(function() { chartInstance.resize(); }, 150);
                     });
@@ -13771,7 +15181,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
     /**
      * 静态 Tabs 标签页交互初始化（供编辑器预览和纯预览模式共用）
      * @private
-     * @param {jQuery} $container      预览容器
+     * @param {XfDom} $container      预览容器
      * @param {Object} settings        设置对象
      * @param {Object} [editorRef]     编辑器实例引用（用于面板切换时重新可见内容初始化）
      */
@@ -13780,9 +15190,9 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
         // Tabs 面板可见时重新初始化隐藏内容（ECharts/KaTeX/FlowChart/代码高亮/Columns）
         function reInitHiddenContent($panel, s, ref) {
             if (!$panel || !$panel.length) return;
-            // 重新初始化 ECharts
+            // 重新初始化 ECharts（forceResize=true 确保从隐藏 tab 切换出来时正确 resize）
             if (s.echarts && typeof echarts !== "undefined") {
-                xfEditor._initECharts($panel, s);
+                xfEditor._initECharts($panel, s, null, true);
             }
             // 重新渲染 KaTeX
             if (s.tex && typeof xfEditor.$katex !== "undefined") {
@@ -13797,7 +15207,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             // 重新高亮代码
             if (s.previewCodeHighlight && typeof prettyPrint !== "undefined") {
                 $panel.find("pre.prettyprint").each(function() {
-                    var $pre = $(this);
+                    var $pre = dom(this);
                     if ($pre.find("li").length > 0) return;
                     try { prettyPrint(); } catch(e) {}
                 });
@@ -13809,7 +15219,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
         }
 
         $container.find(".xf_editor-tabs").each(function() {
-            var $tabs = $(this);
+            var $tabs = dom(this);
             if ($tabs.attr("data-initialized") === "true") return;
             var $nav = $tabs.find(".xf_editor-tab-nav");
             var $body = $tabs.find(".xf_editor-tab-body");
@@ -13821,7 +15231,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             $nav.off("click", "li").on("click", "li", function(e) {
                 e.preventDefault();
                 e.stopPropagation();
-                var $li = $(this);
+                var $li = dom(this);
                 var index = $li.attr("data-index");
                 $nav.find("li").removeClass("active");
                 $li.addClass("active");
@@ -13839,13 +15249,13 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
      * 效果：横向滑动切换（translateX + 过渡动画）、自动播放（3s，悬停暂停）、
      *       左右箭头、圆点指示器、触摸滑动切换；height 未指定时取第一张图片高度
      * @private
-     * @param {jQuery} $container  预览容器
+     * @param {XfDom} $container  预览容器
      */
     xfEditor._initBanners = function($container) {
         if (!$container || !$container.length) return;
         $container.find(".xf_editor-banner").each(function() {
             var banner = this;
-            var $banner = $(banner);
+            var $banner = dom(banner);
             if ($banner.attr("data-initialized") === "true") return;
             $banner.attr("data-initialized", "true");
 
@@ -13868,7 +15278,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
                     if (firstImg.complete && firstImg.naturalHeight > 0) {
                         syncHeight();
                     } else {
-                        $(firstImg).one("load", syncHeight);
+                        dom(firstImg).one("load", syncHeight);
                     }
                 }
             }
@@ -13907,23 +15317,29 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
                 });
                 $banner.on("click", ".xf_editor-banner-dot", function(e) {
                     e.preventDefault(); e.stopPropagation();
-                    goTo(parseInt($(this).attr("data-index"), 10) || 0); play();
+                    goTo(parseInt(dom(this).attr("data-index"), 10) || 0); play();
                 });
                 // 悬停暂停自动播放
                 $banner.on("mouseenter", stop).on("mouseleave", play);
                 // 触摸滑动切换（阈值 40px）
+                // ★ v1.17.38: 保存事件处理器引用，以便后续移除
                 var startX = 0;
-                banner.addEventListener("touchstart", function(e) {
+                var bannerTouchStart = function(e) {
                     startX = e.touches[0].clientX; moved = false; stop();
-                }, { passive: true });
-                banner.addEventListener("touchend", function(e) {
+                };
+                var bannerTouchEnd = function(e) {
                     var dx = e.changedTouches[0].clientX - startX;
                     if (Math.abs(dx) > 40) {
                         moved = true;
                         goTo(dx < 0 ? index + 1 : index - 1);
                     }
                     play();
-                }, { passive: true });
+                };
+                banner.addEventListener("touchstart", bannerTouchStart, { passive: true });
+                banner.addEventListener("touchend", bannerTouchEnd, { passive: true });
+                // 保存引用以便后续清理
+                banner._xfBannerTouchStart = bannerTouchStart;
+                banner._xfBannerTouchEnd = bannerTouchEnd;
                 play();
             }
 
@@ -13937,19 +15353,19 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
     /**
      * 静态多栏布局分隔线初始化（供编辑器预览和纯预览模式共用）
      * @private
-     * @param {jQuery} $container  预览容器
+     * @param {XfDom} $container  预览容器
      */
     xfEditor._initColumns = function($container) {
         if (!$container || !$container.length) return;
         $container.find(".xf_editor-columns").each(function() {
-            var $cols = $(this);
+            var $cols = dom(this);
             if ($cols.attr("data-initialized") === "true") return;
             var count = parseInt($cols.attr("data-count"), 10) || 2;
             if (count < 1 || count > 12) count = 2;
             $cols.find(".xf_editor-column-divider").remove();
             $cols.css("position", "relative");
             for (var i = 1; i < count; i++) {
-                var $divider = $('<div class="xf_editor-column-divider"></div>');
+                var $divider = dom('<div class="xf_editor-column-divider"></div>');
                 $divider.css({
                     position: "absolute",
                     left: (i / count * 100) + "%",
@@ -13968,7 +15384,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
      * 静态页面分页处理（供编辑器预览和纯预览模式共用）
      * 将超出一页的 [[page:*]] 内容拆分为多个页面
      * @private
-     * @param {jQuery} $container  预览容器
+     * @param {XfDom} $container  预览容器
      */
     xfEditor._initPages = function($container) {
         if (!$container || !$container.length) return;
@@ -14012,13 +15428,13 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             }
             var pageMargin = 4, containerWidth = paperSize.w;
             var availableHeight = pageHeight - pageInnerPadding;
-            var $measure = $('<div class="xf_editor-page-content" style="position:absolute;visibility:hidden;width:' + containerWidth + 'px;left:-9999px;"></div>');
-            $("body").append($measure);
+            var $measure = dom('<div class="xf_editor-page-content" style="position:absolute;visibility:hidden;width:' + containerWidth + 'px;left:-9999px;"></div>');
+            dom("body").append($measure);
             var $clone = pageContent.clone();
             $measure.append($clone);
             var pages = [], currentPage = [], currentHeight = 0;
             $clone.children().each(function() {
-                var $child = $(this);
+                var $child = dom(this);
                 var childHeight = $child.outerHeight(true) || 0;
                 if (currentHeight + childHeight > availableHeight && currentPage.length > 0) {
                     pages.push(currentPage);
@@ -14049,12 +15465,12 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
                 if (i === totalPages - 1 && watermark.length) resultHtml += '<div class="xf_editor-page-watermark">' + paperKey + '</div>';
                 resultHtml += '</div>';
             }
-            var $newBlocks = $(resultHtml);
+            var $newBlocks = dom(resultHtml);
             $pageBlock.replaceWith($newBlocks);
             $newBlocks.attr("data-split", "true");
         }
         $container.find(".xf_editor-page-block").each(function() {
-            splitPageContent($(this));
+            splitPageContent(dom(this));
         });
     };
 
@@ -14063,7 +15479,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
      * @private
      */
     xfEditor._buildRendererOptionsStatic = function(settings, overrides) {
-        return $.extend({
+        return Object.assign({
             toc           : false, tocm : false, tocStartLevel : 1,
             taskList      : settings.taskList, tex : settings.tex,
             pageBreak     : settings.pageBreak, atLink : settings.atLink,
@@ -14091,16 +15507,26 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
      * @returns {String} 渲染后的 HTML
      */
     xfEditor._renderMarkdownPipeline = function(markdown, markedOpts, rendererOpts, settings) {
-        var mdProtected = xfEditor.protectTeXSyntax(markdown);
-        mdProtected = xfEditor.preprocessLinkTarget(mdProtected);
-        var mdPreprocess = xfEditor.preprocessMarkdownBlocks(mdProtected, rendererOpts);
-        var html = (xfEditor.$marked || marked)(mdPreprocess.markdown, markedOpts);
-        html = xfEditor.restorePlaceholders(html, mdPreprocess.placeholders);
-        html = xfEditor.restoreTeXSyntax(html);
-        html = xfEditor.fixSmartypantsHTML(html);
-        html = xfEditor.fixTableEmptyCells(html);
-        if (settings.taskList) html = xfEditor.postProcessTaskLists(html);
-        return xfEditor.filterHTMLTags(html, settings.htmlDecode);
+        // ★ v1.17.27: 添加 try/catch 防止 marked 解析失败导致整个渲染流程中断
+        try {
+            var mdProtected = xfEditor.protectTeXSyntax(markdown);
+            mdProtected = xfEditor.preprocessLinkTarget(mdProtected);
+            var mdPreprocess = xfEditor.preprocessMarkdownBlocks(mdProtected, rendererOpts);
+            var html = (xfEditor.$marked || marked)(mdPreprocess.markdown, markedOpts);
+            html = xfEditor.restorePlaceholders(html, mdPreprocess.placeholders);
+            html = xfEditor.restoreTeXSyntax(html);
+            html = xfEditor.fixSmartypantsHTML(html);
+            html = xfEditor.fixTableEmptyCells(html);
+            if (settings.taskList) html = xfEditor.postProcessTaskLists(html);
+            return xfEditor.filterHTMLTags(html, settings.htmlDecode);
+        } catch (e) {
+            if (typeof console !== "undefined" && console.error) {
+                console.error("[xfEditor] Markdown render error:", e);
+            }
+            // 返回转义后的原始 Markdown，避免页面空白
+            return "<pre style='white-space:pre-wrap;word-wrap:break-word;'>" + 
+                   xfEditor.escapeHtml(markdown) + "</pre>";
+        }
     };
 
     /**
@@ -14109,7 +15535,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
      * 
      * @param   {String}   id            用于显示HTML的对象ID
      * @param   {Object}   [options={}]  配置选项，可选
-     * @returns {Object}   div           返回jQuery对象元素
+     * @param   {Object}   [options={}]  配置选项，可选   │ │ * @returns {Object}   div           返回XfDom对象
      */
     
     xfEditor.markdownToHTML = function(id, options) {
@@ -14149,15 +15575,26 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
         
         xfEditor.$marked  = (typeof marked !== "undefined") ? marked : null;
 
+        // markdownToHTML 是同步 API，必须先有 marked。
+        // 若页面未预先引入 lib/marked.min.js，这里给出清晰提示并安全退出，
+        // 避免抛出 "Cannot read properties of null (reading 'Renderer')" 这类难以定位的错误。
+        if (!xfEditor.$marked) {
+            if (typeof console !== "undefined" && console.error) {
+                console.error("[xfEditor] markdownToHTML 需要 marked，请先引入：" +
+                    "<script src=\"" + ((options && options.path) || "lib/") + "marked.min.js\"><\/script>");
+            }
+            return;
+        }
+
         // ★ v1.17.18: 验证 target element 是否存在
-        var div           = $("#" + id);
+        var div           = dom("#" + id);
         if (div.length === 0) {
             if (typeof console !== "undefined" && console.error) {
                 console.error("[xfEditor] markdownToHTML: 找不到目标元素 #" + id);
             }
             return;
         }
-        var settings      = div.settings = $.extend(true, defaults, options || {});
+        var settings      = div.settings = deepMerge( defaults, options || {});
         var saveTo        = div.find("textarea");
         
         if (saveTo.length < 1)
@@ -14205,7 +15642,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             ".xf_editor-copybook-footnote a[href^='#xf_editor-fn-'], " +
             ".xf_editor-footnote-backref[href^='#xf_editor-fnref-']",
             function(e) {
-                var href = $(this).attr("href");
+                var href = dom(this).attr("href");
                 if (!href || href === "#") return;
                 
                 var targetId = decodeURIComponent(href.substring(1));
@@ -14220,7 +15657,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
                     e.preventDefault();
                     e.stopPropagation();
                     targetEl.scrollIntoView({ behavior: "smooth", block: "center" });
-                    var $target = $(targetEl);
+                    var $target = dom(targetEl);
                     $target.addClass("xf_editor-footnote-highlight");
                     setTimeout(function() {
                         $target.removeClass("xf_editor-footnote-highlight");
@@ -14229,7 +15666,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             }
         );
         
-        var tocContainer = (settings.tocContainer !== "") ? $(settings.tocContainer) : div;
+        var tocContainer = (settings.tocContainer !== "") ? dom(settings.tocContainer) : div;
         
         if (settings.tocContainer !== "")
         {
@@ -14280,9 +15717,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
                             var mdCheckDone = function() { mdPending--; if (mdPending <= 0) mdRenderFs(); };
                             if (mdHasFlowChart && typeof flowchart === "undefined") {
                                 mdPending++;
-                                xfEditor.loadScript(xfEditor.defaults.path + "flowchart.min", function() {
-                                    xfEditor.loadScript(xfEditor.defaults.path + "jquery.flowchart.min", mdCheckDone);
-                                });
+                                xfEditor.loadScript(xfEditor.defaults.path + "flowchart.min", mdCheckDone);
                             }
                             if (mdHasSequence && typeof Diagram === "undefined") {
                                 mdPending++;
@@ -14346,7 +15781,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
         xfEditor.initTableScroll(div);
 
         // 7. Tooltip 悬浮提示
-        if (settings.tooltip) {
+        if (settings && settings.tooltip !== false) {
             xfEditor.initTooltips(div);
         }
         
@@ -14419,21 +15854,46 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
      * @param {String}   [into="head"]         嵌入页面的位置
      */
     
+    // ★ v1.17.38: 待加载队列，防止同步重复调用未完成时的竞争条件
+    xfEditor.loadFiles.pendingCSS = [];
+    xfEditor.loadFiles.pendingJS  = [];
+    
     xfEditor.loadCSS   = function(fileName, callback, into) {
         into       = into     || "head";        
         callback   = callback || function() {};
         
-        if ($.inArray(fileName, xfEditor.loadFiles.css) >= 0) {
+        // ★ v1.17.38: 路径归一化用于去重检测
+        var normalizedName = (fileName || "").replace(/^\.\//, "");
+        
+        if (xfEditor.loadFiles.css.indexOf(normalizedName) >= 0) {
             callback();
             return;
         }
+        
+        // ★ v1.17.38: 已在加载中（同步调用尚未完成 onload/onerror）→ 注册回调后返回，避免重复创建 link 标签
+        if (xfEditor.loadFiles.pendingCSS.indexOf(normalizedName) >= 0) {
+            if (typeof callback === "function") callback();
+            return;
+        }
+        xfEditor.loadFiles.pendingCSS.push(normalizedName);
         
         var css    = document.createElement("link");
         css.type   = "text/css";
         css.rel    = "stylesheet";
         
         css.onload = function() {
-            xfEditor.loadFiles.css.push(fileName);
+            // ★ v1.17.38: 检测 CSS 样式表是否真正可用（某些浏览器 404 也会触发 onload）
+            try {
+                if (css.sheet && css.sheet.cssRules) {
+                    // 样式表可访问，确认已加载
+                }
+            } catch (e) {
+                // CSS cross-origin 不可读或加载失败，记录但不中断
+            }
+            xfEditor.loadFiles.css.push(normalizedName);
+            // 从待加载列表移除
+            var pi = xfEditor.loadFiles.pendingCSS.indexOf(normalizedName);
+            if (pi >= 0) xfEditor.loadFiles.pendingCSS.splice(pi, 1);
             callback();
         };
 
@@ -14444,10 +15904,15 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             if (!xfEditor.loadFiles.failed) {
                 xfEditor.loadFiles.failed = [];
             }
-            xfEditor.loadFiles.failed.push(fileName);
+            xfEditor.loadFiles.failed.push(normalizedName);
             if (typeof console !== "undefined" && console.warn) {
-                console.warn("[xfEditor] Failed to load css: " + fileName);
+                console.warn("[xfEditor] Failed to load css: " + normalizedName);
             }
+            // 从待加载列表移除
+            var pi = xfEditor.loadFiles.pendingCSS.indexOf(normalizedName);
+            if (pi >= 0) xfEditor.loadFiles.pendingCSS.splice(pi, 1);
+            // ★ v1.17.38: 即使加载失败也调用 callback，避免加载链中断
+            callback();
         };
 
         if(into === "head") {
@@ -14471,19 +15936,31 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
         into          = into     || "head";
         callback      = callback || function() {};
         
-        if ($.inArray(fileName, xfEditor.loadFiles.js) >= 0) {
+        // ★ v1.17.38: 路径归一化用于去重检测，避免 "./lib/a.js" 和 "lib/a.js" 被重复加载
+        var normalizedName = (fileName || "").replace(/^\.\//, "");
+        
+        if (xfEditor.loadFiles.js.indexOf(normalizedName) >= 0) {
             callback();
             return;
         }
         
+        // ★ v1.17.38: 已在加载中（同步调用尚未完成 onload/onerror）→ 注册回调后返回，避免重复创建 script 标签
+        if (xfEditor.loadFiles.pendingJS.indexOf(normalizedName) >= 0) {
+            if (typeof callback === "function") callback();
+            return;
+        }
+        xfEditor.loadFiles.pendingJS.push(normalizedName);
+        
         var script    = null; 
         script        = document.createElement("script");
-        script.id     = fileName.replace(/[\./]+/g, "-");
+        script.id     = normalizedName.replace(/[\./]+/g, "-");
         script.type   = "text/javascript";        
         script.src    = (/\.js$/i.test(fileName)) ? fileName : (fileName + ".js");
         
         script.onload = function() {
-            xfEditor.loadFiles.js.push(fileName);
+            xfEditor.loadFiles.js.push(normalizedName);
+            var pi = xfEditor.loadFiles.pendingJS.indexOf(normalizedName);
+            if (pi >= 0) xfEditor.loadFiles.pendingJS.splice(pi, 1);
             callback();
         };
         
@@ -14493,10 +15970,12 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             if (!xfEditor.loadFiles.failed) {
                 xfEditor.loadFiles.failed = [];
             }
-            xfEditor.loadFiles.failed.push(fileName);
+            xfEditor.loadFiles.failed.push(normalizedName);
             if (typeof console !== "undefined" && console.warn) {
-                console.warn("[xfEditor] Failed to load script: " + fileName);
+                console.warn("[xfEditor] Failed to load script: " + normalizedName);
             }
+            var pi = xfEditor.loadFiles.pendingJS.indexOf(normalizedName);
+            if (pi >= 0) xfEditor.loadFiles.pendingJS.splice(pi, 1);
             // 即使脚本加载失败，也继续执行加载链
             callback();
         };
@@ -14525,9 +16004,10 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
      */
     xfEditor._resolveBasePath = function() {
         // 尝试从加载 xfEditor.js 的 script 标签推断基路径
+        // 同时兼容 xf_editor.js / xf_editor.min.js / xf_editor.amd.js 等文件名
+        var rbase = /^(.*\/)xf[_-]?editor/i;
         if (document.currentScript && document.currentScript.src) {
-            var src = document.currentScript.src;
-            var match = src.match(/^(.*\/)xfEditor/);
+            var match = document.currentScript.src.match(rbase);
             if (match) {
                 return match[1];
             }
@@ -14537,7 +16017,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
         for (var i = scripts.length - 1; i >= 0; i--) {
             var s = scripts[i];
             if (s.src && (s.src.indexOf("xf_editor") !== -1)) {
-                var m = s.src.match(/^(.*\/)xfEditor/);
+                var m = s.src.match(rbase);
                 if (m) return m[1];
             }
         }
@@ -14591,10 +16071,10 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
         duration = (typeof duration === "undefined") ? 3000 : duration;
 
         // 初始化通知容器
-        var $container = $("#xf_editor-notify-container");
+        var $container = dom("#xf_editor-notify-container");
         if ($container.length === 0) {
-            $container = $('<div id="xf_editor-notify-container" style="position:fixed;top:16px;right:16px;z-index:100000;display:flex;flex-direction:column;gap:8px;pointer-events:none;"></div>');
-            $("body").append($container);
+            $container = dom('<div id="xf_editor-notify-container" style="position:fixed;top:16px;right:16px;z-index:100000;display:flex;flex-direction:column;gap:8px;pointer-events:none;"></div>');
+            dom("body").append($container);
         }
 
         var icons = { info: "ℹ", success: "✓", warning: "⚠", error: "✕" };
@@ -14602,7 +16082,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
         var bgColors = { info: "#E3F2FD", success: "#E8F5E9", warning: "#FFF3E0", error: "#FFEBEE" };
         var textColors = { info: "#1565C0", success: "#2E7D32", warning: "#E65100", error: "#C62828" };
 
-        var $toast = $(
+        var $toast = dom(
             '<div class="xf_editor-notify-toast" style="' +
             'display:flex;align-items:flex-start;gap:10px;' +
             'background:' + bgColors[type] + ';color:' + textColors[type] + ';' +
@@ -14619,7 +16099,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             'font-size:12px;font-weight:bold;line-height:1;">' + icons[type] + '</span>' +
             '<span style="flex:1;"></span>' +
             '<span class="xf_editor-notify-close" style="flex-shrink:0;cursor:pointer;font-size:16px;' +
-            'opacity:0.5;line-height:1;padding:0 2px;" onclick="$(this).closest(\'.xf_editor-notify-toast\').remove()">×</span>' +
+            'opacity:0.5;line-height:1;padding:0 2px;" onclick="var n=this.closest(\'.xf_editor-notify-toast\');if(n){n.remove();}">×</span>' +
             '</div>'
         );
         
@@ -14660,7 +16140,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
      */
     
     xfEditor.lockScreen = function(lock) {
-        $("html,body").css("overflow", (lock) ? "hidden" : "");
+        dom("html,body").css("overflow", (lock) ? "hidden" : "");
     };
         
     /**
@@ -14668,7 +16148,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
      * Creating custom dialogs
      * 
      * @param   {Object} options 配置项键值对 Key/Value
-     * @returns {dialog} 返回创建的dialog的jQuery实例对象
+     * @returns {dialog} 返回创建的dialog的XfDom对象
      */
 
     xfEditor.createDialog = function(options) {
@@ -14690,7 +16170,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             buttons : false
         };
 
-        options          = $.extend(true, defaults, options);
+        options          = deepMerge( defaults, options);
         
         var $this        = this;
         var editor       = this.editor;
@@ -14733,7 +16213,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
         dialog.lockScreen = function(lock) {
             if (options.lockScreen)
             {                
-                $("html,body").css("overflow", (lock) ? "hidden" : "");
+                dom("html,body").css("overflow", (lock) ? "hidden" : "");
                 $this.resize();
             }
 
@@ -14775,14 +16255,14 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
 
         var dialogPosition = function(){
             dialog.css({
-                top    : ($(window).height() - dialog.height()) / 2 + "px",
-                left   : ($(window).width() - dialog.width()) / 2 + "px"
+                top    : (dom(window).height() - dialog.height()) / 2 + "px",
+                left   : (dom(window).width() - dialog.width()) / 2 + "px"
             });
         };
 
         dialogPosition();
 
-        $(window).on("resize.xf_editor-dialog", dialogPosition);
+        dom(window).on("resize.xf_editor-dialog", dialogPosition);
 
         dialog.children("." + classPrefix + "dialog-close").on(mouseOrTouch("click", "touchend"), function(e) {
             e.preventDefault();
@@ -14847,10 +16327,10 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
                 var left, top, nowLeft = parseInt(dialog[0].style.left), nowTop = parseInt(dialog[0].style.top);
 
                 if( nowLeft >= 0 ) {
-                    if( nowLeft + dialog.width() <= $(window).width()) {
+                    if( nowLeft + dialog.width() <= dom(window).width()) {
                         left = e.clientX - posX;
                     } else {	
-                        left = $(window).width() - dialog.width();
+                        left = dom(window).width() - dialog.width();
                         document.onmousemove = null;
                     }
                 } else {
@@ -14869,14 +16349,14 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
                     return false;
                 };
 
-                userUnselect($("body"));
+                userUnselect(dom("body"));
                 userUnselect(dialog);
                 dialog[0].style.left = left + "px";
                 dialog[0].style.top  = top + "px";
             };
 
             document.onmouseup = function() {                            
-                userCanSelect($("body"));
+                userCanSelect(dom("body"));
                 userCanSelect(dialog);
 
                 document.onselectstart = null;         
@@ -14887,7 +16367,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
                 var offset = null;
                 var start  = function(e) {
                     var orig = e.originalEvent; 
-                    var pos  = $(this).parent().position();
+                    var pos  = dom(this).parent().position();
 
                     offset = {
                         x : orig.changedTouches[0].pageX - pos.left,
@@ -14899,7 +16379,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
                     e.preventDefault();
                     var orig = e.originalEvent;
 
-                    $(this).parent().css({
+                    dom(this).parent().css({
                         top  : orig.changedTouches[0].pageY - offset.y,
                         left : orig.changedTouches[0].pageX - offset.x
                     });
@@ -15058,6 +16538,6 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
     return xfEditor;
 
 }));
-	})();
-	return module.exports;
-});
+
+    return window.xfEditor || (typeof xfEditor !== 'undefined' ? xfEditor : null);
+}));

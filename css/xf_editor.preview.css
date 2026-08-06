@@ -5040,7 +5040,7 @@ a.xf_editor-banner-link::after {
   fill: #fff;
 }
 .xf_editor-preview-theme-dark {
-  /* ── 流程图暗色（★ v1.17.31 全面升级） ── */
+  /* ── 流程图暗色（★ v1.17.37 修复：fc-type-* 注入到 <g> 组 + operation 双矩形） ── */
 }
 .xf_editor-preview-theme-dark .flowchart {
   background: #0f1a2e;
@@ -5051,64 +5051,76 @@ a.xf_editor-banner-link::after {
   background: #0f1a2e;
 }
 .xf_editor-preview-theme-dark .flowchart {
-  /* ★ 节点类型区分 */
-  /* 开始/结束（圆角矩形） */
+  /* ★ 开始/结束（圆角矩形） — JS 注入 fc-type-start/fc-type-end 到 <g> + start-element/end-element */
 }
-.xf_editor-preview-theme-dark .flowchart .start rect, .xf_editor-preview-theme-dark .flowchart .start path, .xf_editor-preview-theme-dark .flowchart .end rect, .xf_editor-preview-theme-dark .flowchart .end path {
+.xf_editor-preview-theme-dark .flowchart .fc-type-start rect, .xf_editor-preview-theme-dark .flowchart .fc-type-start path, .xf_editor-preview-theme-dark .flowchart .start-element rect, .xf_editor-preview-theme-dark .flowchart .start-element path,
+.xf_editor-preview-theme-dark .flowchart .fc-type-end rect,
+.xf_editor-preview-theme-dark .flowchart .fc-type-end path, .xf_editor-preview-theme-dark .flowchart .end-element rect, .xf_editor-preview-theme-dark .flowchart .end-element path {
   fill: #166534;
-  stroke: #22c55e;
+  stroke: #22c55e !important;
 }
-.xf_editor-preview-theme-dark .flowchart .start text, .xf_editor-preview-theme-dark .flowchart .end text {
+.xf_editor-preview-theme-dark .flowchart .fc-type-start text, .xf_editor-preview-theme-dark .flowchart .start-element text,
+.xf_editor-preview-theme-dark .flowchart .fc-type-end text, .xf_editor-preview-theme-dark .flowchart .end-element text {
   fill: #bbf7d0;
 }
 .xf_editor-preview-theme-dark .flowchart {
-  /* 操作（矩形） */
+  /* ★ 操作（矩形） — JS 注入 fc-type-operation 到 <g> */
 }
-.xf_editor-preview-theme-dark .flowchart .operation rect, .xf_editor-preview-theme-dark .flowchart .operation path {
+.xf_editor-preview-theme-dark .flowchart .fc-type-operation {
+  /* outer rect */
+}
+.xf_editor-preview-theme-dark .flowchart .fc-type-operation > rect {
   fill: #1e3a5f;
-  stroke: #3b82f6;
+  stroke: #3b82f6 !important;
 }
-.xf_editor-preview-theme-dark .flowchart .operation text {
+.xf_editor-preview-theme-dark .flowchart .fc-type-operation {
+  /* inner rect（v1.17.37 JS 后处理创建的 fc-operation-inner） */
+}
+.xf_editor-preview-theme-dark .flowchart .fc-type-operation .fc-operation-inner {
+  fill: #1e3a5f;
+  stroke: #3b82f6 !important;
+}
+.xf_editor-preview-theme-dark .flowchart .fc-type-operation text {
   fill: #bfdbfe;
 }
 .xf_editor-preview-theme-dark .flowchart {
-  /* 条件/判断（菱形） */
+  /* ★ 条件/判断（菱形） */
 }
-.xf_editor-preview-theme-dark .flowchart .condition rect, .xf_editor-preview-theme-dark .flowchart .condition path {
+.xf_editor-preview-theme-dark .flowchart .fc-type-condition rect, .xf_editor-preview-theme-dark .flowchart .fc-type-condition path {
   fill: #5c3d0a;
-  stroke: #eab308;
+  stroke: #eab308 !important;
 }
-.xf_editor-preview-theme-dark .flowchart .condition text {
+.xf_editor-preview-theme-dark .flowchart .fc-type-condition text {
   fill: #fef08a;
 }
 .xf_editor-preview-theme-dark .flowchart {
-  /* 输入输出（平行四边形） */
+  /* ★ 输入输出（平行四边形） */
 }
-.xf_editor-preview-theme-dark .flowchart .inputoutput rect, .xf_editor-preview-theme-dark .flowchart .inputoutput path {
+.xf_editor-preview-theme-dark .flowchart .fc-type-inputoutput rect, .xf_editor-preview-theme-dark .flowchart .fc-type-inputoutput path {
   fill: #3b1f6e;
-  stroke: #8b5cf6;
+  stroke: #8b5cf6 !important;
 }
-.xf_editor-preview-theme-dark .flowchart .inputoutput text {
+.xf_editor-preview-theme-dark .flowchart .fc-type-inputoutput text {
   fill: #ddd6fe;
 }
 .xf_editor-preview-theme-dark .flowchart {
-  /* 子流程（带双竖线矩形） */
+  /* ★ 子流程（带双竖线矩形） */
 }
-.xf_editor-preview-theme-dark .flowchart .subroutine rect, .xf_editor-preview-theme-dark .flowchart .subroutine path {
+.xf_editor-preview-theme-dark .flowchart .fc-type-subroutine rect, .xf_editor-preview-theme-dark .flowchart .fc-type-subroutine path {
   fill: #1e293b;
-  stroke: #64748b;
+  stroke: #64748b !important;
 }
-.xf_editor-preview-theme-dark .flowchart .subroutine text {
+.xf_editor-preview-theme-dark .flowchart .fc-type-subroutine text {
   fill: #e2e8f0;
 }
 .xf_editor-preview-theme-dark .flowchart {
-  /* 并行 */
+  /* ★ 并行 */
 }
-.xf_editor-preview-theme-dark .flowchart .parallel rect, .xf_editor-preview-theme-dark .flowchart .parallel path {
+.xf_editor-preview-theme-dark .flowchart .fc-type-parallel rect, .xf_editor-preview-theme-dark .flowchart .fc-type-parallel path {
   fill: #1e3a3a;
-  stroke: #14b8a6;
+  stroke: #14b8a6 !important;
 }
-.xf_editor-preview-theme-dark .flowchart .parallel text {
+.xf_editor-preview-theme-dark .flowchart .fc-type-parallel text {
   fill: #ccfbf1;
 }
 .xf_editor-preview-theme-dark .flowchart {
@@ -5728,63 +5740,70 @@ a.xf_editor-banner-link::after {
   background: #0f1a2e;
 }
 [data-theme=dark] .xf_editor-html-preview .flowchart {
-  /* ★ 开始/结束节点 */
+  /* ★ 开始/结束节点 — JS 注入 fc-type-start/fc-type-end 到 <g> + start-element/end-element */
 }
-[data-theme=dark] .xf_editor-html-preview .flowchart .start rect, [data-theme=dark] .xf_editor-html-preview .flowchart .start path, [data-theme=dark] .xf_editor-html-preview .flowchart .end rect, [data-theme=dark] .xf_editor-html-preview .flowchart .end path {
+[data-theme=dark] .xf_editor-html-preview .flowchart .fc-type-start rect, [data-theme=dark] .xf_editor-html-preview .flowchart .fc-type-start path, [data-theme=dark] .xf_editor-html-preview .flowchart .start-element rect, [data-theme=dark] .xf_editor-html-preview .flowchart .start-element path,
+[data-theme=dark] .xf_editor-html-preview .flowchart .fc-type-end rect,
+[data-theme=dark] .xf_editor-html-preview .flowchart .fc-type-end path, [data-theme=dark] .xf_editor-html-preview .flowchart .end-element rect, [data-theme=dark] .xf_editor-html-preview .flowchart .end-element path {
   fill: #166534;
-  stroke: #22c55e;
+  stroke: #22c55e !important;
 }
-[data-theme=dark] .xf_editor-html-preview .flowchart .start text, [data-theme=dark] .xf_editor-html-preview .flowchart .end text {
+[data-theme=dark] .xf_editor-html-preview .flowchart .fc-type-start text, [data-theme=dark] .xf_editor-html-preview .flowchart .start-element text,
+[data-theme=dark] .xf_editor-html-preview .flowchart .fc-type-end text, [data-theme=dark] .xf_editor-html-preview .flowchart .end-element text {
   fill: #bbf7d0;
 }
 [data-theme=dark] .xf_editor-html-preview .flowchart {
-  /* ★ 操作节点 */
+  /* ★ 操作节点 — JS 注入 fc-type-operation 到 <g> + 内矩形 fc-operation-inner */
 }
-[data-theme=dark] .xf_editor-html-preview .flowchart .operation rect, [data-theme=dark] .xf_editor-html-preview .flowchart .operation path {
+[data-theme=dark] .xf_editor-html-preview .flowchart .fc-type-operation > rect {
   fill: #1e3a5f;
-  stroke: #3b82f6;
+  stroke: #3b82f6 !important;
 }
-[data-theme=dark] .xf_editor-html-preview .flowchart .operation text {
+[data-theme=dark] .xf_editor-html-preview .flowchart .fc-type-operation .fc-operation-inner {
+  fill: #1e3a5f;
+  stroke: #3b82f6 !important;
+}
+[data-theme=dark] .xf_editor-html-preview .flowchart .fc-type-operation text {
   fill: #bfdbfe;
 }
 [data-theme=dark] .xf_editor-html-preview .flowchart {
   /* ★ 条件/判断节点（菱形） */
 }
-[data-theme=dark] .xf_editor-html-preview .flowchart .condition rect, [data-theme=dark] .xf_editor-html-preview .flowchart .condition path {
+[data-theme=dark] .xf_editor-html-preview .flowchart .fc-type-condition rect, [data-theme=dark] .xf_editor-html-preview .flowchart .fc-type-condition path {
   fill: #5c3d0a;
-  stroke: #eab308;
+  stroke: #eab308 !important;
 }
-[data-theme=dark] .xf_editor-html-preview .flowchart .condition text {
+[data-theme=dark] .xf_editor-html-preview .flowchart .fc-type-condition text {
   fill: #fef08a;
 }
 [data-theme=dark] .xf_editor-html-preview .flowchart {
   /* ★ 输入输出节点 */
 }
-[data-theme=dark] .xf_editor-html-preview .flowchart .inputoutput rect, [data-theme=dark] .xf_editor-html-preview .flowchart .inputoutput path {
+[data-theme=dark] .xf_editor-html-preview .flowchart .fc-type-inputoutput rect, [data-theme=dark] .xf_editor-html-preview .flowchart .fc-type-inputoutput path {
   fill: #3b1f6e;
-  stroke: #8b5cf6;
+  stroke: #8b5cf6 !important;
 }
-[data-theme=dark] .xf_editor-html-preview .flowchart .inputoutput text {
+[data-theme=dark] .xf_editor-html-preview .flowchart .fc-type-inputoutput text {
   fill: #ddd6fe;
 }
 [data-theme=dark] .xf_editor-html-preview .flowchart {
   /* ★ 子流程节点 */
 }
-[data-theme=dark] .xf_editor-html-preview .flowchart .subroutine rect, [data-theme=dark] .xf_editor-html-preview .flowchart .subroutine path {
+[data-theme=dark] .xf_editor-html-preview .flowchart .fc-type-subroutine rect, [data-theme=dark] .xf_editor-html-preview .flowchart .fc-type-subroutine path {
   fill: #1e293b;
-  stroke: #64748b;
+  stroke: #64748b !important;
 }
-[data-theme=dark] .xf_editor-html-preview .flowchart .subroutine text {
+[data-theme=dark] .xf_editor-html-preview .flowchart .fc-type-subroutine text {
   fill: #e2e8f0;
 }
 [data-theme=dark] .xf_editor-html-preview .flowchart {
   /* ★ 并行节点 */
 }
-[data-theme=dark] .xf_editor-html-preview .flowchart .parallel rect, [data-theme=dark] .xf_editor-html-preview .flowchart .parallel path {
+[data-theme=dark] .xf_editor-html-preview .flowchart .fc-type-parallel rect, [data-theme=dark] .xf_editor-html-preview .flowchart .fc-type-parallel path {
   fill: #1e3a3a;
-  stroke: #14b8a6;
+  stroke: #14b8a6 !important;
 }
-[data-theme=dark] .xf_editor-html-preview .flowchart .parallel text {
+[data-theme=dark] .xf_editor-html-preview .flowchart .fc-type-parallel text {
   fill: #ccfbf1;
 }
 [data-theme=dark] .xf_editor-html-preview .flowchart {

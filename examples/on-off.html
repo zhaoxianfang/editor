@@ -39,7 +39,6 @@ editor.off("resize");
 </textarea>
             </div>
         </div>        
-        <script src="js/jquery.min.js"></script>
         <script src="../xf_editor.min.js"></script>
         <script type="text/javascript">
             var testEditor;
@@ -57,9 +56,9 @@ editor.off("resize");
                         taskList  : true,
                         sequenceDiagram : true,
                         onload : function() {
+                            // unbind before handle
                             this.off("resize");
-                            });
-                            
+
                             // defined event bind
                             this.on("resize", function(){
                                 console.clear();

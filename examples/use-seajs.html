@@ -22,7 +22,7 @@
             <header>
                 <h1>Using sea.js</h1>   
                 <p>说明：</p>
-                <p>1、由于xfEditor是依赖jQuery的，所以在使用Sea.js加载xfEditor时，要在jQuery.js文件尾部加上 <code>if(typeof define === "function") { define(function () { return $.noConflict(); }); }</code>，使jQuery支持Sea.js；</p>  
+                <p>1、xfEditor 已内置零依赖 micro-DOM，<b>不再依赖 jQuery</b>；在 Sea.js 下直接 <code>seajs.use(["../xf_editor"], ...)</code> 即可，无需为 jQuery 单独做 Sea.js 兼容包装。</p>  
                 <p>2、flowChart（流程图）和sequenceDiagram（时序图）基于Raphael.js，由于疑似Sea.js与Raphael.js有冲突，所以必须先加载Raphael.js再加载Sea.js，xfEditor才能在Sea.js下正常进行；</p>      
                 <ul style="margin: 10px 0 0 18px;">
                     <li>Enable HTML tags decode</li>
@@ -54,15 +54,15 @@
             seajs.config({
                 base  : "./",
                 alias : {
-                    jquery   : "js/jquery.min",
-                    xf_editor : "../xf_editor"
+                    xf_editor : "../xf_editor",
+                    // 插件/语言包内部按历史模块名 "xfEditor" 引用，这里做别名映射
+                    xfEditor  : "../xf_editor"
                 }
             });
                 
             //seajs.use("./js/seajs-main"); //使用main.js时 xf_editor 路径要改为 "../../xf_editor"
             
             var deps = [
-                "jquery", 
                 "xf_editor", 
                 "../languages/en", 
                 "../plugins/link-dialog/link-dialog",
@@ -76,10 +76,14 @@
                 "../plugins/preformatted-text-dialog/preformatted-text-dialog"
             ];
 			
-            seajs.use(deps, function($, xfEditor) {
+            seajs.use(deps, function(xfEditor) {
+                // 模块加载器环境下不会走全局导出分支，
+                // 这里直接取编辑器内置的 micro-DOM 作为本页的 $（无需 jQuery）
+                var $ = xfEditor.dom;
                 var testEditor;
                 
-                $.get("md/full.md", function(md){
+                // 使用编辑器内置 micro-DOM 的 AJAX，无需 jQuery
+                xfEditor.dom.get("md/full.md", function(md){
                     testEditor = xfEditor("test-xfEditor", {
                         width: "90%",
                         height: 640,

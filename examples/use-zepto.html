@@ -3,14 +3,14 @@
     <head>
     <link rel="shortcut icon" href="../images/favicon.ico" type="image/x-icon">
         <meta charset="utf-8" />
-        <title>Using Zepto.js - xfEditor examples</title>
+        <title>无外部 DOM 库（内置 micro-DOM）- xfEditor examples</title>
         <link rel="stylesheet" href="css/style.css" />
         <link rel="stylesheet" href="../css/xf_editor.min.css" />
     </head>
     <body>
         <div id="layout">
             <header>
-                <h1>Using Zepto.js</h1>
+                <h1>不使用任何外部 DOM 库（内置 micro-DOM）</h1>
                 <ul style="margin: 10px 0 0 18px;">
                     <li>Enable HTML tags decode</li>
                     <li>Enable TeX, Flowchart, Sequence Diagram, FontAwesome, Task lists</li>
@@ -39,15 +39,16 @@
                 <br/><input type="submit" name="submit" value="Submit" class="btn" style="margin-left: 5%;" />
             </form>
         </div>        
-        <script src="js/zepto.min.js"></script>
         <script src="../xf_editor.min.js"></script>   
         <script type="text/javascript">
 			var testEditor;
-			var jQuery = Zepto;  // 为了避免修改 flowChart.js 和 sequence-diagram.js 的源码，所以想支持 flowChart / sequenceDiagram 就得加上这一句
+            // xfEditor 已内置零依赖 micro-DOM（xfEditor.dom / xfEditor.$），
+            // 无需加载 Zepto / jQuery 即可运行；页面未引入外部 $ 时浏览器全局 $ 自动指向内置 DOM。
+            var $ = (typeof window.xfEditor !== "undefined" && window.xfEditor.dom) ? window.xfEditor.dom : window.$;
 
             $(function() {
                 $.get("md/full.md", function(md){
-					testEditor = xfEditor("test-xfEditor", {
+				testEditor = xfEditor("test-xfEditor", {
 						width  : "90%",
 						height : 720,
 						path   : '../lib/',

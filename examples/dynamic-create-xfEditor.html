@@ -20,26 +20,44 @@
             </header>
         </div>
         
-        <script src="js/jquery.min.js"></script> 
+ 
         <script type="text/javascript">
+            // 本页演示「按需动态加载编辑器」，因此页面自身不预先引入任何库，
+            // 全部使用原生 DOM API（xfEditor 已零 jQuery 依赖）。
             var testXfEditor;
-            
-            $(function() {                
-                $("#create-btn").click(function(){                    
-					$.getScript("../xf_editor.min.js", function() {
-                        $("#layout").append("<div id=\"test-xfEditor\"></div>");
-                        
+
+            document.addEventListener("DOMContentLoaded", function() {
+                var loaded = false;
+
+                document.getElementById("create-btn").addEventListener("click", function() {
+                    var create = function() {
+                        if (!document.getElementById("test-xfEditor")) {
+                            var box = document.createElement("div");
+                            box.id = "test-xfEditor";
+                            document.getElementById("layout").appendChild(box);
+                        }
                         testXfEditor = xfEditor("test-xfEditor", {
                             width: "90%",
                             height: 640,
                             markdown : "### 动态创建 xfEditor\r\n\r\nDynamic create xfEditor",
                             path : '../lib/'
                         });
-					});
-                });  
-                
-                $("#remove-btn").click(function() {
-                    testXfEditor.editor.remove();
+                    };
+
+                    if (loaded || typeof xfEditor !== "undefined") { create(); return; }
+
+                    // 原生动态加载脚本，替代 $.getScript
+                    var script = document.createElement("script");
+                    script.src = "../xf_editor.min.js";
+                    script.onload = function() { loaded = true; create(); };
+                    document.head.appendChild(script);
+                });
+
+                document.getElementById("remove-btn").addEventListener("click", function() {
+                    if (testXfEditor && testXfEditor.editor) {
+                        testXfEditor.editor.remove();
+                        testXfEditor = null;
+                    }
                 });
             });
         </script>
