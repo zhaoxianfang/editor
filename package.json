@@ -10,7 +10,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "build:scss": "npx sass scss/xf_editor.scss:css/xf_editor.css scss/xf_editor.preview.scss:css/xf_editor.preview.css scss/xf_editor.logo.scss:css/xf_editor.logo.css --style expanded --no-source-map && npm run build:css:min",
     "build:css:min": "cleancss css/xf_editor.css -o css/xf_editor.min.css && cleancss css/xf_editor.preview.css -o css/xf_editor.preview.min.css && cleancss css/xf_editor.logo.css -o css/xf_editor.logo.min.css",
-    "build:js": "uglifyjs xf_editor.js -o xf_editor.min.js -c -m",
+    "build:js": "node build-inline-flowchart.js",
     "build:amd": "uglifyjs xf_editor.amd.js -o xf_editor.amd.min.js -c -m",
     "build": "npm run build:scss && npm run build:js && npm run build:amd"
   },

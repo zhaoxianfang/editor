@@ -401,115 +401,56 @@
             background: #0f1a2e;
         }
 
-        /* ★ 开始/结束（圆角矩形） — JS 注入 fc-type-start/fc-type-end 到 <g> + start-element/end-element */
-        .fc-type-start, .start-element,
-        .fc-type-end, .end-element {
-            rect, path {
-                fill: #166534;
-                stroke: #22c55e !important;
+        /* ★ v1.18 重要说明 ★
+         * flowchart.js 输出的是「扁平 SVG」：所有 rect / path / text 都是 <svg> 的
+         * 直系子节点，**不存在 <g> 分组**。因此 fc-type-* 这个 class 是直接打在
+         * 形状元素本身上的（由 $.fn.flowChart 的 symbols 配置注入），
+         * 文本元素则是 fc-type-*t（多一个 t 后缀）。
+         *
+         * 旧写法 `.fc-type-start { rect { ... } }` 编译成后代选择器
+         * `.fc-type-start rect`，在真实 DOM 中永远匹配不到 —— 这正是
+         * 「节点没有形状边框 / 颜色不对」的根因之一。
+         * 现全部改为「元素自身」选择器。
+         */
+        $fc-dark-types: (
+            start:       (#166534, #22c55e, #bbf7d0),
+            end:         (#166534, #22c55e, #bbf7d0),
+            operation:   (#1e3a5f, #3b82f6, #bfdbfe),
+            condition:   (#5c3d0a, #eab308, #fef08a),
+            inputoutput: (#3b1f6e, #8b5cf6, #ddd6fe),
+            subroutine:  (#1e293b, #94a3b8, #e2e8f0),
+            parallel:    (#1e3a3a, #14b8a6, #ccfbf1),
+            input:       (#0c4a6e, #38bdf8, #bae6fd),
+            output:      (#4a1d3d, #ec4899, #fbcfe8)
+        );
+
+        @each $type, $colors in $fc-dark-types {
+            /* 形状本身 */
+            .fc-type-#{$type} {
+                fill:   nth($colors, 1) !important;
+                stroke: nth($colors, 2) !important;
             }
-            text {
-                fill: #bbf7d0;
+            /* 对应文本（class 为 fc-type-<type>t） */
+            text.fc-type-#{$type}t,
+            text.fc-type-#{$type}t tspan {
+                fill: nth($colors, 3) !important;
             }
         }
 
-        /* ★ 操作（矩形） — JS 注入 fc-type-operation 到 <g> */
-        .fc-type-operation {
-            /* outer rect */
-            > rect {
-                fill: #1e3a5f;
-                stroke: #3b82f6 !important;
-            }
-            /* inner rect（v1.17.37 JS 后处理创建的 fc-operation-inner） */
-            .fc-operation-inner {
-                fill: #1e3a5f;
-                stroke: #3b82f6 !important;
-            }
-            text {
-                fill: #bfdbfe;
-            }
+        /* ★ 连线/箭头 —— 仅作用于 JS 后处理标记的 .fc-edge，
+         *   避免「给所有 path 上色」误伤菱形/平行四边形等节点形状。 */
+        path.fc-edge {
+            stroke: #94a3b8 !important;
+            fill: none !important;
+        }
+        marker path {
+            fill: #94a3b8 !important;
+            stroke: #94a3b8 !important;
         }
 
-        /* ★ 条件/判断（菱形） */
-        .fc-type-condition {
-            rect, path {
-                fill: #5c3d0a;
-                stroke: #eab308 !important;
-            }
-            text {
-                fill: #fef08a;
-            }
-        }
-
-        /* ★ 输入输出（平行四边形） */
-        .fc-type-inputoutput {
-            rect, path {
-                fill: #3b1f6e;
-                stroke: #8b5cf6 !important;
-            }
-            text {
-                fill: #ddd6fe;
-            }
-        }
-
-        /* ★ 子流程（带双竖线矩形） */
-        .fc-type-subroutine {
-            rect, path {
-                fill: #1e293b;
-                stroke: #64748b !important;
-            }
-            text {
-                fill: #e2e8f0;
-            }
-        }
-
-        /* ★ 并行 */
-        .fc-type-parallel {
-            rect, path {
-                fill: #1e3a3a;
-                stroke: #14b8a6 !important;
-            }
-            text {
-                fill: #ccfbf1;
-            }
-        }
-
-        /* ★ 连线/箭头 ★ */
-        .edge {
-            path, line {
-                stroke: #64748b;
-                marker-end: none;
-            }
-            polygon, .arrowhead, path[d] {
-                fill: #64748b;
-                stroke: #64748b;
-            }
-            text {
-                fill: #94a3b8;
-            }
-        }
-
-        /* ★ 组/泳道（swimlane / group） */
-        .group {
-            rect {
-                fill: transparent;
-                stroke: #3b4f6d;
-                stroke-dasharray: 6,4;
-            }
-            text {
-                fill: #94a3b8;
-            }
-        }
-
-        /* 通用节点降级 — 未匹配到具体类型时 */
-        rect, path {
-            stroke : #93c5fd;
-        }
-        rect {
-            fill: #93c5fd;
-        }
+        /* 默认文本色（yes/no 分支标签等未带 fc-type-*t 的文本） */
         text {
-            fill: #e2e8f0;
+            fill: #cbd5e1;
         }
     }
 
@@ -1042,112 +983,45 @@
             background: #0f1a2e;
         }
 
-        /* ★ 开始/结束节点 — JS 注入 fc-type-start/fc-type-end 到 <g> + start-element/end-element */
-        .fc-type-start, .start-element,
-        .fc-type-end, .end-element {
-            rect, path {
-                fill: #166534;
-                stroke: #22c55e !important;
+        /* ★ v1.18: 与 .xf_editor-preview-theme-dark 保持同一套配色。
+         * flowchart.js 输出扁平 SVG —— fc-type-* 直接在形状元素上，
+         * 文本为 fc-type-*t，故必须用「元素自身」选择器而非后代选择器。 */
+        $fc-dark-types-attr: (
+            start:       (#166534, #22c55e, #bbf7d0),
+            end:         (#166534, #22c55e, #bbf7d0),
+            operation:   (#1e3a5f, #3b82f6, #bfdbfe),
+            condition:   (#5c3d0a, #eab308, #fef08a),
+            inputoutput: (#3b1f6e, #8b5cf6, #ddd6fe),
+            subroutine:  (#1e293b, #94a3b8, #e2e8f0),
+            parallel:    (#1e3a3a, #14b8a6, #ccfbf1),
+            input:       (#0c4a6e, #38bdf8, #bae6fd),
+            output:      (#4a1d3d, #ec4899, #fbcfe8)
+        );
+
+        @each $type, $colors in $fc-dark-types-attr {
+            .fc-type-#{$type} {
+                fill:   nth($colors, 1) !important;
+                stroke: nth($colors, 2) !important;
             }
-            text {
-                fill: #bbf7d0;
+            text.fc-type-#{$type}t,
+            text.fc-type-#{$type}t tspan {
+                fill: nth($colors, 3) !important;
             }
         }
 
-        /* ★ 操作节点 — JS 注入 fc-type-operation 到 <g> + 内矩形 fc-operation-inner */
-        .fc-type-operation {
-            > rect {
-                fill: #1e3a5f;
-                stroke: #3b82f6 !important;
-            }
-            .fc-operation-inner {
-                fill: #1e3a5f;
-                stroke: #3b82f6 !important;
-            }
-            text {
-                fill: #bfdbfe;
-            }
+        /* ★ 连线箭头：仅作用于 JS 标记的 .fc-edge，避免误伤节点形状 */
+        path.fc-edge {
+            stroke: #94a3b8 !important;
+            fill: none !important;
+        }
+        marker path {
+            fill: #94a3b8 !important;
+            stroke: #94a3b8 !important;
         }
 
-        /* ★ 条件/判断节点（菱形） */
-        .fc-type-condition {
-            rect, path {
-                fill: #5c3d0a;
-                stroke: #eab308 !important;
-            }
-            text {
-                fill: #fef08a;
-            }
-        }
-
-        /* ★ 输入输出节点 */
-        .fc-type-inputoutput {
-            rect, path {
-                fill: #3b1f6e;
-                stroke: #8b5cf6 !important;
-            }
-            text {
-                fill: #ddd6fe;
-            }
-        }
-
-        /* ★ 子流程节点 */
-        .fc-type-subroutine {
-            rect, path {
-                fill: #1e293b;
-                stroke: #64748b !important;
-            }
-            text {
-                fill: #e2e8f0;
-            }
-        }
-
-        /* ★ 并行节点 */
-        .fc-type-parallel {
-            rect, path {
-                fill: #1e3a3a;
-                stroke: #14b8a6 !important;
-            }
-            text {
-                fill: #ccfbf1;
-            }
-        }
-
-        /* ★ 连线箭头 */
-        .edge {
-            path, line {
-                stroke: #64748b;
-            }
-            polygon, .arrowhead, path[d] {
-                fill: #64748b;
-                stroke: #64748b;
-            }
-            text {
-                fill: #94a3b8;
-            }
-        }
-
-        /* ★ 组/泳道 */
-        .group {
-            rect {
-                fill: transparent;
-                stroke: #3b4f6d;
-                stroke-dasharray: 6,4;
-            }
-            text {
-                fill: #94a3b8;
-            }
-        }
-
-        /* 通用降级 */
-        rect, path {
-            stroke: #93c5fd;
-        }
-        rect {
-            fill: #93c5fd;
-        }
+        /* 默认文本色（yes/no 标签等） */
         text {
-            fill: #e2e8f0;
+            fill: #cbd5e1;
         }
     }
 

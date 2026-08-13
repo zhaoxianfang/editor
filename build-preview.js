@@ -12,10 +12,8 @@ var path = require('path');
 var previewFiles = [
     { path: 'lib/marked.min.js',             required: true },
     { path: 'lib/prettify.min.js',           required: false },
-    { path: 'lib/raphael.min.js',            required: false },
-    { path: 'lib/underscore.min.js',        required: false },
+    { path: 'lib/flowchart.bundle.min.js',  required: true },
     { path: 'lib/sequence-diagram.min.js',  required: false },
-    { path: 'lib/flowchart.min.js',          required: false },
     { path: 'lib/echarts.min.js',            required: false },
     { path: 'xf_editor.min.js',              required: true },
 ];

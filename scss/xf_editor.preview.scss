@@ -589,12 +589,42 @@
         }
     }
 
-    // ★ v1.17.27: 确保 flowchart 所有节点（start/operation/condition/end…）拥有可见边框
-    //   使用 !important 防御 Raphael.js 库设置的 stroke="none" 内联属性
+    // ★ v1.18: 亮色主题下的流程图配色
+    //   注意：flowchart.js 输出「扁平 SVG」，fc-type-* 直接打在形状元素上，
+    //   文本元素为 fc-type-*t。旧版这里用 `rect, path { stroke:#555 !important }`
+    //   会把所有节点描边统一成灰色，覆盖掉按类型区分的配色（暗色主题同样被波及），
+    //   因此改为：只兜底描边宽度，颜色按节点类型分别指定。
     .flowchart {
-        rect, path {
-            stroke-width: 1.5px !important;
-            stroke: #555 !important;
+        // 连线不填充（避免箭头路径被误填色）
+        path.fc-edge {
+            fill: none;
+        }
+        // 节点统一描边宽度（颜色由下面按类型指定 / JS 后处理兜底）
+        .fc-node {
+            stroke-width: 2px;
+        }
+
+        $fc-light-types: (
+            start:       (#dcfce7, #16a34a, #14532d),
+            end:         (#dcfce7, #16a34a, #14532d),
+            operation:   (#dbeafe, #2563eb, #1e3a8a),
+            condition:   (#fef9c3, #ca8a04, #713f12),
+            inputoutput: (#ede9fe, #7c3aed, #4c1d95),
+            subroutine:  (#f1f5f9, #64748b, #1e293b),
+            parallel:    (#ccfbf1, #0d9488, #134e4a),
+            input:       (#e0f2fe, #0284c7, #075985),
+            output:      (#fce7f3, #db2777, #831843)
+        );
+
+        @each $type, $colors in $fc-light-types {
+            .fc-type-#{$type} {
+                fill:   nth($colors, 1);
+                stroke: nth($colors, 2);
+            }
+            text.fc-type-#{$type}t,
+            text.fc-type-#{$type}t tspan {
+                fill: nth($colors, 3);
+            }
         }
     }
 
