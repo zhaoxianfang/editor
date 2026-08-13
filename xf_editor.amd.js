@@ -1,70 +1,96 @@
 /*! xfEditor v1.17.38 */
 
 (function(root, factory) {
-    if (typeof define === 'function' && define.amd) {
-        // AMD: register as named module
-        define('xfEditor', [], function() { return factory.call(root); });
-    } else if (typeof module === 'object' && module.exports) {
-        // CommonJS
+    "use strict";
+    if (typeof define === "function" && define.amd) {
+        // AMD（Require.js）：匿名注册，模块名由加载路径决定（如 use-requirejs.html 中的 "xf_editor"）。
+        // 所有插件/语言包按历史模块名 "xfEditor" 声明依赖，由页面 map 重定向到本模块。
+        // 依赖经 codeMirrorModules 注入 factory 的 arguments（见下方 /* Require.js assignment */ 注入）。
+        var cmModePath  = "codemirror/mode/";
+        var cmAddonPath = "codemirror/addon/";
+
+        var codeMirrorModules = [
+                "marked", "prettify",
+                "katex", "raphael", "underscore", "flowchart", "sequenceDiagram",
+                "codemirror/lib/codemirror",
+                cmModePath + "css/css",
+                cmModePath + "sass/sass",
+                cmModePath + "shell/shell",
+                cmModePath + "sql/sql",
+                cmModePath + "clike/clike",
+                cmModePath + "php/php",
+                cmModePath + "xml/xml",
+                cmModePath + "markdown/markdown",
+                cmModePath + "javascript/javascript",
+                cmModePath + "htmlmixed/htmlmixed",
+                cmModePath + "gfm/gfm",
+                cmModePath + "http/http",
+                cmModePath + "go/go",
+                cmModePath + "dart/dart",
+                cmModePath + "coffeescript/coffeescript",
+                cmModePath + "nginx/nginx",
+                cmModePath + "python/python",
+                cmModePath + "perl/perl",
+                cmModePath + "lua/lua",
+                cmModePath + "r/r",
+                cmModePath + "ruby/ruby",
+                cmModePath + "rst/rst",
+                cmModePath + "smartymixed/smartymixed",
+                cmModePath + "vb/vb",
+                cmModePath + "vbscript/vbscript",
+                cmModePath + "velocity/velocity",
+                cmModePath + "xquery/xquery",
+                cmModePath + "yaml/yaml",
+                cmModePath + "erlang/erlang",
+                cmModePath + "jade/jade",
+                cmAddonPath + "edit/trailingspace",
+                cmAddonPath + "dialog/dialog",
+                cmAddonPath + "search/searchcursor",
+                cmAddonPath + "search/search",
+                cmAddonPath + "scroll/annotatescrollbar",
+                cmAddonPath + "search/matchesonscrollbar",
+                cmAddonPath + "display/placeholder",
+                cmAddonPath + "edit/closetag",
+                cmAddonPath + "fold/foldcode",
+                cmAddonPath + "fold/foldgutter",
+                cmAddonPath + "fold/indent-fold",
+                cmAddonPath + "fold/brace-fold",
+                cmAddonPath + "fold/xml-fold",
+                cmAddonPath + "fold/markdown-fold",
+                cmAddonPath + "fold/comment-fold",
+                cmAddonPath + "mode/overlay",
+                cmAddonPath + "selection/active-line",
+                cmAddonPath + "edit/closebrackets",
+                cmAddonPath + "display/fullscreen",
+                cmAddonPath + "search/match-highlighter"
+            ];
+
+        define(codeMirrorModules, factory);
+    } else if (typeof module === "object" && module.exports) {
+        // CommonJS / Node.js
         module.exports = factory.call(root);
     } else {
-        // Browser global: attach to window
+        // Browser global
         var lib = factory.call(root);
-        if (typeof window !== 'undefined') { window.xfEditor = lib; }
-    }
-}(typeof self !== 'undefined' ? self : this, function() {
-'use strict';
-;(function(factory) {
-    "use strict";
-
-    // Polyfill：始终覆盖 window.test，防止浏览器报 "test is not defined" / "test.mode is not a function" 错误
-    if (typeof window !== "undefined") {
-        try {
-            var _testPolyfill = function() {};
-            _testPolyfill.mode       = function() {};
-            _testPolyfill.formatString = function() { return ""; };
-            _testPolyfill.addOption  = function() {};
-            _testPolyfill.show       = function() {};
-            _testPolyfill.init       = function() {};
-            _testPolyfill.run        = function() {};
-            _testPolyfill.destroy    = function() {};
-            window.test = _testPolyfill;
-        } catch(e) {
-            // 静默失败：test polyfill 非关键功能
+        if (typeof window !== "undefined") { window.xfEditor = lib; }
+        // 条件暴露全局 $（与主文件一致）：仅在页面未自带 $（jQuery/Zepto）时生效
+        if (typeof window !== "undefined" && typeof window.$ === "undefined") {
+            window.$ = lib.dom;
         }
     }
+}(typeof self !== "undefined" ? self : this, function() {
     
-	// CommonJS / Node.js 模块加载
-	if (typeof require === "function" && typeof exports === "object" && typeof module === "object")
-    { 
-        module.exports = factory;
-    }
-	else if (typeof define === "function")  // AMD / CMD / Sea.js 模块加载
-	{
-        if (define.amd) // Require.js AMD 加载
-        {
-            /* Require.js define replace */
-        } 
-        else 
-        {
-		    define(factory);  // Sea.js CMD 加载
-        }
-	} 
-	else
-	{ 
-        window.xfEditor = factory();
 
-        // ★ v1.17.38: 条件暴露全局 $ —— 仅在页面没有自带 $（如 jQuery/Zepto）时，
-        //   自动将内置 XfDom 赋给 window.$，确保旧版示例/代码无需修改即可运行。
-        //   若页面已加载 jQuery/Zepto，则保留其 $，避免冲突。
-        if (typeof window.$ === "undefined") {
-            window.$ = window.xfEditor.dom;
-        }
-	}
-    
-}(function() {    
-
-    /* Require.js assignment replace */
+    if (typeof define == "function" && define.amd) {
+                marked     = arguments[0];
+                prettify   = arguments[1];
+                katex      = arguments[2];
+                Raphael    = arguments[3];
+                _          = arguments[4];
+                flowchart  = arguments[5];
+                sequenceDiagram = arguments[6];
+                CodeMirror = arguments[7];
+            }
     
     "use strict";
     
@@ -840,7 +866,13 @@
         $.fn.toggle = function(state) {
             if (typeof state === "boolean") return state ? this.show() : this.hide();
             return this.each(function(i, el) {
-                if (isVisible(el)) $(el).hide(); else $(el).show();
+                if (el.nodeType !== 1) return;
+                // 与 jQuery 一致：以 display 是否为 none 判定（而非几何可见性）。
+                // 注意：未插入文档的元素 getComputedStyle().display 恒为 ''，
+                // 需回退到内联样式 / 标签默认 display，否则 detached 元素无法正确切换。
+                var computed = window.getComputedStyle(el, null).display;
+                var d = computed || (el.style && el.style.display) || defaultDisplay(el.tagName.toLowerCase());
+                if (d === "none") $(el).show(); else $(el).hide();
             });
         };
         // fadeIn/fadeOut：CSS 过渡实现（内联 HTML 的 onload 里被调用）
@@ -1563,13 +1595,40 @@
         // ---------- 内建图表插件（XfDom 插件层封装，下接 Raphael flow/sequence 库；摆脱 jQuery 适配） ----------
         // flowchart.js / js-sequence-diagrams 本身零 jQuery/XfDom 依赖，
         // 直接调用 Raphael API 绘制；此处提供 XfDom 插件接口，无需外部适配器。
+        // ★ v1.18: 判定元素当前所处主题（暗色/亮色）
+        //   优先级：最近的 [data-theme] 祖先 → <html>/<body> 的 data-theme → 类名 theme-dark → 系统偏好
         $.fn.flowChart = function(options) {
             options = options || {};
+            var isDark = false;
+            var probe = this[0];
+            if (probe) {
+                var node = probe;
+                while (node && node.nodeType === 1) {
+                    var dt = node.getAttribute && node.getAttribute("data-theme");
+                    if (dt) { isDark = (dt === "dark"); break; }
+                    var cls = (node.getAttribute && node.getAttribute("class")) || "";
+                    if (/\btheme-dark\b/.test(cls)) { isDark = true; break; }
+                    node = node.parentNode;
+                }
+            }
+            // 暗色主题：浅色描边 + 深色填充 + 浅色文字；亮色主题：沿用官方默认（黑描边/白填充）
+            var themeColors = isDark
+                ? { "font-color": "#e2e8f0", "line-color": "#94a3b8",
+                    "element-color": "#93c5fd", "fill": "#16233c" }
+                : { "font-color": "#1f2937", "line-color": "#4b5563",
+                    "element-color": "#4b5563", "fill": "#ffffff" };
             var defaults = {
                 "x": 0, "y": 0, "line-width": 2, "line-length": 50, "text-margin": 10,
-                "font-size": 14, "font-color": "black", "line-color": "black",
-                "element-color": "black", "fill": "white", "yes-text": "yes", "no-text": "no",
+                "font-size": 14,
+                "font-color": themeColors["font-color"],
+                "line-color": themeColors["line-color"],
+                "element-color": themeColors["element-color"],
+                "fill": themeColors["fill"],
+                "yes-text": "yes", "no-text": "no",
                 "arrow-end": "block",
+                // ★ v1.18: 覆盖 flowchart.js 全部 9 种节点类型（新增 input / output）
+                //   注意：flowchart.js 输出的是「扁平 SVG」（无 <g> 分组），
+                //   每个节点 shape 直接带上这里配置的 class，文本元素则带 class + "t" 后缀。
                 "symbols": {
                     "start":      { "class": "start-element fc-type-start" },
                     "end":        { "class": "end-element fc-type-end" },
@@ -1577,7 +1636,9 @@
                     "subroutine": { "class": "fc-type-subroutine" },
                     "condition":  { "class": "fc-type-condition" },
                     "inputoutput":{ "class": "fc-type-inputoutput" },
-                    "parallel":   { "class": "fc-type-parallel" }
+                    "parallel":   { "class": "fc-type-parallel" },
+                    "input":      { "class": "fc-type-input" },
+                    "output":     { "class": "fc-type-output" }
                 },
                 "flowstate": {
                     "past": { "fill": "#CCCCCC", "font-size": 12 },
@@ -1589,13 +1650,43 @@
                     "rejected": { "fill": "#C45879", "font-size": 12, "yes-text": "n/a", "no-text": "REJECTED" }
                 }
             };
+            // ★ 关键修复（彻底消除版本依赖）：
+            //   优先使用内置自包含 bundle（flowchart.bundle.min.js 内联的 v1.18），
+            //   它已缓存到 xfEditor._flowchart。外部全局 window.flowchart 可能是旧版 v1.3.4，
+            //   一律不优先使用，从而彻底消除 "a.shiftX is not a function" /
+            //   "Cannot set properties of undefined (setting 'yes')" 等错误。
+            var FC = xfEditor._flowchart || window.flowchart;
+            if (typeof FC === "undefined") {
+                console.error("[xfEditor] flowchart 渲染引擎未加载，无法渲染流程图。");
+                return this;
+            }
+
             return this.each(function(i, el) {
-                if (typeof window.flowchart === "undefined") return;
                 var $this = $(el);
-                var diagram = window.flowchart.parse($this.text());
+                // ★ v1.18: 源码优先取 data-fc-source（首次渲染时缓存），
+                //   否则取 textContent。缓存后主题切换可重新渲染而不丢失源码。
+                var source = el.getAttribute("data-fc-source");
+                if (source === null || source === "") {
+                    source = $this.text();
+                    el.setAttribute("data-fc-source", source);
+                }
                 var settings = deepMerge( {}, defaults, options);
-                $this.html("");
-                diagram.drawSVG(el, settings);
+                try {
+                    // parse 必须在 try 内执行，且无论成败都要先清空源码，
+                    // 避免解析失败时 markdown 源码残留在 DOM（"原样输出源码"现象）。
+                    var diagram = FC.parse(source);
+                    $this.html("");
+                    diagram.drawSVG(el, settings);
+                } catch (err) {
+                    console.error("[xfEditor] FlowChart render error:", err);
+                    // 失败时清空源码并给出友好占位，而非残留 markdown 文本。
+                    $this.html(
+                        '<div class="fc-render-error" style="padding:10px 12px;margin:6px 0;' +
+                        'border:1px solid #f0c0c0;border-radius:6px;background:#fff5f5;' +
+                        'color:#c0392b;font-size:13px;line-height:1.6;white-space:pre-wrap;">' +
+                        '流程图渲染失败：' + (err && err.message ? err.message : String(err)) + '</div>'
+                    );
+                }
             });
         };
         $.fn.sequenceDiagram = function(options) {
@@ -1628,7 +1719,7 @@
     };
     
     xfEditor.title        = xfEditor.$name = "xfEditor";
-    xfEditor.version      = "1.17.28";
+    xfEditor.version      = "1.17.38";
     xfEditor.homePage     = "https://github.com/zhaoxianfang/xfeditor";
     xfEditor.classPrefix  = "xf_editor-";
     xfEditor.dom          = dom; // micro-DOM 实例，替代 $/jQuery
@@ -4210,32 +4301,36 @@
                                           (hasSequence && typeof Diagram === "undefined");
                         if (needRaphael) {
                             _this._asyncLoadCount++;
-                            xfEditor.loadScript(settings.path + "raphael.min", function() {
-                                xfEditor.loadScript(settings.path + "underscore.min", function() {
-                                    var pending = 0;
-                                    var checkDone = function() {
-                                        pending--;
-                                        if (pending <= 0) {
-                                            renderFs();
-                                            _this._asyncLoadCount--;
-                                            _this._checkAllAsyncLoaded();
-                                        }
-                                    };
-                                    if (hasFlowChart && typeof flowchart === "undefined") {
-                                        pending++;
-                                        xfEditor.loadScript(settings.path + "flowchart.min", checkDone);
-                                    }
-                                    if (hasSequence && typeof Diagram === "undefined") {
-                                        pending++;
-                                        xfEditor.loadScript(settings.path + "sequence-diagram.min", checkDone);
-                                    }
-                                    if (pending === 0) {
-                                        renderFs();
-                                        _this._asyncLoadCount--;
-                                        _this._checkAllAsyncLoaded();
-                                    }
+                            var pending = 0;
+                            var checkDone = function() {
+                                pending--;
+                                if (pending <= 0) {
+                                    renderFs();
+                                    _this._asyncLoadCount--;
+                                    _this._checkAllAsyncLoaded();
+                                }
+                            };
+                            // ★ 关键修复：flowchart 加载自包含 bundle（内联 v1.18），
+                            //   彻底摆脱外部 lib/flowchart.min.js 版本（旧版 v1.3.4 会崩溃），
+                            //   并缓存内置引用 xfEditor._flowchart。
+                            if (hasFlowChart && typeof flowchart === "undefined") {
+                                pending++;
+                                xfEditor.loadScript(settings.path + "flowchart.bundle.min", function() {
+                                    xfEditor._flowchart = window.flowchart;
+                                    checkDone();
                                 });
-                            });
+                            }
+                            if (hasSequence && typeof Diagram === "undefined") {
+                                pending++;
+                                xfEditor.loadScript(settings.path + "raphael.min", function() {
+                                    xfEditor.loadScript(settings.path + "sequence-diagram.min", checkDone);
+                                });
+                            }
+                            if (pending === 0) {
+                                renderFs();
+                                _this._asyncLoadCount--;
+                                _this._checkAllAsyncLoaded();
+                            }
                         } else {
                             renderFs();
                         }
@@ -6340,7 +6435,31 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
                 c.push('.xf_editor-code-copy-btn:hover{color:#fff;border-color:rgba(255,255,255,0.4);background:rgba(255,255,255,0.22);}.xf_editor-code-copy-btn.copied{color:#4caf50;border-color:#4caf50;background:rgba(76,175,80,0.15);cursor:default;pointer-events:none;}.xf_editor-code-copy-btn.failed{color:#f44336;border-color:#f44336;background:rgba(244,67,54,0.15);cursor:default;pointer-events:none;}');
             }
             c.push('.xf_editor-html-preview li.task-list-item{list-style:none;}.xf_editor-html-preview li.task-list-item+li.task-list-item{margin-top:3px;}.xf_editor-html-preview .task-list-item-checkbox{float:left;margin:0.35em 0 0.25em -1.6em;vertical-align:middle;}');
-            c.push('.xf_editor-html-preview .flowchart,.xf_editor-html-preview .sequence-diagram{margin:0 auto;text-align:center;max-width:100%;overflow-x:auto;}.xf_editor-html-preview .flowchart svg,.xf_editor-html-preview .sequence-diagram svg{max-width:none!important;height:auto!important;margin:0 auto;}.xf_editor-html-preview .flowchart text,.xf_editor-html-preview .sequence-diagram text{font-size:15px!important;}.xf_editor-html-preview .flowchart rect,.xf_editor-html-preview .flowchart path{stroke-width:1.5px!important;stroke:#555!important;}');
+            // ★ v1.18: 容器与自适应
+            c.push('.xf_editor-html-preview .flowchart,.xf_editor-html-preview .sequence-diagram{margin:0 auto;text-align:center;max-width:100%;overflow-x:auto;}.xf_editor-html-preview .flowchart svg,.xf_editor-html-preview .sequence-diagram svg{max-width:none!important;height:auto!important;margin:0 auto;}.xf_editor-html-preview .sequence-diagram text{font-size:15px!important;}');
+            // ★ v1.18: 移除旧的 "所有 rect/path 强制 stroke:#555!important" ——
+            //   该规则会覆盖每种节点类型的主题描边色，导致节点无法区分；
+            //   现仅保证描边宽度，颜色交给下面的按类型规则与 flowstate。
+            c.push('.xf_editor-html-preview .flowchart .fc-node{stroke-width:2px;}.xf_editor-html-preview .flowchart path.fc-edge{fill:none;}');
+            // 亮色主题：按节点类型着色（与暗色主题一一对应）
+            var fcLightTypes = [
+                ["start",       "#dcfce7", "#16a34a", "#14532d"],
+                ["end",         "#dcfce7", "#16a34a", "#14532d"],
+                ["operation",   "#dbeafe", "#2563eb", "#1e3a8a"],
+                ["condition",   "#fef9c3", "#ca8a04", "#713f12"],
+                ["inputoutput", "#ede9fe", "#7c3aed", "#4c1d95"],
+                ["subroutine",  "#f1f5f9", "#64748b", "#1e293b"],
+                ["parallel",    "#ccfbf1", "#0d9488", "#134e4a"],
+                ["input",       "#e0f2fe", "#0284c7", "#075985"],
+                ["output",      "#fce7f3", "#db2777", "#831843"]
+            ];
+            for (var fcli = 0; fcli < fcLightTypes.length; fcli++) {
+                var fcL = fcLightTypes[fcli];
+                var fcLSel = '.xf_editor-html-preview .flowchart ';
+                c.push(fcLSel + '.fc-type-' + fcL[0] + '{fill:' + fcL[1] + ';stroke:' + fcL[2] + ';}' +
+                       fcLSel + 'text.fc-type-' + fcL[0] + 't,' +
+                       fcLSel + 'text.fc-type-' + fcL[0] + 't tspan{fill:' + fcL[3] + ';}');
+            }
             // --- KaTeX 公式样式（完整官方 katex.min.css v0.16.9 + CDN 字体）---
             if (f.katex) {
                 // 完整嵌入官方 katex.min.css（~26KB），替代自写不完整 CSS
@@ -6424,16 +6543,32 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             // ★ Flowchart & Sequence diagram (v1.17.31 全面升级)
             // Flowchart: 节点类型区分 + SVG背景
             c.push('[data-theme="dark"] .xf_editor-html-preview .flowchart{background:#0f1a2e;border-radius:4px;padding:8px;}[data-theme="dark"] .xf_editor-html-preview .flowchart svg{background:#0f1a2e;}');
-            c.push('[data-theme="dark"] .xf_editor-html-preview .flowchart .start rect,[data-theme="dark"] .xf_editor-html-preview .flowchart .start path,[data-theme="dark"] .xf_editor-html-preview .flowchart .end rect,[data-theme="dark"] .xf_editor-html-preview .flowchart .end path{fill:#166534;stroke:#22c55e;}[data-theme="dark"] .xf_editor-html-preview .flowchart .start text,[data-theme="dark"] .xf_editor-html-preview .flowchart .end text{fill:#bbf7d0;}');
-            c.push('[data-theme="dark"] .xf_editor-html-preview .flowchart .operation rect,[data-theme="dark"] .xf_editor-html-preview .flowchart .operation path{fill:#1e3a5f;stroke:#3b82f6;}[data-theme="dark"] .xf_editor-html-preview .flowchart .operation text{fill:#bfdbfe;}');
-            c.push('[data-theme="dark"] .xf_editor-html-preview .flowchart .condition rect,[data-theme="dark"] .xf_editor-html-preview .flowchart .condition path{fill:#5c3d0a;stroke:#eab308;}[data-theme="dark"] .xf_editor-html-preview .flowchart .condition text{fill:#fef08a;}');
-            c.push('[data-theme="dark"] .xf_editor-html-preview .flowchart .inputoutput rect,[data-theme="dark"] .xf_editor-html-preview .flowchart .inputoutput path{fill:#3b1f6e;stroke:#8b5cf6;}[data-theme="dark"] .xf_editor-html-preview .flowchart .inputoutput text{fill:#ddd6fe;}');
-            c.push('[data-theme="dark"] .xf_editor-html-preview .flowchart .subroutine rect,[data-theme="dark"] .xf_editor-html-preview .flowchart .subroutine path{fill:#1e293b;stroke:#64748b;}[data-theme="dark"] .xf_editor-html-preview .flowchart .subroutine text{fill:#e2e8f0;}');
-            c.push('[data-theme="dark"] .xf_editor-html-preview .flowchart .parallel rect,[data-theme="dark"] .xf_editor-html-preview .flowchart .parallel path{fill:#1e3a3a;stroke:#14b8a6;}[data-theme="dark"] .xf_editor-html-preview .flowchart .parallel text{fill:#ccfbf1;}');
-            c.push('[data-theme="dark"] .xf_editor-html-preview .flowchart .edge path,[data-theme="dark"] .xf_editor-html-preview .flowchart .edge line{stroke:#64748b;}[data-theme="dark"] .xf_editor-html-preview .flowchart .edge polygon,[data-theme="dark"] .xf_editor-html-preview .flowchart .edge .arrowhead{fill:#64748b;stroke:#64748b;}[data-theme="dark"] .xf_editor-html-preview .flowchart .edge text{fill:#94a3b8;}');
-            c.push('[data-theme="dark"] .xf_editor-html-preview .flowchart .group rect{fill:transparent;stroke:#3b4f6d;stroke-dasharray:6,4;}');
-            // Flowchart 默认降级
-            c.push('[data-theme="dark"] .xf_editor-html-preview .flowchart rect,[data-theme="dark"] .xf_editor-html-preview .flowchart path{stroke:#93c5fd;}[data-theme="dark"] .xf_editor-html-preview .flowchart rect{fill:#93c5fd;}[data-theme="dark"] .xf_editor-html-preview .flowchart text{fill:#e2e8f0;}');
+            // ★ v1.18: 选择器对齐 flowchart.js 真实输出 —— 扁平 SVG，节点 shape 自带
+            //   fc-type-*（由 $.fn.flowChart 的 symbols 配置注入），文本为 fc-type-*t。
+            //   旧版用 .start/.operation 这类祖先选择器，在真实 DOM 中从不匹配。
+            var fcDarkTypes = [
+                // [类型, 填充, 描边, 文字色]
+                ["start",       "#166534", "#22c55e", "#bbf7d0"],
+                ["end",         "#166534", "#22c55e", "#bbf7d0"],
+                ["operation",   "#1e3a5f", "#3b82f6", "#bfdbfe"],
+                ["condition",   "#5c3d0a", "#eab308", "#fef08a"],
+                ["inputoutput", "#3b1f6e", "#8b5cf6", "#ddd6fe"],
+                ["subroutine",  "#1e293b", "#94a3b8", "#e2e8f0"],
+                ["parallel",    "#1e3a3a", "#14b8a6", "#ccfbf1"],
+                ["input",       "#0c4a6e", "#38bdf8", "#bae6fd"],
+                ["output",      "#4a1d3d", "#ec4899", "#fbcfe8"]
+            ];
+            for (var fcdi = 0; fcdi < fcDarkTypes.length; fcdi++) {
+                var fcT = fcDarkTypes[fcdi];
+                var fcSel = '[data-theme="dark"] .xf_editor-html-preview .flowchart ';
+                c.push(fcSel + '.fc-type-' + fcT[0] + '{fill:' + fcT[1] + '!important;stroke:' + fcT[2] + '!important;}' +
+                       fcSel + 'text.fc-type-' + fcT[0] + 't,' +
+                       fcSel + 'text.fc-type-' + fcT[0] + 't tspan{fill:' + fcT[3] + '!important;}');
+            }
+            // 连线：仅作用于 .fc-edge（后处理标记），避免误伤节点形状
+            c.push('[data-theme="dark"] .xf_editor-html-preview .flowchart path.fc-edge{stroke:#94a3b8!important;fill:none!important;}[data-theme="dark"] .xf_editor-html-preview .flowchart marker path{fill:#94a3b8!important;stroke:#94a3b8!important;}');
+            // 文本默认色（yes/no 标签等未带 fc-type-*t 的文本）
+            c.push('[data-theme="dark"] .xf_editor-html-preview .flowchart text,[data-theme="dark"] .xf_editor-html-preview .flowchart text tspan{fill:#cbd5e1;}');
             // Sequence diagram: 完整元素覆盖
             c.push('[data-theme="dark"] .xf_editor-html-preview .sequence-diagram{background:#0f1a2e;border-radius:4px;padding:8px;}[data-theme="dark"] .xf_editor-html-preview .sequence-diagram svg{background:#0f1a2e;}');
             c.push('[data-theme="dark"] .xf_editor-html-preview .sequence-diagram text.title{fill:#f1f5f9;}');
@@ -13442,12 +13577,14 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
                 return xfEditor.escapeHtml(text || href);
             }
             
-            // marked.js 会将引号编码为 &quot;，尖括号编码为 &lt; &gt;
+            // marked.js 会将引号编码为 &quot;/&#39;，尖括号编码为 &lt; &gt;
+            // ★ v1.18.2: 补充解码 &#39;（单引号）——否则 tooltip:image:'url' 单引号形式
+            //   会残留 &#39; 前缀导致图片 URL 被当作相对路径（破图）
             if (href) {
-                href = href.replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+                href = href.replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>');
             }
             if (title) {
-                title = title.replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+                title = title.replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>');
             }
             
             // 转义 href 用于 HTML 属性
@@ -14989,85 +15126,83 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             $container.find(".flowchart").each(function() {
                 var $fc = dom(this);
                 if ($fc.attr("data-fc-initialized") === "true") return;
-                if ($fc.is(":hidden") || $fc.width() === 0) return;
+
+                // ★ v1.18.1: 容器不可见时延迟渲染而非放弃 ——
+                //   loadedDisplay() 中 this.save()（内部触发 _renderFlowChart）先于
+                //   preview.show() 执行，初始化时预览区仍为 display:none；Raphael 会以
+                //   0 尺寸初始化导致 SVG 错乱。旧守卫直接 return，使流程图永不渲染。
+                //   现改为等待容器可见（rAF 轮询，上限约 25 秒）后再渲染。
+                var fcAttempt = function(remaining) {
+                    if ($fc.attr("data-fc-initialized") === "true") return;
+                    var fcHidden = false, fcWidth = 0;
+                    try { fcHidden = $fc.is(":hidden"); fcWidth = $fc.width(); } catch(e) { fcHidden = true; }
+                    if (fcHidden || fcWidth === 0) {
+                        if (remaining <= 0) return;
+                        if (typeof window.requestAnimationFrame === "function") {
+                            window.requestAnimationFrame(function() { fcAttempt(remaining - 1); });
+                        } else {
+                            window.setTimeout(function() { fcAttempt(remaining - 1); }, 150);
+                        }
+                        return;
+                    }
+                    fcRenderFlowChart();
+                };
+                var fcRenderFlowChart = function() {
                 try {
                     $fc.flowChart();
 
-                    // ★ v1.17.37: 全面流程图后处理 ——
-                    //   ① 将 fc-type-* class 从 shape 传播到父 <g> 组（使 CSS 父子选择器生效）
-                    //   ② operation 节点补 inner rect（对齐 subroutine 的双矩形风格）
-                    //   ③ 确保所有节点拥有可见边框
+                    // ★ v1.18 重写后处理 ——
+                    //   关键背景：flowchart.js 输出的是「扁平 SVG」，所有 shape(rect/path) 与
+                    //   text 都是 <svg> 的直系子节点，**不存在 <g> 分组**。
+                    //   旧实现遍历 <g> 子节点，在真实 DOM 上恒为空集 → 后处理从未生效，
+                    //   这正是"节点没有形状边框"的根因。
+                    //
+                    //   现改为直接遍历带 fc-type-* 的 shape：
+                    //   ① 确保每个节点 shape 有可见描边（部分主题/flowstate 下 stroke 可能为空）
+                    //   ② 为连线（无 fc-type-* 的 path）打上 fc-edge 标记，便于 CSS 精确着色，
+                    //      避免暗色主题里"给所有 path 上色"误伤节点形状。
                     var fcSvg = $fc.find("svg")[0];
                     if (fcSvg) {
-                        var FC_TEXT_MARGIN = 10; // 默认 text-margin，与 $.fn.flowChart defaults 一致
+                        var fcIsDark = false;
+                        var themeNode = this;
+                        while (themeNode && themeNode.nodeType === 1) {
+                            var tAttr = themeNode.getAttribute && themeNode.getAttribute("data-theme");
+                            if (tAttr) { fcIsDark = (tAttr === "dark"); break; }
+                            var tCls = (themeNode.getAttribute && themeNode.getAttribute("class")) || "";
+                            if (/\btheme-dark\b/.test(tCls)) { fcIsDark = true; break; }
+                            themeNode = themeNode.parentNode;
+                        }
+                        var fallbackStroke = fcIsDark ? "#93c5fd" : "#4b5563";
 
-                        // 遍历每个符号组（<svg> 的直系子 <g>）
-                        var groups = Array.prototype.filter.call(
-                            fcSvg.childNodes,
-                            function(n) { return n.nodeType === 1 && n.tagName.toLowerCase() === "g"; }
-                        );
-
-                        groups.forEach(function(group) {
-                            // 定位该组内的首个 shape（rect 或 path）
-                            var shape = null;
-                            var childNodes = group.childNodes;
-                            for (var ci = 0; ci < childNodes.length; ci++) {
-                                var cn = childNodes[ci];
-                                if (cn.nodeType !== 1) continue;
-                                var tag = cn.tagName.toLowerCase();
-                                if (tag === "rect" || tag === "path") { shape = cn; break; }
-                            }
-                            if (!shape) return;
-
+                        var shapes = fcSvg.querySelectorAll("rect,path,ellipse,polygon");
+                        Array.prototype.forEach.call(shapes, function(shape) {
                             var shapeClass = shape.getAttribute("class") || "";
+                            var typeMatch  = shapeClass.match(/\bfc-type-([\w-]+)\b/);
 
-                            // ① 提取 fc-type-* class 并同步到父 <g>（让 CSS 父子选择器 .fc-type-start rect 生效）
-                            var typeMatch = shapeClass.match(/\bfc-type-(\w+)\b/);
                             if (typeMatch) {
-                                group.setAttribute("class", (group.getAttribute("class")||"") + " fc-type-" + typeMatch[1]);
-
-                                // ② operation → subroutine 风格：补 inner rect + 宽化 outer rect + 文本右移
-                                if (typeMatch[1] === "operation") {
-                                    var outerW = parseFloat(shape.getAttribute("width")) || 0;
-                                    var outerH = parseFloat(shape.getAttribute("height")) || 0;
-
-                                    // 宽化 outer rect（对齐 subroutine: w = text.w + 4*margin）
-                                    shape.setAttribute("width", outerW + 2 * FC_TEXT_MARGIN);
-
-                                    // 创建 inner rect（对齐 subroutine: x=margin, w=text.w+2*margin, h=text.h+2*margin,
-                                    //   stroke=element-color, stroke-width=line-width, fill=fill）
-                                    var ir = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-                                    ir.setAttribute("x", FC_TEXT_MARGIN);
-                                    ir.setAttribute("y", 0);
-                                    ir.setAttribute("width", outerW - 2 * FC_TEXT_MARGIN);
-                                    ir.setAttribute("height", outerH);
-                                    ir.setAttribute("fill", shape.getAttribute("fill") || "white");
-                                    ir.setAttribute("stroke", "#555");
-                                    ir.setAttribute("stroke-width", "1.5px");
-                                    ir.setAttribute("class", "fc-operation-inner");
-
-                                    // 文本右移（从 textMargin → 2*textMargin，对齐 subroutine）
-                                    var txt = group.querySelector("text");
-                                    if (txt) {
-                                        txt.setAttribute("x", String(2 * FC_TEXT_MARGIN));
-                                        group.insertBefore(ir, txt);
-                                    } else {
-                                        group.appendChild(ir);
-                                    }
+                                // ① 节点形状：保证描边可见
+                                var strokeVal = shape.getAttribute("stroke");
+                                if (!strokeVal || strokeVal === "none" || strokeVal === "transparent") {
+                                    shape.setAttribute("stroke", fallbackStroke);
                                 }
-                            }
-
-                            // ③ 强制可见边框：stroke 缺失/隐藏 → 补 #555 1.5px
-                            var strokeVal = shape.getAttribute("stroke");
-                            if (!strokeVal || strokeVal === "none" || strokeVal === "transparent") {
-                                shape.setAttribute("stroke", "#555");
-                                shape.setAttribute("stroke-width", "1.5px");
-                            }
-
-                            // ★ start 对齐 end：确保 start-element class 存在（end 通过 defaults 已有 end-element）
-                            //   为 start 元素的 group 也补上 start-element（供亮色主题使用）
-                            if (typeMatch && typeMatch[1] === "start") {
-                                group.setAttribute("class", (group.getAttribute("class")||"") + " start-element");
+                                var swVal = parseFloat(shape.getAttribute("stroke-width"));
+                                if (!swVal || swVal <= 0) {
+                                    shape.setAttribute("stroke-width", "2");
+                                }
+                                // 标记节点，便于 CSS 用 .fc-node 与连线区分
+                                if (!/\bfc-node\b/.test(shapeClass)) {
+                                    shape.setAttribute("class", shapeClass + " fc-node");
+                                }
+                            } else if (shape.tagName.toLowerCase() === "path") {
+                                // ② 连线：打标记（排除 <defs> 内的箭头模板）
+                                var inDefs = false, pnode = shape.parentNode;
+                                while (pnode && pnode !== fcSvg) {
+                                    if (pnode.tagName && pnode.tagName.toLowerCase() === "defs") { inDefs = true; break; }
+                                    pnode = pnode.parentNode;
+                                }
+                                if (!inDefs && !/\bfc-edge\b/.test(shapeClass)) {
+                                    shape.setAttribute("class", (shapeClass ? shapeClass + " " : "") + "fc-edge");
+                                }
                             }
                         });
                     }
@@ -15078,6 +15213,8 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
                         console.warn("[xfEditor] FlowChart render error:", e.message || e);
                     }
                 }
+                };  // end fcRenderFlowChart
+                fcAttempt(1500);  // ★ 启动延迟渲染重试（最多约 25 秒）
             });
         }
         if (settings.sequenceDiagram) {
@@ -15708,24 +15845,30 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
         var mdHasSequence  = div.find(".sequence-diagram").length > 0;
             if (mdHasFlowChart || mdHasSequence) {
                 var mdRenderFs = function() { xfEditor._renderFlowChart(div, settings); };
-                var mdNeedRaphael = (mdHasFlowChart && typeof flowchart === "undefined") || 
+                var mdNeedRaphael = (mdHasFlowChart && typeof flowchart === "undefined") ||
                                     (mdHasSequence && typeof Diagram === "undefined");
                 if (mdNeedRaphael) {
-                    xfEditor.loadScript(xfEditor.defaults.path + "raphael.min", function() {
-                        xfEditor.loadScript(xfEditor.defaults.path + "underscore.min", function() {
-                            var mdPending = 0;
-                            var mdCheckDone = function() { mdPending--; if (mdPending <= 0) mdRenderFs(); };
-                            if (mdHasFlowChart && typeof flowchart === "undefined") {
-                                mdPending++;
-                                xfEditor.loadScript(xfEditor.defaults.path + "flowchart.min", mdCheckDone);
-                            }
-                            if (mdHasSequence && typeof Diagram === "undefined") {
-                                mdPending++;
-                                xfEditor.loadScript(xfEditor.defaults.path + "sequence-diagram.min", mdCheckDone);
-                            }
-                            if (mdPending === 0) mdRenderFs();
+                    var mdPending = 0;
+                    var mdCheckDone = function() { mdPending--; if (mdPending <= 0) mdRenderFs(); };
+                    if (mdHasFlowChart && typeof flowchart === "undefined") {
+                        mdPending++;
+                        // ★ 关键修复：加载【自包含 bundle】flowchart.bundle.min.js，其内部已内联
+                        //   Raphael + Underscore + flowchart.js v1.18，彻底摆脱外部 lib/flowchart.min.js
+                        //   版本（旧版 v1.3.4 会导致 "a.shiftX is not a function" /
+                        //   "Cannot set properties of undefined (setting 'yes')"）。
+                        //   缓存内置引用 xfEditor._flowchart，渲染时优先使用，外部旧版无法覆盖。
+                        xfEditor.loadScript((settings.path || xfEditor.defaults.path || "") + "flowchart.bundle.min", function() {
+                            xfEditor._flowchart = window.flowchart;
+                            mdCheckDone();
                         });
-                    });
+                    }
+                    if (mdHasSequence && typeof Diagram === "undefined") {
+                        mdPending++;
+                        xfEditor.loadScript((settings.path || xfEditor.defaults.path || "") + "raphael.min", function() {
+                            xfEditor.loadScript((settings.path || xfEditor.defaults.path || "") + "sequence-diagram.min", mdCheckDone);
+                        });
+                    }
+                    if (mdPending === 0) mdRenderFs();
                 } else {
                     mdRenderFs();
                 }
@@ -15749,7 +15892,8 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
         // 4. ECharts 图表
         if (settings.echarts) {
             if (typeof echarts === "undefined") {
-                xfEditor.loadScript(xfEditor.defaults.path + "echarts.min", function() {
+                // ★ v1.17.38: 必须使用 settings.path（否则子目录部署时解析到错误目录 404）
+                xfEditor.loadScript((settings.path || xfEditor.defaults.path || "") + "echarts.min", function() {
                     xfEditor._initECharts(div, settings);
                 });
             } else {
@@ -15857,6 +16001,26 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
     // ★ v1.17.38: 待加载队列，防止同步重复调用未完成时的竞争条件
     xfEditor.loadFiles.pendingCSS = [];
     xfEditor.loadFiles.pendingJS  = [];
+    // ★ v1.17.38: CSS 与 JS 必须使用独立的等待队列——
+    //   同一资源可能同时以 .css 与 .js 两种形式被请求（如 codemirror/codemirror.min），
+    //   若共用一个队列，CSS 先加载完成会提前冲掉 JS 排队的回调（CodeMirror 尚未定义就回调）。
+    xfEditor.loadFiles.pendingQueuesCSS = {};
+    xfEditor.loadFiles.pendingQueuesJS  = {};
+
+    // 统一执行排队中的资源加载回调（pendingCSS/pendingJS 竞态修复配套）。
+    // 当同一资源被并发请求（如两处 markdownToHTML 同时 tex:true 加载 katex）时，
+    // 后续请求者必须等待资源真正加载完成后再回调，而不是立即回调。
+    xfEditor._flushLoadQueue = function(queues, name) {
+        if (!queues) return;
+        var q = queues[name];
+        if (!q || !q.length) { delete queues[name]; return; }
+        delete queues[name];
+        for (var i = 0; i < q.length; i++) {
+            try { q[i](); } catch (e) {
+                if (typeof console !== "undefined" && console.error) console.error("[xfEditor] load queue callback error:", e);
+            }
+        }
+    };
     
     xfEditor.loadCSS   = function(fileName, callback, into) {
         into       = into     || "head";        
@@ -15870,12 +16034,15 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             return;
         }
         
-        // ★ v1.17.38: 已在加载中（同步调用尚未完成 onload/onerror）→ 注册回调后返回，避免重复创建 link 标签
+        // ★ v1.17.38: 已在加载中（同步调用尚未完成 onload/onerror）→ 排队等待，加载完成后统一回调
+        //   修复竞态：原实现立即回调，会在资源真正加载完成前执行
+        //   （如两处 markdownToHTML 同时 tex:true，katex 尚未定义就触发回调 → "katex is not defined"）
         if (xfEditor.loadFiles.pendingCSS.indexOf(normalizedName) >= 0) {
-            if (typeof callback === "function") callback();
+            (xfEditor.loadFiles.pendingQueuesCSS[normalizedName] = xfEditor.loadFiles.pendingQueuesCSS[normalizedName] || []).push(callback);
             return;
         }
         xfEditor.loadFiles.pendingCSS.push(normalizedName);
+        (xfEditor.loadFiles.pendingQueuesCSS[normalizedName] = xfEditor.loadFiles.pendingQueuesCSS[normalizedName] || []).push(callback);
         
         var css    = document.createElement("link");
         css.type   = "text/css";
@@ -15894,7 +16061,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             // 从待加载列表移除
             var pi = xfEditor.loadFiles.pendingCSS.indexOf(normalizedName);
             if (pi >= 0) xfEditor.loadFiles.pendingCSS.splice(pi, 1);
-            callback();
+            xfEditor._flushLoadQueue(xfEditor.loadFiles.pendingQueuesCSS, normalizedName);
         };
 
         css.href   = (/\.css$/i.test(fileName)) ? fileName : (fileName + ".css");
@@ -15911,8 +16078,8 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             // 从待加载列表移除
             var pi = xfEditor.loadFiles.pendingCSS.indexOf(normalizedName);
             if (pi >= 0) xfEditor.loadFiles.pendingCSS.splice(pi, 1);
-            // ★ v1.17.38: 即使加载失败也调用 callback，避免加载链中断
-            callback();
+            // ★ v1.17.38: 即使加载失败也统一刷新排队回调，避免加载链中断
+            xfEditor._flushLoadQueue(xfEditor.loadFiles.pendingQueuesCSS, normalizedName);
         };
 
         if(into === "head") {
@@ -15944,12 +16111,15 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             return;
         }
         
-        // ★ v1.17.38: 已在加载中（同步调用尚未完成 onload/onerror）→ 注册回调后返回，避免重复创建 script 标签
+        // ★ v1.17.38: 已在加载中（同步调用尚未完成 onload/onerror）→ 排队等待，加载完成后统一回调
+        //   修复竞态：原实现立即回调，会在资源真正加载完成前执行
+        //   （如两处 markdownToHTML 同时 tex:true，katex 尚未定义就触发回调 → "katex is not defined"）
         if (xfEditor.loadFiles.pendingJS.indexOf(normalizedName) >= 0) {
-            if (typeof callback === "function") callback();
+            (xfEditor.loadFiles.pendingQueuesJS[normalizedName] = xfEditor.loadFiles.pendingQueuesJS[normalizedName] || []).push(callback);
             return;
         }
         xfEditor.loadFiles.pendingJS.push(normalizedName);
+        (xfEditor.loadFiles.pendingQueuesJS[normalizedName] = xfEditor.loadFiles.pendingQueuesJS[normalizedName] || []).push(callback);
         
         var script    = null; 
         script        = document.createElement("script");
@@ -15961,7 +16131,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             xfEditor.loadFiles.js.push(normalizedName);
             var pi = xfEditor.loadFiles.pendingJS.indexOf(normalizedName);
             if (pi >= 0) xfEditor.loadFiles.pendingJS.splice(pi, 1);
-            callback();
+            xfEditor._flushLoadQueue(xfEditor.loadFiles.pendingQueuesJS, normalizedName);
         };
         
         // 优雅处理脚本加载失败
@@ -15976,8 +16146,8 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             }
             var pi = xfEditor.loadFiles.pendingJS.indexOf(normalizedName);
             if (pi >= 0) xfEditor.loadFiles.pendingJS.splice(pi, 1);
-            // 即使脚本加载失败，也继续执行加载链
-            callback();
+            // 即使脚本加载失败，也统一刷新排队回调，继续执行加载链
+            xfEditor._flushLoadQueue(xfEditor.loadFiles.pendingQueuesJS, normalizedName);
         };
 
         if (into === "head") {
@@ -16537,7 +16707,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
 
     return xfEditor;
 
-}));
 
-    return window.xfEditor || (typeof xfEditor !== 'undefined' ? xfEditor : null);
+
+    return xfEditor;
 }));

@@ -3,7 +3,7 @@
 <head>
     <link rel="shortcut icon" href="../images/favicon.ico" type="image/x-icon">
     <meta charset="utf-8" />
-    <title>xfEditor v1.17.27 — Examples</title>
+    <title>xfEditor v1.17.38 — Examples</title>
     <link rel="stylesheet" href="css/style.css" />
     <link rel="stylesheet" href="../css/xf_editor.min.css" />
     <style>
@@ -274,17 +274,17 @@
         <div class="logo-wrap"><i class="xf_editor-logo xf_editor-logo-3x"></i></div>
         <h1>xfEditor Examples</h1>
         <p class="subtitle">更适合教育、教学、网页演示、数据呈现、内容排版的现代化 Markdown 在线编辑器</p>
-        <p class="version">v1.17.27 — 修复预览版复制按钮格式丢失（preview.min.js 未同步）+ tooltip iframe 代码提取修复</p>
+        <p class="version">v1.17.38 — 全面优化：AMD/Require.js 加载链路修复、tooltip 单引号编码破图修复、预览包去重、示例页零 jQuery 依赖</p>
         <div class="stats-bar">
             <div class="stat-item"><span class="stat-icon">📁</span><span class="stat-num" id="total-count">-</span>Example Demos</div>
-            <div class="stat-item"><span class="stat-icon">✨</span><span class="stat-num" id="new-count">-</span>v1.17.27 新特性</div>
+            <div class="stat-item"><span class="stat-icon">✨</span><span class="stat-num" id="new-count">-</span>v1.17.38 新特性</div>
             <div class="stat-item"><span class="stat-icon">🧩</span><span class="stat-num" id="syntax-count">-</span>扩展语法</div>
             <div class="stat-item"><span class="stat-icon">🛠</span><span class="stat-num" id="custom-count">-</span>自定义扩展</div>
         </div>
         <div class="nav-wrap">
             <a href="#start">快速上手</a>
             <a href="#all-features">全部功能</a>
-            <a href="#v179">v1.17.27</a>
+            <a href="#v179">v1.17.38</a>
             <a href="#v170">v1.7.0</a>
             <a href="#markdown">扩展语法</a>
             <a href="#customs">自定义扩展</a>
@@ -330,10 +330,10 @@
         </ul>
         </div>
 
-        <!-- ═══════════════ v1.17.27 全新功能 ═══════════════ -->
+        <!-- ═══════════════ v1.17.38 全新功能 ═══════════════ -->
         <div class="category-section" data-category="v179">
         <h2 class="category">
-            <span class="cat-title"><span>🌟</span><a name="v179"></a>v1.17.27 全新功能 <span class="badge badge-hot">LATEST</span><span class="cat-count">18</span></span>
+            <span class="cat-title"><span>🌟</span><a name="v179"></a>v1.17.38 全新功能 <span class="badge badge-hot">LATEST</span><span class="cat-count">18</span></span>
             <a href="#top">TOP ↑</a>
         </h2>
         <ul class="example-list">
@@ -342,7 +342,7 @@
             <li class="featured"><a href="./footnote.html"><strong>📌 脚注全面增强</strong> <span>🆕 [^name] 引用+定义，文末自动汇总；字帖/拼音格内引用，拼音中嵌入脚注标记；点击跳转+高亮动画</span></a></li>
             <li class="featured"><a href="./tooltip.html"><strong>🖱 Tooltip 增强</strong> <span>🆕 iframe 弹窗最大化⛶/关闭✕按钮 + 固定尺寸自动滚动条 + iframe:pre 类型 Blob URL 悬浮渲染</span></a></li>
             <li class="featured"><a href="./toc.html"><strong>📑 同步滚动修复</strong> <span>🔥 编辑区↔预览区双向同步滚动(Bug修复/data-sign格式/预览点击/键盘导航)；TOC 目录链接滚动容器修正</span></a></li>
-            <li><a href="./echarts.html"><strong>📊 树图主题自适应</strong> <span>v1.17.27：树图支持 light/dark 主题自动跟随，不再硬编码深色主题色</span></a></li>
+            <li><a href="./echarts.html"><strong>📊 树图主题自适应</strong> <span>v1.17.38：树图支持 light/dark 主题自动跟随，不再硬编码深色主题色</span></a></li>
             <li><a href="./code-attr.html"><strong>🎨 代码块属性扩展</strong> <span>```(.className) / ```(#idName) / ```(hidden) 组合支持</span></a></li>
             <li><a href="./table-fix.html"><strong>📊 表格空单元格修复</strong> <span>表格最后一列为空时单元格不再丢失，自动补全</span></a></li>
             <li><a href="./formula.html">📐 公式插入面板 <span>11 分类、100+LaTeX公式、Tab切换、一键插入</span></a></li>
@@ -468,92 +468,83 @@
 
 <script>
 (function() {
-    // ── Touch event compatibility ──
-    var clickOrTouch = function(touchType) {
-        touchType = touchType || "touchend";
-        var eventType = "click";
-        try { document.createEvent("TouchEvent"); eventType = touchType; } catch(e) {}
-        return eventType;
-    };
+    // ── Zero-dependency helpers（本页为纯静态目录页，无需 jQuery）──
+    function $all(sel, ctx) { return Array.prototype.slice.call((ctx || document).querySelectorAll(sel)); }
+    function qs(sel, ctx)   { return (ctx || document).querySelector(sel); }
 
-    $(function() {
-        // ── Smooth anchor scroll ──
-        $("a[href*='#']").on(clickOrTouch(), function() {
-            if (location.pathname.replace(/^\//, "") == this.pathname.replace(/^\//, "") && location.hostname == this.hostname) {
-                var hash = this.hash;
-                var target = $(hash);
-                target = target.length ? target : $("[name=" + hash.slice(1) + "]");
-                if (target.length) {
-                    $("html, body").animate({ scrollTop: target.offset().top - 80 }, 600);
-                    return false;
-                }
-            }
-        });
-
-        // ── Scroll-to-top button ──
-        var $scrollTop = $("#scroll-top");
-        $(window).on("scroll", function() {
-            if ($(window).scrollTop() > 400) {
-                $scrollTop.addClass("visible");
-            } else {
-                $scrollTop.removeClass("visible");
-            }
-        });
-
-        // ── Keyboard shortcut: / to focus search ──
-        var $searchInput = $("#search-input");
-        $(document).on("keydown", function(e) {
-            if (e.key === "/" && document.activeElement !== $searchInput[0] &&
-                !$(e.target).is("input, textarea, [contenteditable]")) {
+    // ── Smooth anchor scroll ──
+    document.addEventListener("click", function(e) {
+        var a = e.target && e.target.closest ? e.target.closest('a[href*="#"]') : null;
+        if (!a) return;
+        if (location.pathname.replace(/^\//, "") === (a.pathname || "").replace(/^\//, "") &&
+            location.hostname === a.hostname) {
+            var hash = a.hash;
+            var target = qs(hash) || qs('[name="' + hash.slice(1) + '"]');
+            if (target) {
                 e.preventDefault();
-                $searchInput.focus().select();
+                var top = target.getBoundingClientRect().top + window.pageYOffset - 80;
+                window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
             }
-        });
-
-        // ── Search filter ──
-        var $hint        = $("#search-hint");
-        var $allCards    = $(".example-list li");
-
-        $searchInput.on("input", function() {
-            var query = $.trim($searchInput.val()).toLowerCase();
-            var visibleCount = 0;
-
-            $allCards.each(function() {
-                var $card = $(this);
-                var text  = $card.text().toLowerCase();
-                if (!query || text.indexOf(query) !== -1) {
-                    $card.removeClass("hidden");
-                    visibleCount++;
-                } else {
-                    $card.addClass("hidden");
-                }
-            });
-
-            if (query) {
-                $hint.text("找到 " + visibleCount + " 个匹配示例").addClass("visible");
-            } else {
-                $hint.removeClass("visible").text("");
-            }
-
-            // Hide empty category sections
-            $(".category-section").each(function() {
-                var $section = $(this);
-                var vis = $section.find(".example-list li:not(.hidden)").length;
-                $section.toggle(vis > 0);
-            });
-        });
-
-        // ── Count stats ──
-        var totalAll  = $allCards.length;
-        var v179Cards = $(".category-section[data-category=v179] .example-list li").length;
-        var mdCards   = $(".category-section[data-category=markdown] .example-list li").length;
-        var custCards = $(".category-section[data-category=customs] .example-list li").length;
-
-        $("#total-count").text(totalAll);
-        $("#new-count").text(v179Cards);
-        $("#syntax-count").text(mdCards);
-        $("#custom-count").text(custCards);
+        }
     });
+
+    // ── Scroll-to-top button ──
+    var scrollTop = qs("#scroll-top");
+    window.addEventListener("scroll", function() {
+        if (window.pageYOffset > 400) { scrollTop.classList.add("visible"); }
+        else                          { scrollTop.classList.remove("visible"); }
+    });
+
+    // ── Keyboard shortcut: / to focus search ──
+    var searchInput = qs("#search-input");
+    document.addEventListener("keydown", function(e) {
+        if (e.key === "/" && document.activeElement !== searchInput &&
+            !/^(input|textarea|select)$/i.test(document.activeElement.tagName) &&
+            !(document.activeElement && document.activeElement.getAttribute("contenteditable") === "true")) {
+            e.preventDefault();
+            searchInput.focus();
+            searchInput.select();
+        }
+    });
+
+    // ── Search filter ──
+    var hint     = qs("#search-hint");
+    var allCards = $all(".example-list li");
+
+    searchInput.addEventListener("input", function() {
+        var query = searchInput.value.trim().toLowerCase();
+        var visibleCount = 0;
+
+        allCards.forEach(function(card) {
+            var text = card.textContent.toLowerCase();
+            if (!query || text.indexOf(query) !== -1) {
+                card.classList.remove("hidden");
+                visibleCount++;
+            } else {
+                card.classList.add("hidden");
+            }
+        });
+
+        if (query) {
+            hint.textContent = "找到 " + visibleCount + " 个匹配示例";
+            hint.classList.add("visible");
+        } else {
+            hint.classList.remove("visible");
+            hint.textContent = "";
+        }
+
+        // Hide empty category sections
+        $all(".category-section").forEach(function(sec) {
+            var vis = sec.querySelectorAll(".example-list li:not(.hidden)").length;
+            sec.style.display = vis > 0 ? "" : "none";
+        });
+    });
+
+    // ── Count stats ──
+    qs("#total-count").textContent  = allCards.length;
+    qs("#new-count").textContent    = $all('.category-section[data-category="v179"] .example-list li').length;
+    qs("#syntax-count").textContent = $all('.category-section[data-category="markdown"] .example-list li').length;
+    qs("#custom-count").textContent = $all('.category-section[data-category="customs"] .example-list li').length;
 })();
 </script>
 </body>

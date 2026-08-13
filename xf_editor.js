@@ -824,7 +824,13 @@
         $.fn.toggle = function(state) {
             if (typeof state === "boolean") return state ? this.show() : this.hide();
             return this.each(function(i, el) {
-                if (isVisible(el)) $(el).hide(); else $(el).show();
+                if (el.nodeType !== 1) return;
+                // 与 jQuery 一致：以 display 是否为 none 判定（而非几何可见性）。
+                // 注意：未插入文档的元素 getComputedStyle().display 恒为 ''，
+                // 需回退到内联样式 / 标签默认 display，否则 detached 元素无法正确切换。
+                var computed = window.getComputedStyle(el, null).display;
+                var d = computed || (el.style && el.style.display) || defaultDisplay(el.tagName.toLowerCase());
+                if (d === "none") $(el).show(); else $(el).hide();
             });
         };
         // fadeIn/fadeOut：CSS 过渡实现（内联 HTML 的 onload 里被调用）
@@ -1671,7 +1677,7 @@
     };
     
     xfEditor.title        = xfEditor.$name = "xfEditor";
-    xfEditor.version      = "1.17.28";
+    xfEditor.version      = "1.17.38";
     xfEditor.homePage     = "https://github.com/zhaoxianfang/xfeditor";
     xfEditor.classPrefix  = "xf_editor-";
     xfEditor.dom          = dom; // micro-DOM 实例，替代 $/jQuery
@@ -13529,12 +13535,14 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
                 return xfEditor.escapeHtml(text || href);
             }
             
-            // marked.js 会将引号编码为 &quot;，尖括号编码为 &lt; &gt;
+            // marked.js 会将引号编码为 &quot;/&#39;，尖括号编码为 &lt; &gt;
+            // ★ v1.18.2: 补充解码 &#39;（单引号）——否则 tooltip:image:'url' 单引号形式
+            //   会残留 &#39; 前缀导致图片 URL 被当作相对路径（破图）
             if (href) {
-                href = href.replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+                href = href.replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>');
             }
             if (title) {
-                title = title.replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+                title = title.replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>');
             }
             
             // 转义 href 用于 HTML 属性
@@ -15807,15 +15815,15 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
                         //   版本（旧版 v1.3.4 会导致 "a.shiftX is not a function" /
                         //   "Cannot set properties of undefined (setting 'yes')"）。
                         //   缓存内置引用 xfEditor._flowchart，渲染时优先使用，外部旧版无法覆盖。
-                        xfEditor.loadScript(xfEditor.defaults.path + "flowchart.bundle.min", function() {
+                        xfEditor.loadScript((settings.path || xfEditor.defaults.path || "") + "flowchart.bundle.min", function() {
                             xfEditor._flowchart = window.flowchart;
                             mdCheckDone();
                         });
                     }
                     if (mdHasSequence && typeof Diagram === "undefined") {
                         mdPending++;
-                        xfEditor.loadScript(xfEditor.defaults.path + "raphael.min", function() {
-                            xfEditor.loadScript(xfEditor.defaults.path + "sequence-diagram.min", mdCheckDone);
+                        xfEditor.loadScript((settings.path || xfEditor.defaults.path || "") + "raphael.min", function() {
+                            xfEditor.loadScript((settings.path || xfEditor.defaults.path || "") + "sequence-diagram.min", mdCheckDone);
                         });
                     }
                     if (mdPending === 0) mdRenderFs();
@@ -15842,7 +15850,8 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
         // 4. ECharts 图表
         if (settings.echarts) {
             if (typeof echarts === "undefined") {
-                xfEditor.loadScript(xfEditor.defaults.path + "echarts.min", function() {
+                // ★ v1.17.38: 必须使用 settings.path（否则子目录部署时解析到错误目录 404）
+                xfEditor.loadScript((settings.path || xfEditor.defaults.path || "") + "echarts.min", function() {
                     xfEditor._initECharts(div, settings);
                 });
             } else {
@@ -15950,6 +15959,26 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
     // ★ v1.17.38: 待加载队列，防止同步重复调用未完成时的竞争条件
     xfEditor.loadFiles.pendingCSS = [];
     xfEditor.loadFiles.pendingJS  = [];
+    // ★ v1.17.38: CSS 与 JS 必须使用独立的等待队列——
+    //   同一资源可能同时以 .css 与 .js 两种形式被请求（如 codemirror/codemirror.min），
+    //   若共用一个队列，CSS 先加载完成会提前冲掉 JS 排队的回调（CodeMirror 尚未定义就回调）。
+    xfEditor.loadFiles.pendingQueuesCSS = {};
+    xfEditor.loadFiles.pendingQueuesJS  = {};
+
+    // 统一执行排队中的资源加载回调（pendingCSS/pendingJS 竞态修复配套）。
+    // 当同一资源被并发请求（如两处 markdownToHTML 同时 tex:true 加载 katex）时，
+    // 后续请求者必须等待资源真正加载完成后再回调，而不是立即回调。
+    xfEditor._flushLoadQueue = function(queues, name) {
+        if (!queues) return;
+        var q = queues[name];
+        if (!q || !q.length) { delete queues[name]; return; }
+        delete queues[name];
+        for (var i = 0; i < q.length; i++) {
+            try { q[i](); } catch (e) {
+                if (typeof console !== "undefined" && console.error) console.error("[xfEditor] load queue callback error:", e);
+            }
+        }
+    };
     
     xfEditor.loadCSS   = function(fileName, callback, into) {
         into       = into     || "head";        
@@ -15963,12 +15992,15 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             return;
         }
         
-        // ★ v1.17.38: 已在加载中（同步调用尚未完成 onload/onerror）→ 注册回调后返回，避免重复创建 link 标签
+        // ★ v1.17.38: 已在加载中（同步调用尚未完成 onload/onerror）→ 排队等待，加载完成后统一回调
+        //   修复竞态：原实现立即回调，会在资源真正加载完成前执行
+        //   （如两处 markdownToHTML 同时 tex:true，katex 尚未定义就触发回调 → "katex is not defined"）
         if (xfEditor.loadFiles.pendingCSS.indexOf(normalizedName) >= 0) {
-            if (typeof callback === "function") callback();
+            (xfEditor.loadFiles.pendingQueuesCSS[normalizedName] = xfEditor.loadFiles.pendingQueuesCSS[normalizedName] || []).push(callback);
             return;
         }
         xfEditor.loadFiles.pendingCSS.push(normalizedName);
+        (xfEditor.loadFiles.pendingQueuesCSS[normalizedName] = xfEditor.loadFiles.pendingQueuesCSS[normalizedName] || []).push(callback);
         
         var css    = document.createElement("link");
         css.type   = "text/css";
@@ -15987,7 +16019,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             // 从待加载列表移除
             var pi = xfEditor.loadFiles.pendingCSS.indexOf(normalizedName);
             if (pi >= 0) xfEditor.loadFiles.pendingCSS.splice(pi, 1);
-            callback();
+            xfEditor._flushLoadQueue(xfEditor.loadFiles.pendingQueuesCSS, normalizedName);
         };
 
         css.href   = (/\.css$/i.test(fileName)) ? fileName : (fileName + ".css");
@@ -16004,8 +16036,8 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             // 从待加载列表移除
             var pi = xfEditor.loadFiles.pendingCSS.indexOf(normalizedName);
             if (pi >= 0) xfEditor.loadFiles.pendingCSS.splice(pi, 1);
-            // ★ v1.17.38: 即使加载失败也调用 callback，避免加载链中断
-            callback();
+            // ★ v1.17.38: 即使加载失败也统一刷新排队回调，避免加载链中断
+            xfEditor._flushLoadQueue(xfEditor.loadFiles.pendingQueuesCSS, normalizedName);
         };
 
         if(into === "head") {
@@ -16037,12 +16069,15 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             return;
         }
         
-        // ★ v1.17.38: 已在加载中（同步调用尚未完成 onload/onerror）→ 注册回调后返回，避免重复创建 script 标签
+        // ★ v1.17.38: 已在加载中（同步调用尚未完成 onload/onerror）→ 排队等待，加载完成后统一回调
+        //   修复竞态：原实现立即回调，会在资源真正加载完成前执行
+        //   （如两处 markdownToHTML 同时 tex:true，katex 尚未定义就触发回调 → "katex is not defined"）
         if (xfEditor.loadFiles.pendingJS.indexOf(normalizedName) >= 0) {
-            if (typeof callback === "function") callback();
+            (xfEditor.loadFiles.pendingQueuesJS[normalizedName] = xfEditor.loadFiles.pendingQueuesJS[normalizedName] || []).push(callback);
             return;
         }
         xfEditor.loadFiles.pendingJS.push(normalizedName);
+        (xfEditor.loadFiles.pendingQueuesJS[normalizedName] = xfEditor.loadFiles.pendingQueuesJS[normalizedName] || []).push(callback);
         
         var script    = null; 
         script        = document.createElement("script");
@@ -16054,7 +16089,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             xfEditor.loadFiles.js.push(normalizedName);
             var pi = xfEditor.loadFiles.pendingJS.indexOf(normalizedName);
             if (pi >= 0) xfEditor.loadFiles.pendingJS.splice(pi, 1);
-            callback();
+            xfEditor._flushLoadQueue(xfEditor.loadFiles.pendingQueuesJS, normalizedName);
         };
         
         // 优雅处理脚本加载失败
@@ -16069,8 +16104,8 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             }
             var pi = xfEditor.loadFiles.pendingJS.indexOf(normalizedName);
             if (pi >= 0) xfEditor.loadFiles.pendingJS.splice(pi, 1);
-            // 即使脚本加载失败，也继续执行加载链
-            callback();
+            // 即使脚本加载失败，也统一刷新排队回调，继续执行加载链
+            xfEditor._flushLoadQueue(xfEditor.loadFiles.pendingQueuesJS, normalizedName);
         };
 
         if (into === "head") {

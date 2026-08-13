@@ -35,6 +35,12 @@
                 throw new Error(message || ('Expected ' + JSON.stringify(expected) + ' but got ' + JSON.stringify(actual)));
             }
         },
+
+        assertNotEqual: function(actual, expected, message) {
+            if (actual === expected) {
+                throw new Error(message || ('Expected not ' + expected + ' but got ' + actual));
+            }
+        },
         
         run: function() {
             console.log('=== 开始测试 ===\n');
