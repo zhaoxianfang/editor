@@ -2630,6 +2630,7 @@
                 return this;
             }
             
+            var self             = this;
             var settings         = this.settings;
             var editor           = this.editor;
             
@@ -2638,6 +2639,48 @@
                 xfEditor.loadCSS(settings.path + "codemirror/theme/" + settings.editorTheme);
             }
             
+            // ★ 超长 base64 图片自动收起：在编辑区把 data:image/...;base64,<超长串>
+            //   折叠为 (data:image/...;base64,iVBORw0KGgoAAAANSUhEUgAAA...，点击 ... 展开/收起。
+            //   该能力独立于 codeFold 开关，始终生效（依赖 addons.min 内已包含的 foldcode）。
+            var xfBase64Fold = function(cm, start) {
+                if (!start || typeof start.line !== "number") return undefined;
+                var lineNo = start.line;
+                var line = cm.getLine(lineNo);
+                if (line == null) return undefined;
+                // 匹配 data:image/<type>;base64,<超长内容>（至少 60 字符才收起，避免误伤短串）
+                var re = /(data:image\/[a-zA-Z0-9.+-]+;base64,)([A-Za-z0-9+/=]{60,})/g;
+                var m;
+                while ((m = re.exec(line)) !== null) {
+                    var headerLen = m[1].length;          // "data:image/png;base64," 长度
+                    var fullLen   = m[0].length;
+                    var keep      = Math.min(20, fullLen - headerLen); // 保留前缀字符数
+                    var fromCh    = m.index + headerLen + keep;
+                    var toCh      = m.index + fullLen;
+                    if (toCh - fromCh <= 0) return undefined;
+                    return {
+                        from : xfEditor.$CodeMirror.Pos(lineNo, fromCh),
+                        to   : xfEditor.$CodeMirror.Pos(lineNo, toCh)
+                    };
+                }
+                return undefined;
+            };
+            if (xfEditor.$CodeMirror && xfEditor.$CodeMirror.registerHelper) {
+                xfEditor.$CodeMirror.registerHelper("fold", "xfeditorBase64", xfBase64Fold);
+            }
+            // 自动折叠全文档中的超长 base64 行
+            var xfFoldAllBase64 = function() {
+                if (!self.cm) return;
+                var cm = self.cm;
+                var last = cm.lastLine();
+                for (var i = 0; i <= last; i++) {
+                    var ln = cm.getLine(i);
+                    if (ln && /data:image\/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+/=]{60,}/.test(ln)) {
+                        try { cm.foldCode(xfEditor.$CodeMirror.Pos(i, 0), xfBase64Fold, "fold"); } catch (e) {}
+                    }
+                }
+            };
+            this._xfFoldAllBase64 = xfFoldAllBase64;
+
             var codeMirrorConfig = {
                 mode                      : settings.mode,
                 theme                     : settings.editorTheme,
@@ -2656,6 +2699,11 @@
                                             },
                 foldGutter                : settings.codeFold,
                 gutters                   : ["CodeMirror-linenumbers", "CodeMirror-foldgutter"],
+                // 超长 base64 图片始终自动收起（widget 显示 "..."，点击展开/收起）
+                foldOptions                : {
+                    rangeFinder : xfBase64Fold,
+                    widget      : "..."
+                },
                 matchBrackets             : settings.matchBrackets,
                 indentWithTabs            : settings.indentWithTabs,
                 styleActiveLine           : settings.styleActiveLine,
@@ -2672,6 +2720,11 @@
             if (settings.value !== "")
             {
                 this.cm.setValue(settings.value);
+            }
+
+            // 初始文档加载后，自动折叠所有超长 base64 图片
+            if (xfFoldAllBase64) {
+                try { xfFoldAllBase64(); } catch (e) {}
             }
 
             this.codeMirror.css({
@@ -3759,7 +3812,16 @@
                 {
                     _this.previewContainer.css("padding", settings.autoHeight ? "20px 20px 50px 40px" : "20px");
                 }
-                
+
+                // 编辑后防抖自动折叠新出现的超长 base64 图片（保留已展开/收起交互状态）
+                if (_this._xfBase64FoldTimer) clearTimeout(_this._xfBase64FoldTimer);
+                _this._xfBase64FoldTimer = setTimeout(function() {
+                    _this._xfBase64FoldTimer = null;
+                    if (_this._xfFoldAllBase64) {
+                        try { _this._xfFoldAllBase64(); } catch (e) {}
+                    }
+                }, 400);
+
                 _this.timer = setTimeout(function() {
                     clearTimeout(_this.timer);
                     
