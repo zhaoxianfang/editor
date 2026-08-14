@@ -1681,6 +1681,7 @@
     xfEditor.homePage     = "https://github.com/zhaoxianfang/xfeditor";
     xfEditor.classPrefix  = "xf_editor-";
     xfEditor.dom          = dom; // micro-DOM 实例，替代 $/jQuery
+    xfEditor._echartsSeq  = 0;   // echarts 图表 id 稳定计数器（避免 Math.random 每次渲染漂移）
     
     /**
      * HTML 实体转义工具函数
@@ -4280,8 +4281,12 @@
                             }
                             if (hasSequence && typeof Diagram === "undefined") {
                                 pending++;
+                                // ★ 修复：js-sequence-diagrams 依赖 underscore.js（内部使用 _），
+                                //   必须先于 sequence-diagram.min 加载，否则运行时报 "_ is not defined"。
                                 xfEditor.loadScript(settings.path + "raphael.min", function() {
-                                    xfEditor.loadScript(settings.path + "sequence-diagram.min", checkDone);
+                                    xfEditor.loadScript(settings.path + "underscore.min", function() {
+                                        xfEditor.loadScript(settings.path + "sequence-diagram.min", checkDone);
+                                    });
                                 });
                             }
                             if (pending === 0) {
@@ -6632,7 +6637,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             s.push('    var c=charts[i];');
             s.push('    if(getAttr(c,"data-initialized")==="true")continue;');
             s.push('    var config={};');
-            s.push('    try{config=JSON.parse(getAttr(c,"data-config"));}catch(e){continue;}');
+            s.push('    try{config=JSON.parse((getAttr(c,"data-config")||"").replace(/&apos;/g,"\'"));}catch(e){continue;}');
             s.push('    var curH=c.style.height||_win.getComputedStyle(c).height;');
             s.push('    if(!curH||curH==="0px"||curH==="auto"){');
             s.push('      var ch=(config.height||"").toString();');
@@ -13275,17 +13280,28 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
      */
     xfEditor.restorePlaceholders = function(html, placeholders) {
         if (!html || !placeholders || placeholders.length === 0) return html;
+        // 构建 id -> html 映射，单次 String.replace 一次性恢复所有占位符。
+        // 相比原先「多轮 forEach + split/join 全字符串拷贝」(最坏 O(占位符数 × 文本长度 × 轮数))，
+        // 这里仅构造一次正则并执行一次替换，性能更优且行为等价（占位符标记唯一，单次替换即可全部恢复）。
+        var map = {};
+        for (var i = 0; i < placeholders.length; i++) {
+            var ph = placeholders[i];
+            if (ph && ph.id) map["<!--" + ph.id + "-->"] = ph.html || "";
+        }
+        if (!Object.keys(map).length) return html;
+        // 占位符标记格式为 <!--xf_editor-{type}-{number}-->，如 <!--xf_editor-ph-3-->、
+        // <!--xf_editor-ltp-1-->（LaTeX）、<!--xf_editor-cb-2-->（code block）、
+        // <!--xf_editor-iptp-4-->（inner tabs）、<!--xf_editor-xssp-1--> 等。
+        // 保留多轮处理以正确还原嵌套占位符（外层 html 可能包含内层占位符标记），
+        // 但每轮改用单次正则替换（替代原先「每个占位符一次完整 split/join 字符串拷贝」），
+        // 大幅减少对大文档的全串遍历开销。最多 10 轮确保收敛。
+        var markerRegex = /<!--xf_editor-[a-z]+-[0-9]+-->/g;
         var maxRounds = 10;
         while (maxRounds-- > 0) {
             var anyFound = false;
-            placeholders.forEach(function(ph) {
-                if (ph && ph.id) {
-                    var marker = "<!--" + ph.id + "-->";
-                    if (html.indexOf(marker) !== -1) {
-                        html = html.split(marker).join(ph.html || "");
-                        anyFound = true;
-                    }
-                }
+            html = html.replace(markerRegex, function(match) {
+                if (match in map) { anyFound = true; return map[match]; }
+                return match;
             });
             if (!anyFound) break;
         }
@@ -13910,7 +13926,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             }
             else if (cleanLang === "echarts" && settings.echarts)
             {
-                var chartId = "xf_editor-echarts-" + Math.random().toString(36).slice(2, 11);
+                var chartId = "xf_editor-echarts-" + (++xfEditor._echartsSeq);
                 var config = {};
                 try {
                     config = JSON.parse(code);
@@ -13918,7 +13934,11 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
                     config = { type: "bar", title: { text: "ECharts 配置错误" }, xAxis: { data: ["A"] }, yAxis: {}, series: [{ type: "bar", data: [0] }] };
                 }
                 var chartHeight = (config.height && typeof config.height === "number") ? config.height : 400;
-                return '<div id="' + chartId + '" class="xf_editor-echarts" data-config=\'' + JSON.stringify(config) + '\' style="width:100%;height:' + chartHeight + 'px;"></div>';
+                // ★ 修复：JSON 含双引号（属性值本身），若用双引号包裹 data-config 会被提前截断；
+                //   故用单引号包裹属性，并把 JSON 内部的单引号转义为 &apos;（读取时解码回 '），
+                //   双引号保持原样（不破坏单引号属性）。
+                var configStr = JSON.stringify(config).replace(/'/g, "&apos;");
+                return '<div id="' + chartId + '" class="xf_editor-echarts" data-config=\'' + configStr + '\' style="width:100%;height:' + chartHeight + 'px;"></div>';
             }
             else 
             {
@@ -15227,7 +15247,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             if ($chart.attr("data-initialized") === "true") return;
             if ($chart.is(":hidden") || $chart.width() === 0 || $chart.height() === 0) return;
             var config = {};
-            try { config = JSON.parse($chart.attr("data-config")); } catch(e) { return; }
+            try { config = JSON.parse(($chart.attr("data-config") || "").replace(/&apos;/g, "'")); } catch(e) { return; }
             try {
                 var chartTheme = config.theme || editorTheme || undefined;
                 var chartInstance = echarts.init(this, chartTheme);

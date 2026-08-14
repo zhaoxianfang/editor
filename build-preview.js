@@ -13,11 +13,13 @@ var previewFiles = [
     { path: 'lib/marked.min.js',             required: true },
     { path: 'lib/prettify.min.js',           required: false },
     { path: 'lib/echarts.min.js',            required: false },
-    // ★ xf_editor.min.js 已内联 flowchart bundle（Raphael/Underscore/flowchart v1.18），
-    //   不再单独包含 lib/flowchart.bundle.min.js，避免 Raphael/Element 重复执行两次；
-    //   sequence-diagram.min.js 加载时引用 Raphael/underscore（_.extend/Raphael.registerFont），
-    //   必须放在 xf_editor.min.js 之后（由内联 bundle 提供全局 Raphael/_）。
-    { path: 'xf_editor.min.js',              required: true },
+    // ★ xf_editor.min.js 已内联 flowchart bundle（flowchart v1.18 绘制逻辑），
+    //   但 Raphael 矢量库与 underscore（_.extend 工具）并未内联，需单独引入；
+    //   sequence-diagram.min.js 依赖全局 Raphael（new Raphael()）与 underscore（_.extend），
+    //   必须放在 raphael/underscore/xf_editor 三者之后，确保三者均已提供全局 Raphael 与 _。
+    { path: 'lib/raphael.min.js',           required: true },
+    { path: 'lib/underscore.min.js',        required: true },
+    { path: 'xf_editor.min.js',             required: true },
     { path: 'lib/sequence-diagram.min.js',  required: false },
 ];
 
