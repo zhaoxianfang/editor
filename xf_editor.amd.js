@@ -2720,6 +2720,10 @@
                         try { cm.foldCode(xfEditor.$CodeMirror.Pos(i, 0), xfBase64Fold, "fold"); } catch (e) {}
                     }
                 }
+                // base64 折叠会改变行的可见高度，使 编辑行↔预览Y 映射失效，需立即废弃缓存
+                if (self._syncState && typeof self._syncState._invalidateAnchors === "function") {
+                    try { self._syncState._invalidateAnchors(); } catch (e) {}
+                }
             };
             this._xfFoldAllBase64 = xfFoldAllBase64;
 
@@ -7624,6 +7628,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
                     programmaticScroll: false,
                     disablePreviewListener: false,
                     editorAnimTimer: null,
+                    editorCmAnimTimer: null,
                     mouseTarget: null,
                     suppressAllSync: false
                 };
@@ -7780,12 +7785,13 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
                     var scrollElRect = scrollEl.getBoundingClientRect ? scrollEl.getBoundingClientRect() : { top: 0 };
                     
                     if (headingMap.length < 2) {
-                        // 标题不够，使用全体块的比例映射
+                        // 标题不够：用块在预览高度中的占比映射 editorLine（比"块序号均匀"更贴合真实滚动比例）
                         var seRect = scrollEl.getBoundingClientRect();
+                        var totalPreviewH = Math.max(1, scrollEl.scrollHeight || (seRect.bottom - seRect.top));
                         for (var bi = 0; bi < blocks.length; bi++) {
                             var bRect = blocks[bi].getBoundingClientRect();
                             var py = scrollEl.scrollTop + (bRect.top - seRect.top);
-                            var el = Math.round((bi / Math.max(1, blocks.length - 1)) * (totalLines - 1));
+                            var el = Math.round(Math.max(0, Math.min(1, py / totalPreviewH)) * (totalLines - 1));
                             _positionMap.push({ editorLine: el, previewY: Math.max(0, py) });
                         }
                     } else {
@@ -7880,6 +7886,59 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
                     }
                 };
                 state.editorAnimTimer = requestAnimationFrame(animationHandler);
+            };
+            
+            // ★ 方向二对称缓动：滚动编辑器到目标行（与 _scrollAnimationTo 体验一致，避免瞬时跳变抖动）
+            var _scrollEditorToLineAnim = function(targetLine) {
+                try {
+                    var cmInfo = cm.getScrollInfo();
+                    if (cmInfo.clientHeight <= 0) return;
+                    var totalLines = cm.lineCount();
+                    targetLine = Math.max(0, Math.min(totalLines - 1, targetLine || 0));
+                    var editorMaxScroll = cmInfo.height - cmInfo.clientHeight;
+                    if (editorMaxScroll <= 0) return;
+                    
+                    var lineCoords = cm.charCoords({line: targetLine, ch: 0}, "local");
+                    var targetEditorTop = lineCoords.top - Math.round(cmInfo.clientHeight / 3);
+                    targetEditorTop = Math.max(0, Math.min(editorMaxScroll, targetEditorTop));
+                    
+                    if (Math.abs(cmInfo.top - targetEditorTop) < 3) return;
+                    
+                    if (state.editorCmAnimTimer) {
+                        cancelAnimationFrame(state.editorCmAnimTimer);
+                        state.editorCmAnimTimer = null;
+                    }
+                    
+                    var animId = ++_animCounter;
+                    state.disableEditorListener = true;
+                    state.programmaticScroll = true;
+                    
+                    var startTop = cmInfo.top;
+                    var startTime = performance.now();
+                    var duration = 200;
+                    
+                    var animHandler = function(timestamp) {
+                        if (animId !== _animCounter) return;
+                        var elapsed = timestamp - startTime;
+                        var t = Math.min(1, elapsed / duration);
+                        var eased = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+                        var cur = startTop + (targetEditorTop - startTop) * eased;
+                        cm.scrollTo(0, cur);
+                        if (t < 1) {
+                            state.editorCmAnimTimer = requestAnimationFrame(animHandler);
+                        } else {
+                            state.editorCmAnimTimer = null;
+                            cm.scrollTo(0, targetEditorTop);
+                            requestAnimationFrame(function() {
+                                requestAnimationFrame(function() {
+                                    state.disableEditorListener = false;
+                                    state.programmaticScroll = false;
+                                });
+                            });
+                        }
+                    };
+                    state.editorCmAnimTimer = requestAnimationFrame(animHandler);
+                } catch(e) {}
             };
             
             // ★ v1.17.8: 暴露内部方法到 state 对象供外部调用
@@ -8016,6 +8075,7 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
             var _editorSyncToPreview = function() {
                 if (state.suppressAllSync) return;
                 if (state.programmaticScroll) return;
+                if (state.disableEditorListener) return;
                 if (_this._applyingDomChanges) return;
                 if (_masterZone === "preview") return;
                 if (!_masterZone && state.mouseTarget === "preview") return;
@@ -8101,19 +8161,8 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
                     var totalLines = cm.lineCount();
                     targetLine = Math.max(0, Math.min(totalLines - 1, targetLine));
                     
-                    state.programmaticScroll = true;
-                    var editorMaxScroll = cmInfo.height - cmInfo.clientHeight;
-                    if (editorMaxScroll > 0) {
-                        var lineCoords = cm.charCoords({line: targetLine, ch: 0}, "local");
-                        var targetEditorTop = lineCoords.top - Math.round(cmInfo.clientHeight / 3);
-                        targetEditorTop = Math.max(0, Math.min(editorMaxScroll, targetEditorTop));
-                        cm.scrollTo(0, targetEditorTop);
-                    }
-                    requestAnimationFrame(function() {
-                        requestAnimationFrame(function() {
-                            state.programmaticScroll = false;
-                        });
-                    });
+                    // ★ 改用缓动动画滚动编辑器，与方向一（预览动画）体验一致，避免瞬时跳变抖动
+                    _scrollEditorToLineAnim(targetLine);
                 } catch(e) {}
             };
     
@@ -8235,6 +8284,38 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
                     _editorSyncToPreview();
                 }, 200);
             });
+    
+            // ================================================================
+            // ★ 增强：异步内容（图片/KaTeX/图表）加载完成后自动重算映射
+            //   预览区高度在图片/字体/图表渲染后才会稳定，否则映射基于临时高度会偏差
+            // ================================================================
+            var _imgResyncTimer = null;
+            var _scheduleImgResync = function() {
+                if (_imgResyncTimer) clearTimeout(_imgResyncTimer);
+                _imgResyncTimer = setTimeout(function() {
+                    _imgResyncTimer = null;
+                    _invalidatePositionMap();
+                    // 若用户当前主控编辑区（或尚未选定），则重新对齐预览；主控预览区则不反向打扰
+                    if (_masterZone === "editor" || (!_masterZone && state.mouseTarget !== "preview")) {
+                        _editorSyncToPreview();
+                    }
+                }, 150);
+            };
+            // 监听预览内图片加载完成（含后续动态插入的图片，事件委托）
+            previewDom.off("load.xf_editor-sync-img").on("load.xf_editor-sync-img", "img", function() {
+                _scheduleImgResync();
+            });
+            // 对初始尚未加载完的图片补监听
+            try {
+                var _imgs0 = previewDom[0].querySelectorAll("img");
+                Array.prototype.forEach.call(_imgs0, function(img) {
+                    if (!img.complete) {
+                        dom(img).off("load.xf_editor-sync-img2").on("load.xf_editor-sync-img2", function() {
+                            _scheduleImgResync();
+                        });
+                    }
+                });
+            } catch(e) {}
     
             // ================================================================
             // ★ v1.17.9: 外部接口 — 预览区交互时暂停/恢复同步
