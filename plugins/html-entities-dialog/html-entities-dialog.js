@@ -13,7 +13,7 @@
 
 	var factory = function (exports) {
 
-		var $            = (exports && exports.dom) ? exports.dom : (typeof jQuery !== "undefined" ? jQuery : null);
+		var dom          = (exports && exports.dom) ? exports.dom : null;
 		var pluginName   = "html-entities-dialog";
 		var selecteds    = [];
 		var entitiesData = [];
@@ -117,11 +117,11 @@
 				}
 
 				dialog.find("." + classPrefix + "html-entity-btn").on(exports.mouseOrTouch("click", "touchend"), function() {
-					$(this).toggleClass("selected");
+					dom(this).toggleClass("selected");
 
-					if ($(this).hasClass("selected")) 
+					if (dom(this).hasClass("selected")) 
 					{
-						selecteds.push($(this).attr("value"));
+						selecteds.push(dom(this).attr("value"));
 					}
 				});
 			};
@@ -130,7 +130,7 @@
 			{            
 				if (typeof (dialog.loading) == "function") dialog.loading(true);
 
-				$.getJSON(path + pluginName.replace("-dialog", "") + ".json", function(json) {
+				dom.getJSON(path + pluginName.replace("-dialog", "") + ".json", function(json) {
 
 					if (typeof (dialog.loading) == "function") dialog.loading(false);
 

@@ -153,10 +153,11 @@ Setext 风格二级标题 @pandao
         </div>
     </div>
     <script src="../xf_editor.min.js"></script>
-    <script type="text/javascript">
+    <script type="text/javascript">var dom = (window.xfEditor && window.xfEditor.dom) ? window.xfEditor.dom : null; // 内置 micro-DOM（零依赖，无全局 $）
+
         var testEditor;
 
-        $(function() {
+        dom(function() {
             // 自定义 @link 基础 URL
             xfEditor.urls.atLinkBase = "https://github.com/";
 

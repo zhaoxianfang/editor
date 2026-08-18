@@ -70,10 +70,11 @@
         <script src="../lib/echarts.min.js"></script>
         <script src="../xf_editor.min.js"></script>
         -->
-        <script type="text/javascript">
-            $(function() {
+        <script type="text/javascript">var dom = (window.xfEditor && window.xfEditor.dom) ? window.xfEditor.dom : null; // 内置 micro-DOM（零依赖，无全局 $）
+
+            dom(function() {
                 // 从 md/full.md 加载完整演示内容
-                $.get("md/full.md", function(markdown) {
+                dom.get("md/full.md", function(markdown) {
                     xfEditor.markdownToHTML("full-preview", {
                         markdown: markdown,     // 从外部 .md 文件加载
                         path: "../lib/",         // ★ 必须指定：examples/ 下默认 "./lib/" 指向错误路径
@@ -98,7 +99,7 @@
                     });
                 }).fail(function() {
                     // 降级：显示加载失败提示
-                    $("#full-preview").html('<div style="text-align:center;padding:60px;color:#999;"><h2>⚠️ 无法加载 md/full.md</h2><p>请检查文件是否存在于 examples/md/ 目录下</p></div>');
+                    dom("#full-preview").html('<div style="text-align:center;padding:60px;color:#999;"><h2>⚠️ 无法加载 md/full.md</h2><p>请检查文件是否存在于 examples/md/ 目录下</p></div>');
                 });
             });
         </script>

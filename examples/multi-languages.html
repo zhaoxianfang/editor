@@ -38,10 +38,11 @@
         <script src="../xf_editor.min.js"></script>
         <!--<script src="../languages/en.js"></script>
         <script src="../languages/zh-tw.js"></script> -->
-        <script type="text/javascript">
+        <script type="text/javascript">var dom = (window.xfEditor && window.xfEditor.dom) ? window.xfEditor.dom : null; // 内置 micro-DOM（零依赖，无全局 $）
+
             var testEditor;
             
-            $(function() {
+            dom(function() {
                 testEditor = xfEditor("test-xfEditor", {
                     width: "90%",
                     height: 640,
@@ -54,8 +55,8 @@
                 
                 // 动态加载语言包
                 // Dynamic load language package
-                $("#lang-select").change(function() {
-                    var value = $(this).val();
+                dom("#lang-select").change(function() {
+                    var value = dom(this).val();
                     var path  = "../languages/";
                     
                     if (value == "zh-cn") 

@@ -79,9 +79,10 @@
     </div>
 </div>
 
-<script type="text/javascript">
-    $(function() {
-        var $log = $("#event-list");
+<script type="text/javascript">var dom = (window.xfEditor && window.xfEditor.dom) ? window.xfEditor.dom : null; // 内置 micro-DOM（零依赖，无全局 $）
+
+    dom(function() {
+        var logEl = dom("#event-list");
         var eventCount = 0;
         var MAX_LOG = 200;
 
@@ -96,22 +97,22 @@
         function addLog(name, typeClass, detail) {
             eventCount++;
             var time = getTime();
-            var $item = $('<div class="item ' + (typeClass || '') + '">' +
+            var itemEl = dom('<div class="item ' + (typeClass || '') + '">' +
                 '<span class="time">' + time + '</span>' +
                 '<span class="name">#' + eventCount + ' ' + name + '</span>' +
                 (detail ? ' <span style="color:#666;">' + detail + '</span>' : '') +
             '</div>');
-            $log.prepend($item);
+            logEl.prepend(itemEl);
 
             // 限制日志数量
-            var items = $log.children('.item');
+            var items = logEl.children('.item');
             if (items.length > MAX_LOG) {
                 items.slice(MAX_LOG).remove();
             }
         }
 
-        $("#clear-log").on("click", function() {
-            $log.empty();
+        dom("#clear-log").on("click", function() {
+            logEl.empty();
             eventCount = 0;
             addLog("日志已清空", "", "");
         });
@@ -120,7 +121,7 @@
             width: "100%",
             height: 600,
             path: "../lib/",
-            markdown: $("#editor").text(),
+            markdown: dom("#editor").text(),
             taskList: true,
             toc: true,
             htmlDecode: "style,script,iframe|on*",
@@ -223,14 +224,14 @@
     });
 
     // 所有资源加载完成
-    $(window).on("load", function() {
-        var $log = $("#event-list");
-        if ($log.length) {
+    dom(window).on("load", function() {
+        var logEl = dom("#event-list");
+        if (logEl.length) {
             var d = new Date();
             var time = d.getHours().toString().padStart(2,'0') + ':' +
                        d.getMinutes().toString().padStart(2,'0') + ':' +
                        d.getSeconds().toString().padStart(2,'0');
-            $log.prepend('<div class="item"><span class="time">' + time + '</span><span class="name">🟤 onPageAllLoad</span> 所有资源（图片/字体等）加载完成</div>');
+            logEl.prepend('<div class="item"><span class="time">' + time + '</span><span class="name">🟤 onPageAllLoad</span> 所有资源（图片/字体等）加载完成</div>');
         }
     });
 </script>

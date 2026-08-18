@@ -140,10 +140,11 @@ WebKit 是一个开源的浏览器引擎，与之相应的引擎有 Gecko（Mozi
         </div>
         
         <script src="../xf_editor.min.js"></script>   
-        <script type="text/javascript">            
+        <script type="text/javascript">            var dom = (window.xfEditor && window.xfEditor.dom) ? window.xfEditor.dom : null; // 内置 micro-DOM（零依赖，无全局 $）
+            
             var testEditor;
                 
-            $(function() {
+            dom(function() {
                 testEditor = xfEditor("test-xfEditor", {
                     width         : "90%",
                     height        : 720,
@@ -152,14 +153,14 @@ WebKit 是一个开源的浏览器引擎，与之相应的引擎有 Gecko（Mozi
                     tocStartLevel : 2      // Parse beginning of H2, Default value 1
                 });
                 
-                $("#insert-btn").click(function() {
+                dom("#insert-btn").click(function() {
                     testEditor.config({
                         tocContainer : "#custom-toc-container",
                         tocDropdown   : false
                     });
                 });
                 
-                $("#menu-btn").click(function(){
+                dom("#menu-btn").click(function(){
                     testEditor.config({
                         tocContainer  : "",
                         tocDropdown   : true,
@@ -167,7 +168,7 @@ WebKit 是一个开源的浏览器引擎，与之相应的引擎有 Gecko（Mozi
                     });
                 });
                 
-                $("#menu2-btn").click(function(){
+                dom("#menu2-btn").click(function(){
                     testEditor.config({
                         tocContainer  : "#custom-toc-container",
                         tocDropdown   : true,
@@ -175,8 +176,8 @@ WebKit 是一个开源的浏览器引擎，与之相应的引擎有 Gecko（Mozi
                     });
                 });
                 
-                $("#default-btn").click(function() {
-                    $("#custom-toc-container").html("#custom-toc-container");
+                dom("#default-btn").click(function() {
+                    dom("#custom-toc-container").html("#custom-toc-container");
                     testEditor.config({
                         tocContainer : "",
                         tocm : false,
@@ -184,8 +185,8 @@ WebKit 是一个开源的浏览器引擎，与之相应的引擎有 Gecko（Mozi
                     });
                 });
                 
-                $("#tocm-btn").click(function() {
-                    $("#custom-toc-container").html("#custom-toc-container");
+                dom("#tocm-btn").click(function() {
+                    dom("#custom-toc-container").html("#custom-toc-container");
                     testEditor.config({
                         tocm : true,
                         tocContainer : "",

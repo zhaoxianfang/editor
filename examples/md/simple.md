@@ -6,7 +6,7 @@
 
 ## 🚀 快速入门
 
-xfEditor 是一款功能强大的开源 Markdown 在线编辑器，基于 CodeMirror、jQuery 和 Marked 构建，适用于教育、教学、文档编写和内容排版等场景。
+xfEditor 是一款功能强大的开源 Markdown 在线编辑器，基于 CodeMirror、Marked 构建，内置零依赖 micro-DOM（XfDom），无需 jQuery，适用于教育、教学、文档编写和内容排版等场景。
 
 **核心能力一览：**
 

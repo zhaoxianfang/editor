@@ -42,12 +42,12 @@
         <script src="../xf_editor.min.js"></script>   
         <script type="text/javascript">
 			var testEditor;
-            // xfEditor 已内置零依赖 micro-DOM（xfEditor.dom / xfEditor.$），
-            // 无需加载 Zepto / jQuery 即可运行；页面未引入外部 $ 时浏览器全局 $ 自动指向内置 DOM。
-            var $ = (typeof window.xfEditor !== "undefined" && window.xfEditor.dom) ? window.xfEditor.dom : window.$;
+            // xfEditor 已内置零依赖 micro-DOM（xfEditor.dom），
+            // 无需加载 Zepto / jQuery 即可运行。
+            var dom = (typeof window.xfEditor !== "undefined" && window.xfEditor.dom) ? window.xfEditor.dom : null;
 
-            $(function() {
-                $.get("md/full.md", function(md){
+            dom(function() {
+                dom.get("md/full.md", function(md){
 				testEditor = xfEditor("test-xfEditor", {
 						width  : "90%",
 						height : 720,
@@ -71,54 +71,54 @@
 					});
 				});
 
-                $("#show-btn").on('click', function(){
+                dom("#show-btn").on('click', function(){
                     testEditor.show();
                 });
 
-                $("#hide-btn").on('click', function(){
+                dom("#hide-btn").on('click', function(){
                     testEditor.hide();
                 });
 
-                $("#get-md-btn").on('click', function(){
+                dom("#get-md-btn").on('click', function(){
                     alert(testEditor.getMarkdown());
                 });
 
-                $("#get-html-btn").on('click', function() {
+                dom("#get-html-btn").on('click', function() {
                     alert(testEditor.getHTML());
                 });                
 
-                $("#watch-btn").on('click', function() {
+                dom("#watch-btn").on('click', function() {
                     testEditor.watch();
                 });                 
 
-                $("#unwatch-btn").on('click', function() {
+                dom("#unwatch-btn").on('click', function() {
                     testEditor.unwatch();
                 });              
 
-                $("#preview-btn").on('click', function() {
+                dom("#preview-btn").on('click', function() {
                     testEditor.previewing();
                 });
 
-                $("#fullscreen-btn").on('click', function() {
+                dom("#fullscreen-btn").on('click', function() {
                     testEditor.fullscreen();
                 });
                 
-                $("#show-toolbar-btn").on('click', function() {
+                dom("#show-toolbar-btn").on('click', function() {
                     testEditor.showToolbar();
                 });
                 
-                $("#close-toolbar-btn").on('click', function() {
+                dom("#close-toolbar-btn").on('click', function() {
                     testEditor.hideToolbar();
                 });
                 
-                $("#toc-menu-btn").click(function(){
+                dom("#toc-menu-btn").click(function(){
                     testEditor.config({
                         tocDropdown   : true,
                         tocTitle      : "目录 Table of Contents",
                     });
                 });
                 
-                $("#toc-default-btn").click(function() {
+                dom("#toc-default-btn").click(function() {
                     testEditor.config("tocDropdown", false);
                 });
             });

@@ -89,14 +89,15 @@ alert("script");
         <script src="../lib/sequence-diagram.min.js"></script>
         <script src="../lib/flowchart.min.js"></script>
         <script src="../xf_editor.min.js"></script>
-        <script type="text/javascript">            
-            $(function() {
+        <script type="text/javascript">            var dom = (window.xfEditor && window.xfEditor.dom) ? window.xfEditor.dom : null; // 内置 micro-DOM（零依赖，无全局 $）
+            
+            dom(function() {
                 var testXfEditorView, testXfEditorView2;
                 
-                $.get("md/full.md", function(markdown) {
+                dom.get("md/full.md", function(markdown) {
                     
 				    testXfEditorView = xfEditor.markdownToHTML("test-xf_editor-view", {
-                        markdown        : markdown ,//+ "\r\n" + $("#append-test").text(),
+                        markdown        : markdown ,//+ "\r\n" + dom("#append-test").text(),
                         //htmlDecode      : true,       // 开启 HTML 标签解析，为了安全性，默认不开启
                         htmlDecode      : "style,script,iframe",  // you can filter tags decode
                         //toc             : false,

@@ -27,10 +27,11 @@ var testEditor = xfEditor("test-xfEditor", {
             </div>
         </div>
         <script src="../xf_editor.min.js"></script>
-        <script type="text/javascript">
+        <script type="text/javascript">var dom = (window.xfEditor && window.xfEditor.dom) ? window.xfEditor.dom : null; // 内置 micro-DOM（零依赖，无全局 $）
+
 			var testEditor;
 
-            $(function() {
+            dom(function() {
                 testEditor = xfEditor("test-xfEditor", {
                     width           : "90%",
                     autoHeight      : true,
@@ -43,8 +44,8 @@ var testEditor = xfEditor("test-xfEditor", {
                     sequenceDiagram : true
                 });
                 
-                $("#append-btn").click(function(){
-                    $.get("md/full.md", function(md){
+                dom("#append-btn").click(function(){
+                    dom.get("md/full.md", function(md){
                         testEditor.appendMarkdown(md);
                     });
                 });

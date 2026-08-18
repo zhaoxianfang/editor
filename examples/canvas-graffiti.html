@@ -87,8 +87,9 @@
 
     <script src="../xf_editor.min.js"></script>
     <script src="../languages/zh-cn.min.js"></script>
-    <script>
-        $(function() {
+    <script>var dom = (window.xfEditor && window.xfEditor.dom) ? window.xfEditor.dom : null; // 内置 micro-DOM（零依赖，无全局 $）
+
+        dom(function() {
             var testEditor = xfEditor("test-xfEditor", {
                 width: "100%",
                 height: 720,

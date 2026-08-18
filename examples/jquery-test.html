@@ -80,11 +80,12 @@
     <!-- ★ v1.18: 本页已彻底移除 jQuery 依赖，全部改用原生 DOM API 实现。
          xfEditor 自带 micro-DOM（xfEditor.dom），不需要任何外部 DOM 库。 -->
     <script src="../xf_editor.min.js"></script>
-    <script>
+    <script>var dom = (window.xfEditor && window.xfEditor.dom) ? window.xfEditor.dom : null; // 内置 micro-DOM（零依赖，无全局 $）
+
         (function () {
             "use strict";
 
-            // ---- 原生小工具（替代 jQuery 的 $()/html()/append()/prepend() ----
+            // ---- 原生小工具（替代 jQuery 的 dom()/html()/append()/prepend() ----
             function byId(id)      { return document.getElementById(id); }
             function setHTML(el, h){ if (el) el.innerHTML = h; }
             function addHTML(el, h){ if (!el) return; var d = document.createElement("div"); d.innerHTML = h;
@@ -118,7 +119,7 @@
                             e.preventDefault();
                             var target = document.querySelector(this.getAttribute("href"));
                             if (target) {
-                                // 原生平滑滚动，替代 $('html,body').animate({scrollTop})
+                                // 原生平滑滚动，替代 dom('html,body').animate({scrollTop})
                                 window.scrollTo({
                                     top: target.getBoundingClientRect().top + window.pageYOffset - 100,
                                     behavior: "smooth"
@@ -174,7 +175,7 @@
                 }
             }
 
-            // 替代 $(function(){...})
+            // 替代 dom(function(){...})
             if (document.readyState === "loading") {
                 document.addEventListener("DOMContentLoaded", run);
             } else {

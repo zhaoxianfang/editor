@@ -24,12 +24,13 @@
             <div id="test-xfEditor"></div>
         </div>
         <script src="../xf_editor.min.js"></script>
-        <script type="text/javascript">
+        <script type="text/javascript">var dom = (window.xfEditor && window.xfEditor.dom) ? window.xfEditor.dom : null; // 内置 micro-DOM（零依赖，无全局 $）
+
             var testEditor;
             
-            $(function() {
+            dom(function() {
                 
-                $.get("md/full.md", function(md){
+                dom.get("md/full.md", function(md){
                     testEditor = xfEditor("test-xfEditor", {
                         width           : "90%",
                         height          : 740,
@@ -46,33 +47,33 @@
                     });
                 });
                 
-                $("#goto-line-btn").on("click", function(){
+                dom("#goto-line-btn").on("click", function(){
                     testEditor.gotoLine(90);
                 });
                 
-                $("#goto-line-150-btn").on("click", function(){
+                dom("#goto-line-150-btn").on("click", function(){
                     testEditor.gotoLine(150);
                 });
                 
-                $("#goto-line-240-btn").on("click", function(){
+                dom("#goto-line-240-btn").on("click", function(){
                     testEditor.gotoLine(240);
                 });
                 
-                $("#goto-line-300-btn").on("click", function(){
+                dom("#goto-line-300-btn").on("click", function(){
                     testEditor.gotoLine(300);
                 });
                 
-                $("#goto-line-400-btn").on("click", function(){
+                dom("#goto-line-400-btn").on("click", function(){
                     testEditor.gotoLine(400);
                 });
                 
-                $("#goto-first-line-btn").on("click", function(){
+                dom("#goto-first-line-btn").on("click", function(){
                     testEditor.gotoLine("first");
                     // or
                     //testEditor.gotoLine(1);
                 });
                 
-                $("#goto-last-line-btn").on("click", function(){
+                dom("#goto-last-line-btn").on("click", function(){
                     testEditor.gotoLine("last");
                     // or
                     //testEditor.gotoLine(testEditor.cm.lineCount());

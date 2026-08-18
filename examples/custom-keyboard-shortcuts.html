@@ -57,10 +57,11 @@ var testEditor = xfEditor("test-xfEditor", {
             </div>
         </div>
         <script src="../xf_editor.min.js"></script>
-        <script type="text/javascript">
+        <script type="text/javascript">var dom = (window.xfEditor && window.xfEditor.dom) ? window.xfEditor.dom : null; // 内置 micro-DOM（零依赖，无全局 $）
+
 			var testEditor;
 
-            $(function() {   
+            dom(function() {   
                 var widgets = [];
                 
                 testEditor = xfEditor("test-xfEditor", {
@@ -71,13 +72,13 @@ var testEditor = xfEditor("test-xfEditor", {
                         "Ctrl-B", "F11", "F10"  // disable some default keyboard shortcuts handle
                     ],
                     onchange : function() {
-                                $("#test").remove();
+                                dom("#test").remove();
                                 var cm = this.cm;
                                 var cursor = cm.getCursor();
 
                                 //cm.replaceSelection("@");
                                 
-                                widgets.push(cm.addWidget({line : cursor.line, ch : cursor.ch}, $("<p style='z-index:100000;background:red;color:#fff;padding:5px;' id='test'>fsdfsdfsdf</p>")[0], true));
+                                widgets.push(cm.addWidget({line : cursor.line, ch : cursor.ch}, dom("<p style='z-index:100000;background:red;color:#fff;padding:5px;' id='test'>fsdfsdfsdf</p>")[0], true));
                                 console.log(cm.getCursor(), cm.getLine(cursor.line), cm.getLineTokens(cursor.line));   
                     },
                     onload : function() {
@@ -96,7 +97,7 @@ var testEditor = xfEditor("test-xfEditor", {
                         };
                         
                         this.cm.on("keyup", function(cm){
-                            //$("#test").remove();
+                            //dom("#test").remove();
                         });
                         
                         // setting signle key

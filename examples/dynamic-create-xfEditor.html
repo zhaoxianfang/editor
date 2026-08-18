@@ -21,7 +21,8 @@
         </div>
         
  
-        <script type="text/javascript">
+        <script type="text/javascript">var dom = (window.xfEditor && window.xfEditor.dom) ? window.xfEditor.dom : null; // 内置 micro-DOM（零依赖，无全局 $）
+
             // 本页演示「按需动态加载编辑器」，因此页面自身不预先引入任何库，
             // 全部使用原生 DOM API（xfEditor 已零 jQuery 依赖）。
             var testXfEditor;
@@ -46,7 +47,7 @@
 
                     if (loaded || typeof xfEditor !== "undefined") { create(); return; }
 
-                    // 原生动态加载脚本，替代 $.getScript
+                    // 原生动态加载脚本，替代 dom.getScript
                     var script = document.createElement("script");
                     script.src = "../xf_editor.min.js";
                     script.onload = function() { loaded = true; create(); };

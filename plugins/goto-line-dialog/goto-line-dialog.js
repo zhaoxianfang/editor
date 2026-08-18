@@ -13,7 +13,7 @@
 
 	var factory = function (exports) {
 
-		var $            = (exports && exports.dom) ? exports.dom : (typeof jQuery !== "undefined" ? jQuery : null);
+		var dom          = (exports && exports.dom) ? exports.dom : null;
 		var pluginName   = "goto-line-dialog";
 
 		var langs = {
@@ -64,7 +64,7 @@
 			var classPrefix = this.classPrefix;
 			var dialogName  = classPrefix + pluginName, dialog;
 
-			$.extend(true, this.lang, langs[this.lang.name]);
+			dom.extend(true, this.lang, langs[this.lang.name]);
 			this.setToolbar();
 
 			var lang        = this.lang;

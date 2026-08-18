@@ -469,7 +469,7 @@
 <script>
 (function() {
     // ── Zero-dependency helpers（本页为纯静态目录页，无需 jQuery）──
-    function $all(sel, ctx) { return Array.prototype.slice.call((ctx || document).querySelectorAll(sel)); }
+    function qsa(sel, ctx) { return Array.prototype.slice.call((ctx || document).querySelectorAll(sel)); }
     function qs(sel, ctx)   { return (ctx || document).querySelector(sel); }
 
     // ── Smooth anchor scroll ──
@@ -509,7 +509,7 @@
 
     // ── Search filter ──
     var hint     = qs("#search-hint");
-    var allCards = $all(".example-list li");
+    var allCards = qsa(".example-list li");
 
     searchInput.addEventListener("input", function() {
         var query = searchInput.value.trim().toLowerCase();
@@ -534,7 +534,7 @@
         }
 
         // Hide empty category sections
-        $all(".category-section").forEach(function(sec) {
+        qsa(".category-section").forEach(function(sec) {
             var vis = sec.querySelectorAll(".example-list li:not(.hidden)").length;
             sec.style.display = vis > 0 ? "" : "none";
         });
@@ -542,9 +542,9 @@
 
     // ── Count stats ──
     qs("#total-count").textContent  = allCards.length;
-    qs("#new-count").textContent    = $all('.category-section[data-category="v179"] .example-list li').length;
-    qs("#syntax-count").textContent = $all('.category-section[data-category="markdown"] .example-list li').length;
-    qs("#custom-count").textContent = $all('.category-section[data-category="customs"] .example-list li').length;
+    qs("#new-count").textContent    = qsa('.category-section[data-category="v179"] .example-list li').length;
+    qs("#syntax-count").textContent = qsa('.category-section[data-category="markdown"] .example-list li').length;
+    qs("#custom-count").textContent = qsa('.category-section[data-category="customs"] .example-list li').length;
 })();
 </script>
 </body>

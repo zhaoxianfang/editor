@@ -23,10 +23,12 @@
         <script src="../xf_editor.min.js"></script>
         <script type="text/javascript">
 			var testEditor;
+            // xfEditor 内置零依赖 micro-DOM（不再暴露全局 $），本页统一使用 dom 别名
+            var dom = window.xfEditor.dom;
 
-            $(function() {
+            dom(function() {
                 // 从 md/simple.md 加载演示内容
-                $.get("md/simple.md", function(markdown) {
+                dom.get("md/simple.md", function(markdown) {
                     testEditor = xfEditor("test-xfEditor", {
                         width       : "90%",
                         height      : 640,

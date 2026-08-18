@@ -13,7 +13,7 @@
 
 	var factory = function (exports) {
 
-		var $            = (exports && exports.dom) ? exports.dom : (typeof jQuery !== "undefined" ? jQuery : null);
+		var dom          = (exports && exports.dom) ? exports.dom : null;
 		var pluginName   = "help-dialog";
 
 		exports.fn.helpDialog = function() {
@@ -63,8 +63,8 @@
 
 			if (helpContent.html() === "") 
 			{
-				$.get(path + "help.md", function(text) {
-					var md = exports.$marked(text);
+				dom.get(path + "help.md", function(text) {
+					var md = exports.marked(text);
 					helpContent.html(md);
                     
                     helpContent.find("a").attr("target", "_blank");

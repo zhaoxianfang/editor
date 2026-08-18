@@ -432,31 +432,32 @@ alert("script");
             // 设置全局资源路径，确保从 examples/ 子目录也能正确加载 KaTeX、流程图等资源
             xfEditor.defaults.path = "../lib/";
         </script>
-        <script type="text/javascript">
+        <script type="text/javascript">var dom = (window.xfEditor && window.xfEditor.dom) ? window.xfEditor.dom : null; // 内置 micro-DOM（零依赖，无全局 $）
+
             // ── TOC 目录 显示/隐藏 ──
             var tocVisible = true;
             function toggleTOC() {
                 tocVisible = !tocVisible;
-                var $sidebar = $('#toc-sidebar');
-                var $floatBtn = $('#toc-float-btn');
-                var $btnToggle = $('#btn-toggle-toc');
+                var sidebarEl = dom('#toc-sidebar');
+                var floatBtnEl = dom('#toc-float-btn');
+                var btnToggleEl = dom('#btn-toggle-toc');
                 if (tocVisible) {
-                    $sidebar.removeClass('collapsed');
-                    $floatBtn.hide();
-                    $btnToggle.hide();
+                    sidebarEl.removeClass('collapsed');
+                    floatBtnEl.hide();
+                    btnToggleEl.hide();
                 } else {
-                    $sidebar.addClass('collapsed');
-                    $floatBtn.show();
-                    $btnToggle.show();
+                    sidebarEl.addClass('collapsed');
+                    floatBtnEl.show();
+                    btnToggleEl.show();
                 }
             }
 
             // ── Scroll Spy：滚动时高亮当前章节 ──
             function initScrollSpy() {
-                var $tocLinks = $('#custom-toc-container a[href^="#"]');
-                if (!$tocLinks.length) return;
+                var tocLinksEl = dom('#custom-toc-container a[href^="#"]');
+                if (!tocLinksEl.length) return;
                 var headings = [];
-                $tocLinks.each(function() {
+                tocLinksEl.each(function() {
                     var id = this.getAttribute('href').slice(1);
                     var el = document.getElementById(id);
                     if (el) headings.push({ id: id, el: el, link: this });
@@ -475,13 +476,13 @@ alert("script");
                                     break;
                                 }
                             }
-                            $tocLinks.removeClass('toc-active');
+                            tocLinksEl.removeClass('toc-active');
                             if (activeId) {
-                                var $active = $('#custom-toc-container a[href="#' + activeId + '"]');
-                                $active.addClass('toc-active');
+                                var activeElW = dom('#custom-toc-container a[href="#' + activeId + '"]');
+                                activeElW.addClass('toc-active');
                                 // 不在当前视口内的激活项自动滚动到可视区
                                 var tocEl = document.getElementById('custom-toc-container');
-                                var activeEl = $active[0];
+                                var activeEl = activeElW[0];
                                 if (tocEl && activeEl) {
                                     var tocRect = tocEl.getBoundingClientRect();
                                     var linkRect = activeEl.getBoundingClientRect();
@@ -499,13 +500,13 @@ alert("script");
                 onScroll();
             }
 
-            $(function() {
+            dom(function() {
                 var testEditormdView, testEditormdView2;
                 
-                $.get("md/full.md", function(markdown) {
+                dom.get("md/full.md", function(markdown) {
                     
 				    testEditormdView = xfEditor.markdownToHTML("test-xf_editor-view", {
-                        markdown        : markdown ,//+ "\r\n" + $("#append-test").text(),
+                        markdown        : markdown ,//+ "\r\n" + dom("#append-test").text(),
                         //htmlDecode      : true,       // 开启 HTML 标签解析，为了安全性，默认不开启
                         htmlDecode      : "style,script,iframe",  // you can filter tags decode
                         //toc             : false,

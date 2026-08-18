@@ -50,12 +50,13 @@ this.config("onresize", function() {
 ```</textarea></div>
         </div>
         <script src="../xf_editor.min.js"></script>   
-        <script type="text/javascript">
+        <script type="text/javascript">var dom = (window.xfEditor && window.xfEditor.dom) ? window.xfEditor.dom : null; // 内置 micro-DOM（零依赖，无全局 $）
+
             var testEditor;
             
-            $(function() {
+            dom(function() {
                 
-                $.get("md/full.md", function(md) {
+                dom.get("md/full.md", function(md) {
                     testEditor = xfEditor("test-xfEditor", {
                         width                : "90%",
                         height               : 740,
@@ -98,43 +99,43 @@ this.config("onresize", function() {
                     });
                 });
                 
-                $("#show-btn").click(function(){
+                dom("#show-btn").click(function(){
                     testEditor.show();
                 });
                 
-                $("#hide-btn").click(function(){
+                dom("#hide-btn").click(function(){
                     testEditor.hide();
                 });
                 
-                $("#get-md-btn").click(function(){
+                dom("#get-md-btn").click(function(){
                     alert(testEditor.getMarkdown());
                 });
                 
-                $("#get-html-btn").click(function() {
+                dom("#get-html-btn").click(function() {
                     alert(testEditor.getHTML());
                 });                
                 
-                $("#watch-btn").click(function() {
+                dom("#watch-btn").click(function() {
                     testEditor.watch();
                 });                 
                 
-                $("#unwatch-btn").click(function() {
+                dom("#unwatch-btn").click(function() {
                     testEditor.unwatch();
                 });              
                 
-                $("#preview-btn").click(function() {
+                dom("#preview-btn").click(function() {
                     testEditor.previewing();
                 });
                 
-                $("#fullscreen-btn").click(function() {
+                dom("#fullscreen-btn").click(function() {
                     testEditor.fullscreen();
                 });
                 
-                $("#show-toolbar-btn").click(function() {
+                dom("#show-toolbar-btn").click(function() {
                     testEditor.showToolbar();
                 });
                 
-                $("#close-toolbar-btn").click(function() {
+                dom("#close-toolbar-btn").click(function() {
                     testEditor.hideToolbar();
                 });
             });          

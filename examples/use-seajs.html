@@ -78,8 +78,8 @@
 			
             seajs.use(deps, function(xfEditor) {
                 // 模块加载器环境下不会走全局导出分支，
-                // 这里直接取编辑器内置的 micro-DOM 作为本页的 $（无需 jQuery）
-                var $ = xfEditor.dom;
+                // 这里直接取编辑器内置的 micro-DOM 作为本页的 dom（无需 jQuery）
+                var dom = xfEditor.dom;
                 var testEditor;
                 
                 // 使用编辑器内置 micro-DOM 的 AJAX，无需 jQuery
@@ -123,54 +123,54 @@
                     });
                 });
 
-                $("#show-btn").on('click', function(){
+                dom("#show-btn").on('click', function(){
                     testEditor.show();
                 });
 
-                $("#hide-btn").on('click', function(){
+                dom("#hide-btn").on('click', function(){
                     testEditor.hide();
                 });
 
-                $("#get-md-btn").on('click', function(){
+                dom("#get-md-btn").on('click', function(){
                     alert(testEditor.getMarkdown());
                 });
 
-                $("#get-html-btn").on('click', function() {
+                dom("#get-html-btn").on('click', function() {
                     alert(testEditor.getHTML());
                 });                
 
-                $("#watch-btn").on('click', function() {
+                dom("#watch-btn").on('click', function() {
                     testEditor.watch();
                 });                 
 
-                $("#unwatch-btn").on('click', function() {
+                dom("#unwatch-btn").on('click', function() {
                     testEditor.unwatch();
                 });              
 
-                $("#preview-btn").on('click', function() {
+                dom("#preview-btn").on('click', function() {
                     testEditor.previewing();
                 });
 
-                $("#fullscreen-btn").on('click', function() {
+                dom("#fullscreen-btn").on('click', function() {
                     testEditor.fullscreen();
                 });
                 
-                $("#show-toolbar-btn").on('click', function() {
+                dom("#show-toolbar-btn").on('click', function() {
                     testEditor.showToolbar();
                 });
                 
-                $("#close-toolbar-btn").on('click', function() {
+                dom("#close-toolbar-btn").on('click', function() {
                     testEditor.hideToolbar();
                 });
                 
-                $("#toc-menu-btn").click(function(){
+                dom("#toc-menu-btn").click(function(){
                     testEditor.config({
                         tocDropdown   : true,
                         tocTitle      : "目录 Table of Contents",
                     });
                 });
                 
-                $("#toc-default-btn").click(function() {
+                dom("#toc-default-btn").click(function() {
                     testEditor.config("tocDropdown", false);
                 });
             });

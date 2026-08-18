@@ -137,12 +137,13 @@ editor.setPreviewTheme('theme-name');
             </div>
         </div>
         <script src="../xf_editor.min.js"></script>
-        <script type="text/javascript">
+        <script type="text/javascript">var dom = (window.xfEditor && window.xfEditor.dom) ? window.xfEditor.dom : null; // 内置 micro-DOM（零依赖，无全局 $）
+
 			var testEditor;
             
             function themeSelect(id, themes, lsKey, callback)
             {
-                var select = $("#" + id);
+                var select = dom("#" + id);
                 
                 for (var i = 0, len = themes.length; i < len; i ++)
                 {                    
@@ -153,7 +154,7 @@ editor.setPreviewTheme('theme-name');
                 }
                 
                 select.on("change", function(){
-                    var theme = $(this).val();
+                    var theme = dom(this).val();
                     
                     if (theme === "")
                     {
@@ -170,7 +171,7 @@ editor.setPreviewTheme('theme-name');
                 return select;
             }
 
-            $(function() {                
+            dom(function() {                
                 testEditor = xfEditor("test-xfEditor", {
                     width        : "90%",
                     height       : 720,
@@ -188,16 +189,16 @@ editor.setPreviewTheme('theme-name');
                     path         : '../lib/'
                 });
                 
-                themeSelect("xf_editor-theme-select", xfEditor.themes, "theme", function($this, theme) {
+                themeSelect("xf_editor-theme-select", xfEditor.themes, "theme", function(self, theme) {
                     testEditor.setTheme(theme);
                 });
                 
-                themeSelect("editor-area-theme-select", xfEditor.editorThemes, "editorTheme", function($this, theme) {
+                themeSelect("editor-area-theme-select", xfEditor.editorThemes, "editorTheme", function(self, theme) {
                     testEditor.setCodeMirrorTheme(theme); 
                     // or testEditor.setEditorTheme(theme);
                 });
                 
-                themeSelect("preview-area-theme-select", xfEditor.previewThemes, "previewTheme", function($this, theme) {
+                themeSelect("preview-area-theme-select", xfEditor.previewThemes, "previewTheme", function(self, theme) {
                     testEditor.setPreviewTheme(theme);
                 });          
             });

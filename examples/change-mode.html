@@ -417,14 +417,15 @@ if __name__ == '__main__':
             </div>
         </div>
         <script src="../xf_editor.min.js"></script>
-        <script type="text/javascript">
+        <script type="text/javascript">var dom = (window.xfEditor && window.xfEditor.dom) ? window.xfEditor.dom : null; // 内置 micro-DOM（零依赖，无全局 $）
+
             var testEditor;
             
             function getCodeValue() {
-                return (localStorage.modeName) ? $("#"+localStorage.modeName.replace("text/", "").replace("c/c++", "cpp")+"-code").val() : $("#html-code").val();
+                return (localStorage.modeName) ? dom("#"+localStorage.modeName.replace("text/", "").replace("c/c++", "cpp")+"-code").val() : dom("#html-code").val();
             }
             
-            $(function() {
+            dom(function() {
                 testEditor = xfEditor("test-xfEditor", {
                     width            : "90%",
                     height           : 720,
@@ -439,22 +440,22 @@ if __name__ == '__main__':
                     path             : '../lib/'
                 });
 
-                $("#get-code-btn").on("click", function() {
+                dom("#get-code-btn").on("click", function() {
                     alert(testEditor.getValue());
                 });
 
-                $("#fullscreen-btn").on("click", function() {
+                dom("#fullscreen-btn").on("click", function() {
                     testEditor.fullscreen();
                 });
                 
-                var select = $("#themes");
+                var select = dom("#themes");
                 
                 // 合并编辑器整体主题和 CodeMirror 编辑区主题到下拉框
                 var allThemes = xfEditor.themes.concat(xfEditor.editorThemes);
                 // 去重
                 var uniqueThemes = [];
                 for (var t = 0; t < allThemes.length; t++) {
-                    if ($.inArray(allThemes[t], uniqueThemes) === -1) {
+                    if (dom.inArray(allThemes[t], uniqueThemes) === -1) {
                         uniqueThemes.push(allThemes[t]);
                     }
                 }
@@ -467,7 +468,7 @@ if __name__ == '__main__':
                 }
                 
                 select.change(function(){
-                    var theme = $(this).val();
+                    var theme = dom(this).val();
                     
                     if (theme == "")
                     {
@@ -478,17 +479,17 @@ if __name__ == '__main__':
                     localStorage.theme = theme;
                     
                     // 如果是编辑器整体主题（default/dark），设置整体主题
-                    if ($.inArray(theme, xfEditor.themes) !== -1) {
+                    if (dom.inArray(theme, xfEditor.themes) !== -1) {
                         testEditor.setTheme(theme);
                         // setTheme 内部会自动为 "dark" 设置 "monokai" CodeMirror 主题
                     }
                     // 如果是 CodeMirror 编辑区主题
-                    if ($.inArray(theme, xfEditor.editorThemes) !== -1) {
+                    if (dom.inArray(theme, xfEditor.editorThemes) !== -1) {
                         testEditor.setEditorTheme(theme);
                     }
                 });   
                 
-                var modesSelect = $("#modes");
+                var modesSelect = dom("#modes");
                 var modeNames = ["text/html", "javascript", "php", "text/xml", "text/json", "java", "actionscript", "perl", "go", "python", "c/c++", "css", "ruby"];
                 var modes     = ["text/html", "javascript", "php", "text/xml", "text/json", "clike", "javascript", "perl", "go", "python", "clike", "css", "ruby"];
                 
@@ -500,8 +501,8 @@ if __name__ == '__main__':
                 }
                 
                 modesSelect.change(function(){
-                    var mode = $(this).val();
-                    var modeName = $(this).find("option:selected").attr("name");
+                    var mode = dom(this).val();
+                    var modeName = dom(this).find("option:selected").attr("name");
                     
                     if (mode == "")
                     {

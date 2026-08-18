@@ -13,7 +13,7 @@
 
     var factory = function (exports) {
 
-		var $            = (exports && exports.dom) ? exports.dom : (typeof jQuery !== "undefined" ? jQuery : null);           // if using module loader(Require.js/Sea.js).
+		var dom          = (exports && exports.dom) ? exports.dom : null;           // 使用编辑器内置 micro-DOM（零外部依赖）
 
 		var langs = {
 			"zh-cn" : {
@@ -73,7 +73,7 @@
 			var selection   = cm.getSelection();
 			var classPrefix = this.classPrefix;
 
-			$.extend(true, this.lang, langs[this.lang.name]); // l18n
+			dom.extend(true, this.lang, langs[this.lang.name]); // l18n
 			this.setToolbar();
 
 			cm.focus();

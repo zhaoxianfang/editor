@@ -97,8 +97,9 @@ $(function() {
         <script src="../xf_editor.min.js"></script> 
         <!-- 多语言和自定义工具栏的整合测试 -->
         <script src="../languages/en.js"></script>   
-        <script type="text/javascript">
-            $(function() {
+        <script type="text/javascript">var dom = (window.xfEditor && window.xfEditor.dom) ? window.xfEditor.dom : null; // 内置 micro-DOM（零依赖，无全局 $）
+
+            dom(function() {
                 var testEditor = xfEditor("test-xfEditor", {
                     width: "90%",
                     height: 640,
@@ -164,10 +165,10 @@ $(function() {
                     },
 
                     onload : function(){
-                        $("[type=\"file\"]").on("change", function(){
-                            alert($(this).val());
-                            testEditor.cm.replaceSelection($(this).val());
-                            console.log($(this).val(), testEditor);
+                        dom("[type=\"file\"]").on("change", function(){
+                            alert(dom(this).val());
+                            testEditor.cm.replaceSelection(dom(this).val());
+                            console.log(dom(this).val(), testEditor);
                         });
                     }
                 });

@@ -16,8 +16,8 @@
 
     var factory = function (exports) {
 
-        // 编辑器已内置零依赖 micro-DOM，插件优先复用它（不再依赖外部 jQuery）
-        var $ = (exports && exports.dom) ? exports.dom : (typeof jQuery !== "undefined" ? jQuery : null);
+        // 编辑器已内置零依赖 micro-DOM，插件复用它（零外部依赖）
+        var dom = (exports && exports.dom) ? exports.dom : null;
 
         if (!exports) {
             return;

@@ -70,9 +70,10 @@ testEditor.getPreviewedHTML();  // 获取预览窗口里的 HTML，在开启 wat
             </form>
         </div>        
         <script src="../xf_editor.min.js"></script>   
-        <script type="text/javascript">
-            $(function() {
-                $.get("md/full.md", function(md) {
+        <script type="text/javascript">var dom = (window.xfEditor && window.xfEditor.dom) ? window.xfEditor.dom : null; // 内置 micro-DOM（零依赖，无全局 $）
+
+            dom(function() {
+                dom.get("md/full.md", function(md) {
                     var testEditor = xfEditor("test-xfEditor", {
                         width  : "90%",
                         height : 640,

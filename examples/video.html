@@ -73,8 +73,9 @@ http://vjs.zencdn.net/v/oceans.mp4
             </div>
         </div>
         <script src="../xf_editor.min.js"></script>
-        <script>
-            $(function() {
+        <script>var dom = (window.xfEditor && window.xfEditor.dom) ? window.xfEditor.dom : null; // 内置 micro-DOM（零依赖，无全局 $）
+
+            dom(function() {
                 xfEditor("test-xfEditor", {
                     width: "90%", height: 700, path: "../lib/",
                     theme: "default", previewTheme: "default", editorTheme: "default",

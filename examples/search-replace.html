@@ -20,11 +20,12 @@
             </div>
         </div>
         <script src="../xf_editor.min.js"></script>
-        <script type="text/javascript">
+        <script type="text/javascript">var dom = (window.xfEditor && window.xfEditor.dom) ? window.xfEditor.dom : null; // 内置 micro-DOM（零依赖，无全局 $）
+
             var testEditor;
             
-            $(function() {
-                $.get("md/full.md", function(md) {
+            dom(function() {
+                dom.get("md/full.md", function(md) {
                     testEditor = xfEditor("test-xfEditor", {
                         width  : "90%",
                         height : 720,

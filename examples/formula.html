@@ -155,9 +155,10 @@ $\Gamma, \Delta, \Theta, \Lambda, \Pi, \Sigma, \Phi, \Omega$
             </footer>
         </div>
         <script src="../xf_editor.min.js"></script>
-        <script>
+        <script>var dom = (window.xfEditor && window.xfEditor.dom) ? window.xfEditor.dom : null; // 内置 micro-DOM（零依赖，无全局 $）
+
             var testEditor;
-            $(function() {
+            dom(function() {
                 testEditor = xfEditor("test-xfEditor", {
                     width    : "100%",
                     height   : 720,

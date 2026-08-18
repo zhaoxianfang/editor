@@ -182,8 +182,9 @@
         </div>
 
         <script src="../xf_editor.min.js"></script>
-        <script type="text/javascript">
-            $(function() {
+        <script type="text/javascript">var dom = (window.xfEditor && window.xfEditor.dom) ? window.xfEditor.dom : null; // 内置 micro-DOM（零依赖，无全局 $）
+
+            dom(function() {
                 xfEditor("test-xfEditor", {
                     width: "90%",
                     height: 800,

@@ -84,7 +84,8 @@ $(function() {
             </div>
         </div>        
         <script src="../xf_editor.min.js"></script>
-        <script type="text/javascript">
+        <script type="text/javascript">var dom = (window.xfEditor && window.xfEditor.dom) ? window.xfEditor.dom : null; // 内置 micro-DOM（零依赖，无全局 $）
+
             var testEditor;
             
             function EditormdExtend() {
@@ -130,7 +131,7 @@ $(function() {
                 console.log("customMethod", this);
             };
             
-            $(function() {
+            dom(function() {
                 xfEditor.methodOne = function() {
                     console.log("xfEditor.methodOne");
                 };
@@ -141,7 +142,7 @@ $(function() {
                     path   : '../lib/',
                     onload : function() {
                         this.customMethod();
-                        $.proxy(EditormdExtend, this)();
+                        dom.proxy(EditormdExtend, this)();
                     }
                 });
                 

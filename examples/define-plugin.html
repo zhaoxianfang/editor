@@ -31,7 +31,7 @@
 
     var factory = function (exports) {
 
-		var $ = jQuery;           // if using module loader(Require.js/Sea.js).
+		var dom = (exports && exports.dom) ? exports.dom : null;   // 使用编辑器内置 micro-DOM（零外部依赖，无需 jQuery）
 
 		exports.customMethod = function() {
 		    //....
@@ -108,7 +108,8 @@
             </div>
         </div>        
         <script src="../xf_editor.min.js"></script>
-        <script type="text/javascript">
+        <script type="text/javascript">var dom = (window.xfEditor && window.xfEditor.dom) ? window.xfEditor.dom : null; // 内置 micro-DOM（零依赖，无全局 $）
+
             var testEditor;
             
             xfEditor.fn.customMethod = function() {
@@ -119,7 +120,7 @@
                 console.log("pluginA", this);
             };
             
-            $(function() {
+            dom(function() {
                 xfEditor.methodOne = function(){
                     console.log("xfEditor.methodOne");
                 };

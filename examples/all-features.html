@@ -1512,13 +1512,15 @@ xfEditor 持续迭代，致力于为开发者和内容创作者提供最优秀�
     </script>
     <script type="text/javascript">
         var testEditor;
+        // xfEditor 内置零依赖 micro-DOM（不再暴露全局 $），本页统一使用 dom 别名
+        var dom = window.xfEditor.dom;
 
-        $(function() {
+        dom(function() {
             // 优先加载最完整的示例 md/full.md（含 Banner 轮播图等全部功能）；
             // 若以 file:// 直接打开导致 fetch 失败，则回退到本页内嵌的示例内容。
             function initEditor(md) {
                 if (typeof md === "string" && md.length) {
-                    $("#test-xfEditor textarea").val(md);
+                    dom("#test-xfEditor textarea").val(md);
                 }
                 testEditor = xfEditor("test-xfEditor", {
                 // ═══ 基础配置 ═══
@@ -1732,12 +1734,12 @@ xfEditor 持续迭代，致力于为开发者和内容创作者提供最优秀�
 
             // ＝＝ API 交互按钮 ＝＝
 
-            $("#get-md-btn").on("click", function() {
+            dom("#get-md-btn").on("click", function() {
                 var md = testEditor.getMarkdown();
                 console.log("=== Markdown 内容，共（" + md.length + " 字符） ===\n" + md);
             });
 
-            $("#get-html-btn").on("click", function() {
+            dom("#get-html-btn").on("click", function() {
                 var types = testEditor.getUseTypes(); // 获取 编辑区 使用到了哪些语法
                 if(types.echarts){
                     console.warn("提示：检测编辑区使用了 ECharts 图表，在外部网页中直接使用 getHTML() 返回数据时，还需要单独引入 “lib/echarts.min.js” 库才能正常渲染ECharts 图表");
@@ -1750,38 +1752,38 @@ xfEditor 持续迭代，致力于为开发者和内容创作者提供最优秀�
                 alert("预览 HTML 已输出到控制台（" + html.length + " 字符）");
             });
 
-            $("#watch-btn").on("click", function() {
+            dom("#watch-btn").on("click", function() {
                 testEditor.watch();
                 console.log("实时预览已开启");
             });
 
-            $("#unwatch-btn").on("click", function() {
+            dom("#unwatch-btn").on("click", function() {
                 testEditor.unwatch();
                 console.log("实时预览已关闭");
             });
 
-            $("#fullscreen-btn").on("click", function() {
+            dom("#fullscreen-btn").on("click", function() {
                 testEditor.fullscreen();
             });
 
-            $("#show-toolbar-btn").on("click", function() {
+            dom("#show-toolbar-btn").on("click", function() {
                 testEditor.showToolbar();
             });
 
-            $("#hide-toolbar-btn").on("click", function() {
+            dom("#hide-toolbar-btn").on("click", function() {
                 testEditor.hideToolbar();
             });
 
-            $("#goto-line-btn").on("click", function() {
+            dom("#goto-line-btn").on("click", function() {
                 testEditor.gotoLine(30);
                 console.log("已跳转到第 30 行");
             });
 
-            $("#preview-btn").on("click", function() {
+            dom("#preview-btn").on("click", function() {
                 testEditor.previewing();
             });
 
-            $("#toc-dropdown-btn").on("click", function() {
+            dom("#toc-dropdown-btn").on("click", function() {
                 testEditor.config({
                     tocDropdown: true,
                     tocTitle: "目录 Table of Contents"
@@ -1789,21 +1791,21 @@ xfEditor 持续迭代，致力于为开发者和内容创作者提供最优秀�
                 console.log("ToC 模式已切换为下拉菜单");
             });
 
-            $("#toc-default-btn").on("click", function() {
+            dom("#toc-default-btn").on("click", function() {
                 testEditor.config("tocDropdown", false);
                 console.log("ToC 模式已切换为默认内嵌");
             });
 
             // ＝＝ 主题切换 ＝＝
-            $("#theme-default-btn").on("click", function() {
+            dom("#theme-default-btn").on("click", function() {
                 testEditor.setTheme("default");
                 console.log("主题已切换为默认");
             });
-            $("#theme-dark-btn").on("click", function() {
+            dom("#theme-dark-btn").on("click", function() {
                 testEditor.setTheme("dark");
                 console.log("主题已切换为暗色");
             });
-            $("#canvas-btn").on("click", function() {
+            dom("#canvas-btn").on("click", function() {
                 testEditor.canvasDialog();
             });
         });
