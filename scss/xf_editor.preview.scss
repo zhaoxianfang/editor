@@ -5,11 +5,33 @@
 
 @import "xf_editor.logo";
 
-// ★ v1.17.32: 所有第三方样式（font-awesome / github-markdown）嵌套在 .xf_editor 下，
-// 保证不会泄漏到宿主页面影响 .xf_editor 之外的元素
+// ★ v1.17.39: github-markdown 依赖的图标字体（内嵌 base64），单独在顶层 import 一次，
+// 避免 github-markdown 被重复 import 时 @font-face（含 base64）重复输出导致体积翻倍
+@import "github-markdown.fonts";
+
+// ★ v1.17.32: 图标字体嵌套在 .xf_editor 下，保证不泄漏到宿主页面影响容器外的元素
 .xf_editor {
     @import "font-awesome";
+    // 编辑器模式 DOM：外层 .xf_editor > 内层 .markdown-body（后代选择器匹配）
     @import "github-markdown";
+}
+
+// ★ v1.17.39 【重要修复】：纯预览模式（xfEditor.markdownToHTML）生成的容器
+//   **自身** 同时带 .xf_editor 与 .markdown-body 两个类：
+//       <div id="xxx" class="xf_editor markdown-body xf_editor-html-preview">
+//   而上面 `.xf_editor .markdown-body` 是**后代选择器**，要求存在带 .xf_editor 的
+//   **祖先**，对容器自身不成立 —— 于是 github-markdown 的一整套基础排版样式
+//   （标题/段落/列表/表格/图片/行内代码等）在纯预览模式下**全部失效**，
+//   只剩宿主页面的 reset 起作用，造成两个后果：
+//     ① 同一份 Markdown 在不同宿主页面渲染结果完全不同；
+//     ② 宿主的全局样式（如 `* { margin:0 }`、`.article img { border-radius }`、
+//        `.article h1 { font-weight:600 }`）反向污染编辑器预览区。
+//   这里用 `.xf_editor.markdown-body`（自身匹配）再输出一份，两种 DOM 形态都生效。
+//   注：github-markdown.self.scss 把原版的 `.markdown-body` 前缀替换为 Sass 的 `&`，
+//   嵌套后展开为父选择器自身，避免产生 `.xf_editor.markdown-body .markdown-body`
+//   这种永远无法匹配的双重选择器。
+.xf_editor.markdown-body {
+    @import "github-markdown.self";
 }
 
 
@@ -2189,5 +2211,90 @@ a#{$prefix}banner-link {
     border: none !important;
 }
 
+// ==================================================================
+// ★ v1.17.39 补齐：Attachment / File list（[[file]] 附件列表）亮色基础样式
+// ------------------------------------------------------------------
+// 此前 file-list 与 attachment-link 只在 xf_editor.preview.themes.scss 的
+// 暗色分支中定义过，亮色模式下没有任何基础样式，[[file]] 渲染出的附件列表
+// 是「裸 <a> 链接」（无边框 / 无内边距 / 无圆角 / 无背景）；
+// 而 getHTML() 导出的独立 HTML 因 _getCoreStyles() 内联了亮色定义反而正常，
+// 造成「编辑器预览」与「导出结果」视觉不一致。
+// 补齐取值与 xf_editor.js 中 _getCoreStyles() 的亮色内联样式严格对齐，
+// 修改此处时请同步修改 xf_editor.js 对应 c.push() 内容。
+// ==================================================================
+#{$prefix}file-list {
+    margin: 10px 0;
+    padding: 8px 10px;
+    border: 1px solid #e5e7eb;
+    border-radius: 4px;
+    background: #fafafa;
+}
+
+#{$prefix}file-list a,
+#{$prefix}attachment-link {
+    display: inline-block;
+    margin: 3px 6px 3px 0;
+    padding: 4px 10px;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    background: #fff;
+    color: #333;
+    font-size: 13px;
+    text-decoration: none;
+    -webkit-transition: background-color 150ms ease, border-color 150ms ease;
+    -moz-transition: background-color 150ms ease, border-color 150ms ease;
+    transition: background-color 150ms ease, border-color 150ms ease;
+}
+
+#{$prefix}file-list a:hover,
+#{$prefix}attachment-link:hover {
+    background: #f0f0f0;
+    border-color: #c9c9c9;
+    color: #111;
+}
+
+// ==================================================================
+// ★ v1.17.39 补齐：脚注跳转高亮（.xf_editor-footnote-highlight）亮色样式
+// ------------------------------------------------------------------
+// 点击正文中的脚注引用时，xf_editor.js 会给目标脚注项加上
+// .xf_editor-footnote-highlight 类，实现「定位高亮 + 脉冲动画」的视觉反馈。
+// 但此前该类只在 xf_editor.preview.themes.scss 的暗色分支中定义过，
+// 亮色模式下点击脚注**完全没有视觉反馈**；
+// 而 getHTML() 导出的独立 HTML 因 _getCoreStyles() 内联了亮色定义反而是正常的，
+// 同样造成「编辑器预览」与「导出结果」不一致。
+// 补齐取值与 xf_editor.js 中 _getCoreStyles() 的亮色内联样式严格对齐，
+// 修改此处时请同步修改 xf_editor.js 对应 c.push() 内容。
+// ==================================================================
+#{$prefix}footnote-highlight {
+    background: #fef3c7 !important;
+    border-color: #f59e0b !important;
+    box-shadow: 0 0 12px rgba(245, 158, 11, 0.3) !important;
+    -webkit-transition: all 0.3s ease;
+    -moz-transition: all 0.3s ease;
+    transition: all 0.3s ease;
+    -webkit-animation: xf_editor-footnote-pulse 0.6s ease-in-out;
+    animation: xf_editor-footnote-pulse 0.6s ease-in-out;
+}
+
+// 脉冲高亮动画：与 _getCoreStyles() 中导出的同名关键帧保持一致
+// （注意：@keyframes 名称是全局标识，不能带 #{$prefix} 的点前缀）
+@keyframes xf_editor-footnote-pulse {
+    0%,
+    100% {
+        box-shadow: 0 0 8px rgba(245, 158, 11, 0.2);
+    }
+
+    50% {
+        box-shadow: 0 0 20px rgba(245, 158, 11, 0.5);
+    }
+}
+
 // ★ v1.17.30+: 暗色主题在文件末尾引入，保证主题样式覆盖所有 base 和 github-markdown 样式
 @import "xf_editor.preview.themes";
+
+// ★ v1.17.39+: 宿主样式隔离层 —— 必须放在**最后**（暗色主题之后），
+// 使其以「最高特指度 + 最后加载」成为最终裁决者，彻底阻断宿主页面
+// （如文档系统的 `* { margin:0 }`、`.article img { border-radius }`、
+// `.article h1 { font-weight:600 }`、`i { font-style:normal }` 等）
+// 对编辑器预览区的样式渗透。详见文件内注释。
+@import "xf_editor.preview.isolation";

@@ -6385,7 +6385,13 @@
             }
             // --- fileList 文件列表 ---
             if (f.fileList) {
-                c.push('.xf_editor-file-list{margin:10px 0;}.xf_editor-file-list a{display:inline-block;margin:3px 6px 3px 0;padding:4px 10px;border:1px solid #ddd;border-radius:3px;text-decoration:none;color:#333;font-size:13px;}.xf_editor-file-list a:hover{background:#f0f0f0;}');
+                // ★ v1.17.39：补齐亮色基础外观（背景/内边距/边框/圆角/过渡），
+                //   并同时覆盖 .xf_editor-attachment-link 类名选择器。
+                //   改动须与 scss/xf_editor.preview.scss 中的亮色定义保持一致，
+                //   否则「编辑器预览」与「导出 HTML」的附件列表外观会不一致。
+                c.push('.xf_editor-file-list{margin:10px 0;padding:8px 10px;border:1px solid #e5e7eb;border-radius:4px;background:#fafafa;}');
+                c.push('.xf_editor-file-list a,.xf_editor-attachment-link{display:inline-block;margin:3px 6px 3px 0;padding:4px 10px;border:1px solid #ddd;border-radius:3px;background:#fff;color:#333;font-size:13px;text-decoration:none;}');
+                c.push('.xf_editor-file-list a:hover,.xf_editor-attachment-link:hover{background:#f0f0f0;border-color:#c9c9c9;color:#111;}');
             }
             // --- banner 轮播图 ---
             if (f.banner) {
@@ -6652,6 +6658,60 @@ c.push('.xf_editor-html-preview pre code{display:block;max-width:100%;overflow-x
                 // ★ 组元素可收缩响应式布局，max-width 确保不超出容器
                 c.push('.xf_editor-copybook-row-wide>.xf_editor-copybook-group{flex:0 1 auto!important;min-width:0;max-width:100%;}');
             }
+
+            // ==================================================================
+            // ★ v1.17.39 补齐：Page Block（纸张页面）亮色基础样式
+            // ------------------------------------------------------------------
+            // 此前 _getCoreStyles 只输出了 `[data-theme=dark] .xf_editor-page-block`
+            // 的暗色补充样式，却**缺少亮色基础定义**（导出为独立 HTML 时没有
+            // xf_editor.preview.css，纸张页面会完全丢失背景/边框/阴影/留白，
+            // 页眉页脚水印也不显示）。这里按 preview.css 的最终生效值补齐，
+            // 保证「编辑器预览效果」与「导出 HTML 效果」一致。
+            // ==================================================================
+            if (f.pageBlock || f.pageBreak) {
+                c.push('.xf_editor-page-block{position:relative;display:block;box-sizing:border-box;background:#fff;color:#333;border:1px solid #ddd;border-radius:2px;margin:16px auto;padding:48px 60px;overflow:hidden;box-shadow:0 1px 2px rgba(15,23,42,0.06),0 8px 24px rgba(15,23,42,0.10);transition:box-shadow 240ms ease;}');
+                c.push('.xf_editor-page-block:hover{box-shadow:0 2px 4px rgba(15,23,42,0.08),0 12px 32px rgba(15,23,42,0.14);}');
+                c.push('.xf_editor-page-content{font-size:14px;line-height:1.8;color:#333;word-wrap:break-word;overflow-wrap:break-word;}');
+                c.push('.xf_editor-page-content h1,.xf_editor-page-content h2,.xf_editor-page-content h3,.xf_editor-page-content h4,.xf_editor-page-content h5,.xf_editor-page-content h6{margin-top:1em;margin-bottom:0.5em;}');
+                c.push('.xf_editor-page-content h1{border-bottom:1px solid #eaecef;padding-bottom:0.3em;}');
+                c.push('.xf_editor-page-content h2{border-bottom:1px solid #eaecef;padding-bottom:0.25em;}');
+                c.push('.xf_editor-page-content table{display:table;width:100%;max-width:100%;}');
+                c.push('.xf_editor-page-content pre{white-space:pre-wrap;word-wrap:break-word;max-width:100%;}');
+                c.push('.xf_editor-page-content .markdown-toc{margin:16px 0;}');
+                c.push('.xf_editor-page-block:has(.xf_editor-page-header) .xf_editor-page-content{padding-top:24px;}');
+                c.push('.xf_editor-page-block:has(.xf_editor-page-footer) .xf_editor-page-content{padding-bottom:24px;}');
+                c.push('.xf_editor-page-watermark{position:absolute;bottom:16px;right:20px;font-size:11px;color:#ccc;font-weight:300;letter-spacing:2px;text-transform:uppercase;pointer-events:none;user-select:none;}');
+                c.push('.xf_editor-page-header{position:absolute;top:12px;left:60px;right:60px;font-size:12px;color:#666;font-weight:500;text-align:center;padding-bottom:8px;border-bottom:1px solid #eee;letter-spacing:0.5px;}');
+                c.push('.xf_editor-page-footer{position:absolute;bottom:12px;left:60px;right:60px;font-size:11px;color:#888;font-weight:400;text-align:center;padding-top:8px;border-top:1px solid #eee;letter-spacing:0.3px;}');
+                c.push('.xf_editor-page-split{page-break-after:always;}');
+                c.push('.xf_editor-page-split::before{content:attr(data-page);display:inline-block;min-width:18px;position:absolute;top:8px;right:12px;padding:1px 6px;text-align:center;font-size:10px;line-height:1.5;font-weight:400;color:#94a3b8;background:#f8fafc;border:1px solid #e2e8f0;border-radius:9px;}');
+                c.push('@media print{.xf_editor-page-block{border-color:#ccc!important;border-radius:0!important;box-shadow:none!important;margin:0 auto!important;page-break-after:always;break-after:page;}}');
+                c.push('@media screen and (max-width:860px){.xf_editor-page-block{width:auto!important;max-width:100%;margin:8px 0;padding:24px 20px;}}');
+            }
+
+            // ==================================================================
+            // ★ v1.17.39 新增：导出版「宿主样式隔离层」
+            // ------------------------------------------------------------------
+            // getHTML() 产出的独立 HTML 常被嵌入第三方页面（文档系统/CMS/后台），
+            // 宿主的 `* {margin:0;padding:0}`、`i{font-style:normal}`、
+            // `.article img{border-radius;box-shadow;margin}`、
+            // `.article th{background}` 等会反向污染预览区。
+            // 这里以 `.xf_editor.markdown-body.xxx`（特指度 0,3,x）显式声明
+            // 这些易被污染的属性。仅覆盖「与明暗主题无关」的几何/装饰属性，
+            // 避免与上面的 dark 主题规则（含 !important）冲突。
+            // ==================================================================
+            c.push('.markdown-body.xf_editor-preview-container,.markdown-body.xf_editor-html-preview{box-sizing:border-box;text-align:left;word-wrap:break-word;overflow-wrap:break-word;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;}');
+            c.push('.markdown-body.xf_editor-preview-container img,.markdown-body.xf_editor-html-preview img,.markdown-body.xf_editor-preview-container video,.markdown-body.xf_editor-html-preview video,.markdown-body.xf_editor-preview-container iframe,.markdown-body.xf_editor-html-preview iframe{margin:0;border:0;border-radius:0;box-shadow:none;vertical-align:middle;max-width:100%;height:auto;box-sizing:border-box;}');
+            c.push('.markdown-body.xf_editor-preview-container i,.markdown-body.xf_editor-html-preview i,.markdown-body.xf_editor-preview-container em,.markdown-body.xf_editor-html-preview em,.markdown-body.xf_editor-preview-container cite,.markdown-body.xf_editor-html-preview cite,.markdown-body.xf_editor-preview-container dfn,.markdown-body.xf_editor-html-preview dfn,.markdown-body.xf_editor-preview-container var,.markdown-body.xf_editor-html-preview var{font-style:italic;}');
+            c.push('.markdown-body.xf_editor-preview-container h1,.markdown-body.xf_editor-html-preview h1,.markdown-body.xf_editor-preview-container h2,.markdown-body.xf_editor-html-preview h2,.markdown-body.xf_editor-preview-container h3,.markdown-body.xf_editor-html-preview h3,.markdown-body.xf_editor-preview-container h4,.markdown-body.xf_editor-html-preview h4,.markdown-body.xf_editor-preview-container h5,.markdown-body.xf_editor-html-preview h5,.markdown-body.xf_editor-preview-container h6,.markdown-body.xf_editor-html-preview h6{font-weight:700;line-height:1.35;text-align:left;}');
+            c.push('.markdown-body.xf_editor-preview-container blockquote,.markdown-body.xf_editor-html-preview blockquote{font-style:normal;}');
+            c.push('.markdown-body.xf_editor-preview-container table th,.markdown-body.xf_editor-html-preview table th,.markdown-body.xf_editor-preview-container table td,.markdown-body.xf_editor-html-preview table td{background-color:transparent;}');
+            // 纸张内部元素同样做宿主污染防护
+            c.push('.xf_editor-page-content h1,.xf_editor-page-content h2,.xf_editor-page-content h3,.xf_editor-page-content h4,.xf_editor-page-content h5,.xf_editor-page-content h6{font-weight:700;line-height:1.35;text-align:left;}');
+            c.push('.xf_editor-page-content p{margin:0 0 12px;}.xf_editor-page-content ul,.xf_editor-page-content ol{margin:0 0 12px;padding-left:2em;}.xf_editor-page-content li{margin-bottom:4px;}');
+            c.push('.xf_editor-page-content blockquote{font-style:normal;margin:12px 0;}.xf_editor-page-content hr{border:0;border-top:1px solid #e1e4e8;margin:20px 0;}');
+            c.push('.xf_editor-page-content img,.xf_editor-page-content video,.xf_editor-page-content iframe{margin:0;border:0;border-radius:0;box-shadow:none;vertical-align:middle;max-width:100%;height:auto;}');
+
             // ★ v1.17.32: 作用域隔离 — 将 .markdown-body 选择器限制在 .xf_editor 容器内，
             // 确保 getHTML() 输出的内联样式不会泄漏到宿主页面的其他元素
             return c.join('\n').replace(/\.markdown-body/g, '.xf_editor.markdown-body');

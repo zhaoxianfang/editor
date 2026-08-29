@@ -1,0 +1,257 @@
+// ==========================================================================
+// ★ v1.17.39  宿主样式隔离层（Host Style Isolation Layer）
+// --------------------------------------------------------------------------
+// 背景：xfEditor 的预览区（编辑器预览 / markdownToHTML 纯预览）通常被嵌入到
+//       第三方业务页面（文档系统、后台、博客等）中。宿主页面的全局样式会
+//       反向污染预览区，导致「同一份 Markdown 在不同页面渲染结果不一致」。
+//       典型污染源：
+//         · `* { margin: 0; padding: 0 }`          —— 清掉预览区依赖的默认值
+//         · `body { font-family: ... }`             —— 预览区未自定义字体时继承宿主
+//         · `i { font-style: normal }`              —— 破坏图标/斜体语义
+//         · `.article img { border-radius/box-shadow/margin }` —— 给图片加装饰
+//         · `.article h1 { font-weight: 600 }`      —— 改变标题字重
+//         · `.article th { background: ... }`       —— 盖掉表头渐变
+//         · `.article p/ul/ol/li/hr/blockquote`     —— 覆盖段落与列表排版
+//
+// 方案：在预览容器上以「高特指度 + 最后加载」的方式，显式声明所有可能被宿主
+//       污染的属性。本层选择器特指度为 (0,3,x)，高于上述常见的 (0,1,1) / (0,0,1)，
+//       且本文件在 `xf_editor.preview.scss` 的最末尾（暗色主题之后）引入，
+//       因此无论是宿主样式还是编辑器内部样式，隔离层都是最终裁决者。
+//
+// ⚠️ 维护约定：
+//   1) 只声明「宿主可能污染」的属性，不要在这里重新定义编辑器的设计样式
+//      （设计样式请写在 preview.scss 主体 / github-markdown 中）；
+//   2) 若新增属性在暗色主题下需要不同取值，必须在本文件内补 `[data-theme="dark"]`
+//      覆盖，否则会盖掉 xf_editor.preview.themes.scss 的暗色规则；
+//   3) 不要使用 `!important`，靠特指度与加载顺序取胜，保留使用方可覆盖的能力。
+// ==========================================================================
+
+// 预览容器的两种形态：
+//   · 编辑器模式：`.xf_editor > .markdown-body.xf_editor-preview-container`
+//   · 纯预览模式：容器自身同时带 `.xf_editor .markdown-body .xf_editor-html-preview`
+$xf-isolation-scope: ".xf_editor.markdown-body#{$prefix}preview-container, .xf_editor.markdown-body#{$prefix}html-preview";
+
+#{$xf-isolation-scope} {
+    // ─────────────────────────────────────────────────────────────
+    // 1. 容器自持：字体/排版/盒模型不依赖宿主继承
+    // ─────────────────────────────────────────────────────────────
+    box-sizing: border-box;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+                 "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue",
+                 Helvetica, Arial, sans-serif, "Apple Color Emoji",
+                 "Segoe UI Emoji", "Segoe UI Symbol";
+    text-align: left;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+
+    // ─────────────────────────────────────────────────────────────
+    // 2. 媒体元素：剥离宿主附加的装饰（圆角/阴影/外边距/边框/对齐）
+    //    宿主常见写法：`.article img { border-radius: 6px; box-shadow: ...; margin: 16px 0 }`
+    // ─────────────────────────────────────────────────────────────
+    img,
+    video,
+    iframe,
+    svg:not(#{$prefix}copybook-svg) {
+        margin: 0;
+        border: 0;
+        border-radius: 0;
+        box-shadow: none;
+        vertical-align: middle;
+        max-width: 100%;
+        height: auto;
+        box-sizing: border-box;
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // 3. 斜体语义：宿主常见 `i { font-style: normal }`（多用于图标字体）会
+    //    把预览区里的 <i> 变正体，破坏斜体与图标字体的显示
+    // ─────────────────────────────────────────────────────────────
+    i,
+    em,
+    cite,
+    dfn,
+    var {
+        font-style: italic;
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // 4. 标题：锁定字重与行高，防御 `.article h1 { font-weight: 600 }` 之类
+    // ─────────────────────────────────────────────────────────────
+    h1, h2, h3, h4, h5, h6 {
+        font-weight: 700;
+        line-height: 1.35;
+        text-align: left;
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // 5. 引用块：宿主常见 `.article blockquote { font-style: italic }`
+    // ─────────────────────────────────────────────────────────────
+    blockquote {
+        font-style: normal;
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // 6. 表格：表头背景必须透明，否则会盖住 thead 的渐变底；
+    //    同时补齐宿主 `th, td { border: 1px solid }` 之外的三边差异
+    // ─────────────────────────────────────────────────────────────
+    table {
+        th,
+        td {
+            background-color: transparent;
+        }
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────
+// 7. Page Block（[[page:A4]] 纸张页面）：加固 + 美化
+//    · 防止宿主 reset 抹掉纸张的内边距/边框/阴影/定位
+//    · 纸张内部元素同样做宿主污染防护
+//    · 更接近真实纸张的质感与打印表现
+// ─────────────────────────────────────────────────────────────────
+#{$prefix}page-block {
+    // ★ 加固：宿主 `* { margin:0; padding:0 }` 会抹掉纸张留白
+    box-sizing: border-box;
+    display: block;
+    position: relative;
+    overflow: hidden;
+    background: #fff;
+    color: #333;
+    border: 1px solid #ddd;
+    border-radius: 2px;
+    margin: 16px auto;
+    padding: 48px 60px;
+    // ★ 美化：更立体的纸张投影（近实远虚双层）
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06),
+                0 8px 24px rgba(15, 23, 42, 0.10);
+    transition: box-shadow 240ms ease, transform 240ms ease;
+
+    &:hover {
+        box-shadow: 0 2px 4px rgba(15, 23, 42, 0.08),
+                    0 12px 32px rgba(15, 23, 42, 0.14);
+    }
+}
+
+#{$prefix}page-content {
+    font-size: 14px;
+    line-height: 1.8;
+    color: #333;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+
+    // ★ 纸张内部元素的宿主污染防护
+    h1, h2, h3, h4, h5, h6 {
+        font-weight: 700;
+        line-height: 1.35;
+        text-align: left;
+    }
+    h1 {
+        border-bottom: 1px solid #eaecef;
+        padding-bottom: 0.3em;
+    }
+    h2 {
+        border-bottom: 1px solid #eaecef;
+        padding-bottom: 0.25em;
+    }
+    p {
+        margin: 0 0 12px;
+    }
+    ul,
+    ol {
+        margin: 0 0 12px;
+        padding-left: 2em;
+    }
+    li {
+        margin-bottom: 4px;
+    }
+    blockquote {
+        font-style: normal;
+        margin: 12px 0;
+    }
+    hr {
+        border: 0;
+        border-top: 1px solid #e1e4e8;
+        margin: 20px 0;
+    }
+    img,
+    video,
+    iframe,
+    svg:not(#{$prefix}copybook-svg) {
+        margin: 0;
+        border: 0;
+        border-radius: 0;
+        box-shadow: none;
+        vertical-align: middle;
+        max-width: 100%;
+        height: auto;
+    }
+}
+
+// ★ 美化：分页纸张的分隔与页码更清晰
+#{$prefix}page-split {
+    position: relative;
+
+    &::before {
+        display: inline-block;
+        min-width: 18px;
+        padding: 1px 6px;
+        text-align: center;
+        color: #94a3b8;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 9px;
+        font-size: 10px;
+        line-height: 1.5;
+    }
+}
+
+// ★ 打印：去掉阴影/圆角，纸张按真实纸张分页
+@media print {
+    #{$prefix}page-block {
+        border-color: #ccc !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        margin: 0 auto !important;
+        page-break-after: always;
+        break-after: page;
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────
+// 8. 暗色主题下隔离层的配套取值
+//    （本文件在 themes 之后加载，故需显式补暗色，避免把暗色主题盖回亮色）
+// ─────────────────────────────────────────────────────────────────
+[data-theme="dark"] #{$prefix}page-block {
+    background: #1e293b;
+    border-color: #2d3a52;
+    color: #cbd5e1;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.30),
+                0 8px 24px rgba(0, 0, 0, 0.40);
+
+    &:hover {
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.35),
+                    0 12px 32px rgba(0, 0, 0, 0.50);
+    }
+}
+
+[data-theme="dark"] #{$prefix}page-content {
+    color: #cbd5e1;
+
+    h1,
+    h2 {
+        border-bottom-color: #2d3a52;
+    }
+    hr {
+        border-top-color: #2d3a52;
+    }
+    blockquote {
+        border-left-color: #60a5fa;
+    }
+}
+
+[data-theme="dark"] #{$prefix}page-split::before {
+    color: #64748b;
+    background: #0f172a;
+    border-color: #2d3a52;
+}

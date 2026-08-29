@@ -1817,6 +1817,10 @@
   color: #2196F3;
 }
 
+@font-face {
+  font-family: octicons-anchor;
+  src: url(data:font/woff;charset=utf-8;base64,d09GRgABAAAAAAYcAA0AAAAACjQAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAABGRlRNAAABMAAAABwAAAAca8vGTk9TLzIAAAFMAAAARAAAAFZG1VHVY21hcAAAAZAAAAA+AAABQgAP9AdjdnQgAAAB0AAAAAQAAAAEACICiGdhc3AAAAHUAAAACAAAAAj//wADZ2x5ZgAAAdwAAADRAAABEKyikaNoZWFkAAACsAAAAC0AAAA2AtXoA2hoZWEAAALgAAAAHAAAACQHngNFaG10eAAAAvwAAAAQAAAAEAwAACJsb2NhAAADDAAAAAoAAAAKALIAVG1heHAAAAMYAAAAHwAAACABEAB2bmFtZQAAAzgAAALBAAAFu3I9x/Nwb3N0AAAF/AAAAB0AAAAvaoFvbwAAAAEAAAAAzBdyYwAAAADP2IQvAAAAAM/bz7t4nGNgZGFgnMDAysDB1Ml0hoGBoR9CM75mMGLkYGBgYmBlZsAKAtJcUxgcPsR8iGF2+O/AEMPsznAYKMwIkgMA5REMOXicY2BgYGaAYBkGRgYQsAHyGMF8FgYFIM0ChED+h5j//yEk/3KoSgZGNgYYk4GRCUgwMaACRoZhDwCs7QgGAAAAIgKIAAAAAf//AAJ4nHWMMQrCQBBF/0zWrCCIKUQsTDCL2EXMohYGSSmorScInsRGL2DOYJe0Ntp7BK+gJ1BxF1stZvjz/v8DRghQzEc4kIgKwiAppcA9LtzKLSkdNhKFY3HF4lK69ExKslx7Xa+vPRVS43G98vG1DnkDMIBUgFN0MDXflU8tbaZOUkXUH0+U27RoRpOIyCKjbMCVejwypzJJG4jIwb43rfl6wbwanocrJm9XFYfskuVC5K/TPyczNU7b84CXcbxks1Un6H6tLH9vf2LRnn8Ax7A5WQAAAHicY2BkYGAA4teL1+yI57f5ysDNwgAC529f0kOmWRiYVgEpDgYmEA8AUzEKsQAAAHicY2BkYGB2+O/AEMPCAAJAkpEBFbAAADgKAe0EAAAiAAAAAAQAAAAEAAAAAAAAKgAqACoAiAAAeJxjYGRgYGBhsGFgYgABEMkFhAwM/xn0QAIAD6YBhwB4nI1Ty07cMBS9QwKlQapQW3VXySvEqDCZGbGaHULiIQ1FKgjWMxknMfLEke2A+IJu+wntrt/QbVf9gG75jK577Lg8K1qQPCfnnnt8fX1NRC/pmjrk/zprC+8D7tBy9DHgBXoWfQ44Av8t4Bj4Z8CLtBL9CniJluPXASf0Lm4CXqFX8Q84dOLnMB17N4c7tBo1AS/Qi+hTwBH4rwHHwN8DXqQ30XXAS7QaLwSc0Gn8NuAVWou/gFmnjLrEaEh9GmDdDGgL3B4JsrRPDU2hTOiMSuJUIdKQQayiAth69r6akSSFqIJuA19TrzCIaY8sIoxyrNIrL//pw7A2iMygkX5vDj+G+kuoLdX4GlGK/8Lnlz6/h9MpmoO9rafrz7ILXEHHaAx95s9lsI7AHNMBWEZHULnfAXwG9/ZqdzLI08iuwRloXE8kfhXYAvE23+23DU3t626rbs8/8adv+9DWknsHp3E17oCf+Z48rvEQNZ78paYM38qfk3v/u3l3u3GXN2Dmvmvpf1Srwk3pB/VSsp512bA/GG5i2WJ7wu430yQ5K3nFGiOqgtmSB5pJVSizwaacmUZzZhXLlZTq8qGGFY2YcSkqbth6aW1tRmlaCFs2016m5qn36SbJrqosG4uMV4aP2PHBmB3tjtmgN2izkGQyLWprekbIntJFing32a5rKWCN/SdSoga45EJykyQ7asZvHQ8PTm6cslIpwyeyjbVltNikc2HTR7YKh9LBl9DADC0U/jLcBZDKrMhUBfQBvXRzLtFtjU9eNHKin0x5InTqb8lNpfKv1s1xHzTXRqgKzek/mb7nB8RZTCDhGEX3kK/8Q75AmUM/eLkfA+0Hi908Kx4eNsMgudg5GLdRD7a84npi+YxNr5i5KIbW5izXas7cHXIMAau1OueZhfj+cOcP3P8MNIWLyYOBuxL6DRylJ4cAAAB4nGNgYoAALjDJyIAOWMCiTIxMLDmZedkABtIBygAAAA==) format("woff");
+}
 .xf_editor {
   /*!
    *  Font Awesome 4.3.0 by @davegandy - http://fontawesome.io - @fontawesome
@@ -3625,13 +3629,6 @@
 .xf_editor .fa-medium:before {
   content: "\f23a";
 }
-.xf_editor {
-  /*! github-markdown-css | The MIT License (MIT) | Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com) | https://github.com/sindresorhus/github-markdown-css */
-}
-@font-face {
-  font-family: octicons-anchor;
-  src: url(data:font/woff;charset=utf-8;base64,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) format("woff");
-}
 .xf_editor .markdown-body {
   -ms-text-size-adjust: 100%;
   -webkit-text-size-adjust: 100%;
@@ -4178,6 +4175,480 @@
   vertical-align: middle;
 }
 .xf_editor .markdown-body :checked + .radio-label {
+  z-index: 1;
+  position: relative;
+  border-color: #4183c4;
+}
+
+.xf_editor.markdown-body {
+  -ms-text-size-adjust: 100%;
+  -webkit-text-size-adjust: 100%;
+  color: #333;
+  overflow: hidden;
+  font-family: "Microsoft YaHei", Helvetica, "Meiryo UI", "Malgun Gothic", "Segoe UI", "Trebuchet MS", "Monaco", monospace, Tahoma, STXihei, "华文细黑", STHeiti, "Helvetica Neue", "Droid Sans", "wenquanyi micro hei", FreeSans, Arimo, Arial, SimSun, "宋体", Heiti, "黑体", sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+  word-wrap: break-word;
+}
+.xf_editor.markdown-body a {
+  background: transparent;
+}
+.xf_editor.markdown-body a:active, .xf_editor.markdown-body a:hover {
+  outline: 0;
+}
+.xf_editor.markdown-body strong {
+  font-weight: bold;
+}
+.xf_editor.markdown-body h1 {
+  font-size: 2em;
+  margin: 0.67em 0;
+}
+.xf_editor.markdown-body img {
+  border: 0;
+}
+.xf_editor.markdown-body hr {
+  -moz-box-sizing: content-box;
+  box-sizing: content-box;
+  height: 0;
+}
+.xf_editor.markdown-body pre {
+  overflow: auto;
+}
+.xf_editor.markdown-body code, .xf_editor.markdown-body kbd, .xf_editor.markdown-body pre {
+  font-family: "Meiryo UI", "YaHei Consolas Hybrid", Consolas, "Malgun Gothic", "Segoe UI", "Trebuchet MS", Helvetica, monospace, monospace;
+  font-size: 1em;
+}
+.xf_editor.markdown-body input {
+  color: inherit;
+  font: inherit;
+  margin: 0;
+}
+.xf_editor.markdown-body html input[disabled] {
+  cursor: default;
+}
+.xf_editor.markdown-body input {
+  line-height: normal;
+}
+.xf_editor.markdown-body input[type=checkbox] {
+  -moz-box-sizing: border-box;
+  box-sizing: border-box;
+  padding: 0;
+}
+.xf_editor.markdown-body table {
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+.xf_editor.markdown-body td, .xf_editor.markdown-body th {
+  padding: 0;
+}
+.xf_editor.markdown-body * {
+  -moz-box-sizing: border-box;
+  box-sizing: border-box;
+}
+.xf_editor.markdown-body input {
+  font: 13px/1.4 Helvetica, arial, freesans, clean, sans-serif, "Segoe UI Emoji", "Segoe UI Symbol";
+}
+.xf_editor.markdown-body a {
+  color: #4183c4;
+  text-decoration: none;
+}
+.xf_editor.markdown-body a:hover, .xf_editor.markdown-body a:active {
+  text-decoration: underline;
+}
+.xf_editor.markdown-body hr {
+  height: 0;
+  margin: 15px 0;
+  overflow: hidden;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid #ddd;
+}
+.xf_editor.markdown-body hr:before {
+  display: table;
+  content: "";
+}
+.xf_editor.markdown-body hr:after {
+  display: table;
+  clear: both;
+  content: "";
+}
+.xf_editor.markdown-body h1, .xf_editor.markdown-body h2, .xf_editor.markdown-body h3, .xf_editor.markdown-body h4, .xf_editor.markdown-body h5, .xf_editor.markdown-body h6 {
+  margin-top: 15px;
+  margin-bottom: 15px;
+  line-height: 1.1;
+}
+.xf_editor.markdown-body h1 {
+  font-size: 30px;
+}
+.xf_editor.markdown-body h2 {
+  font-size: 21px;
+}
+.xf_editor.markdown-body h3 {
+  font-size: 16px;
+}
+.xf_editor.markdown-body h4 {
+  font-size: 14px;
+}
+.xf_editor.markdown-body h5 {
+  font-size: 12px;
+}
+.xf_editor.markdown-body h6 {
+  font-size: 11px;
+}
+.xf_editor.markdown-body blockquote {
+  margin: 0;
+}
+.xf_editor.markdown-body ul, .xf_editor.markdown-body ol {
+  padding: 0;
+  margin-top: 0;
+  margin-bottom: 0;
+}
+.xf_editor.markdown-body ol ol, .xf_editor.markdown-body ul ol {
+  list-style-type: lower-roman;
+}
+.xf_editor.markdown-body ul ul ol, .xf_editor.markdown-body ul ol ol, .xf_editor.markdown-body ol ul ol, .xf_editor.markdown-body ol ol ol {
+  list-style-type: lower-alpha;
+}
+.xf_editor.markdown-body dd {
+  margin-left: 0;
+}
+.xf_editor.markdown-body code {
+  font-family: Consolas, "Liberation Mono", Menlo, Courier, monospace;
+  font-size: 12px;
+}
+.xf_editor.markdown-body pre {
+  margin-top: 0;
+  margin-bottom: 0;
+  font: 12px Consolas, "Liberation Mono", Menlo, Courier, monospace;
+}
+.xf_editor.markdown-body .octicon {
+  font: normal normal 16px octicons-anchor;
+  line-height: 1;
+  display: inline-block;
+  text-decoration: none;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+.xf_editor.markdown-body .octicon-link:before {
+  content: "\f05c";
+}
+.xf_editor.markdown-body > *:first-child {
+  margin-top: 0 !important;
+}
+.xf_editor.markdown-body > *:last-child {
+  margin-bottom: 0 !important;
+}
+.xf_editor.markdown-body .anchor {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: block;
+  padding-right: 6px;
+  padding-left: 30px;
+  margin-left: -30px;
+}
+.xf_editor.markdown-body .anchor:focus {
+  outline: none;
+}
+.xf_editor.markdown-body h1, .xf_editor.markdown-body h2, .xf_editor.markdown-body h3, .xf_editor.markdown-body h4, .xf_editor.markdown-body h5, .xf_editor.markdown-body h6 {
+  position: relative;
+  margin-top: 1em;
+  margin-bottom: 16px;
+  font-weight: bold;
+  line-height: 1.4;
+}
+.xf_editor.markdown-body h1 .octicon-link, .xf_editor.markdown-body h2 .octicon-link, .xf_editor.markdown-body h3 .octicon-link, .xf_editor.markdown-body h4 .octicon-link, .xf_editor.markdown-body h5 .octicon-link, .xf_editor.markdown-body h6 .octicon-link {
+  display: none;
+  color: #000;
+  vertical-align: middle;
+}
+.xf_editor.markdown-body h1:hover .anchor, .xf_editor.markdown-body h2:hover .anchor, .xf_editor.markdown-body h3:hover .anchor, .xf_editor.markdown-body h4:hover .anchor, .xf_editor.markdown-body h5:hover .anchor, .xf_editor.markdown-body h6:hover .anchor {
+  padding-left: 8px;
+  margin-left: -30px;
+  text-decoration: none;
+}
+.xf_editor.markdown-body h1:hover .anchor .octicon-link, .xf_editor.markdown-body h2:hover .anchor .octicon-link, .xf_editor.markdown-body h3:hover .anchor .octicon-link, .xf_editor.markdown-body h4:hover .anchor .octicon-link, .xf_editor.markdown-body h5:hover .anchor .octicon-link, .xf_editor.markdown-body h6:hover .anchor .octicon-link {
+  display: inline-block;
+}
+.xf_editor.markdown-body h1 {
+  padding-bottom: 0.3em;
+  font-size: 2.25em;
+  line-height: 1.2;
+  border-bottom: 1px solid #eee;
+}
+.xf_editor.markdown-body h1 .anchor {
+  line-height: 1;
+}
+.xf_editor.markdown-body h2 {
+  padding-bottom: 0.3em;
+  font-size: 1.75em;
+  line-height: 1.225;
+  border-bottom: 1px solid #eee;
+}
+.xf_editor.markdown-body h2 .anchor {
+  line-height: 1;
+}
+.xf_editor.markdown-body h3 {
+  font-size: 1.5em;
+  line-height: 1.43;
+}
+.xf_editor.markdown-body h3 .anchor {
+  line-height: 1.2;
+}
+.xf_editor.markdown-body h4 {
+  font-size: 1.25em;
+}
+.xf_editor.markdown-body h4 .anchor {
+  line-height: 1.2;
+}
+.xf_editor.markdown-body h5 {
+  font-size: 1em;
+}
+.xf_editor.markdown-body h5 .anchor {
+  line-height: 1.1;
+}
+.xf_editor.markdown-body h6 {
+  font-size: 1em;
+  color: #777;
+}
+.xf_editor.markdown-body h6 .anchor {
+  line-height: 1.1;
+}
+.xf_editor.markdown-body p, .xf_editor.markdown-body blockquote, .xf_editor.markdown-body ul, .xf_editor.markdown-body ol, .xf_editor.markdown-body dl, .xf_editor.markdown-body table, .xf_editor.markdown-body pre {
+  margin-top: 0;
+  margin-bottom: 16px;
+}
+.xf_editor.markdown-body {
+  /*
+  & hr {
+    height: 4px;
+    padding: 0;
+    margin: 16px 0;
+    background-color: #e7e7e7;
+    border: 0 none;
+  }*/
+}
+.xf_editor.markdown-body ul, .xf_editor.markdown-body ol {
+  padding-left: 2em;
+}
+.xf_editor.markdown-body ul ul, .xf_editor.markdown-body ul ol, .xf_editor.markdown-body ol ol, .xf_editor.markdown-body ol ul {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+.xf_editor.markdown-body li > p {
+  margin-top: 16px;
+}
+.xf_editor.markdown-body dl {
+  padding: 0;
+}
+.xf_editor.markdown-body dl dt {
+  padding: 0;
+  margin-top: 16px;
+  font-size: 1em;
+  font-style: italic;
+  font-weight: bold;
+}
+.xf_editor.markdown-body dl dd {
+  padding: 0 16px;
+  margin-bottom: 16px;
+}
+.xf_editor.markdown-body blockquote {
+  padding: 0 15px;
+  color: #777;
+  border-left: 4px solid #ddd;
+}
+.xf_editor.markdown-body blockquote > :first-child {
+  margin-top: 0;
+}
+.xf_editor.markdown-body blockquote > :last-child {
+  margin-bottom: 0;
+}
+.xf_editor.markdown-body table {
+  display: block;
+  width: 100%;
+  overflow: auto;
+  word-break: keep-all;
+}
+.xf_editor.markdown-body table th {
+  font-weight: bold;
+}
+.xf_editor.markdown-body table th, .xf_editor.markdown-body table td {
+  padding: 6px 13px;
+  border: 1px solid #ddd;
+}
+.xf_editor.markdown-body table tr {
+  background-color: #fff;
+  border-top: 1px solid #ccc;
+}
+.xf_editor.markdown-body table tr:nth-child(2n) {
+  background-color: #f8f8f8;
+}
+.xf_editor.markdown-body img {
+  max-width: 100%;
+  -moz-box-sizing: border-box;
+  box-sizing: border-box;
+}
+.xf_editor.markdown-body code {
+  padding: 0;
+  padding-top: 0.2em;
+  padding-bottom: 0.2em;
+  margin: 0;
+  font-size: 85%;
+  background-color: rgba(0, 0, 0, 0.04);
+  border-radius: 3px;
+}
+.xf_editor.markdown-body code:before, .xf_editor.markdown-body code:after {
+  letter-spacing: -0.2em;
+  content: " ";
+}
+.xf_editor.markdown-body pre > code {
+  padding: 0;
+  margin: 0;
+  font-size: 100%;
+  word-break: normal;
+  white-space: pre;
+  background: transparent;
+  border: 0;
+}
+.xf_editor.markdown-body .highlight {
+  margin-bottom: 16px;
+}
+.xf_editor.markdown-body .highlight pre, .xf_editor.markdown-body pre {
+  padding: 16px;
+  overflow: auto;
+  font-size: 85%;
+  line-height: 1.45;
+  background-color: #f7f7f7;
+  border-radius: 3px;
+}
+.xf_editor.markdown-body .highlight pre {
+  margin-bottom: 0;
+  word-break: normal;
+}
+.xf_editor.markdown-body pre {
+  word-wrap: normal;
+}
+.xf_editor.markdown-body pre code {
+  display: inline;
+  max-width: initial;
+  padding: 0;
+  margin: 0;
+  overflow: initial;
+  line-height: inherit;
+  word-wrap: normal;
+  background-color: transparent;
+  border: 0;
+}
+.xf_editor.markdown-body pre code:before, .xf_editor.markdown-body pre code:after {
+  content: normal;
+}
+.xf_editor.markdown-body kbd {
+  display: inline-block;
+  padding: 3px 5px;
+  font-size: 11px;
+  line-height: 10px;
+  color: #555;
+  vertical-align: middle;
+  background-color: #fcfcfc;
+  border: solid 1px #ccc;
+  border-bottom-color: #bbb;
+  border-radius: 3px;
+  box-shadow: inset 0 -1px 0 #bbb;
+}
+.xf_editor.markdown-body .pl-c {
+  color: #969896;
+}
+.xf_editor.markdown-body .pl-c1, .xf_editor.markdown-body .pl-mdh, .xf_editor.markdown-body .pl-mm, .xf_editor.markdown-body .pl-mp, .xf_editor.markdown-body .pl-mr, .xf_editor.markdown-body .pl-s1 .pl-v, .xf_editor.markdown-body .pl-s3, .xf_editor.markdown-body .pl-sc, .xf_editor.markdown-body .pl-sv {
+  color: #0086b3;
+}
+.xf_editor.markdown-body .pl-e, .xf_editor.markdown-body .pl-en {
+  color: #795da3;
+}
+.xf_editor.markdown-body .pl-s1 .pl-s2, .xf_editor.markdown-body .pl-smi, .xf_editor.markdown-body .pl-smp, .xf_editor.markdown-body .pl-stj, .xf_editor.markdown-body .pl-vo, .xf_editor.markdown-body .pl-vpf {
+  color: #333;
+}
+.xf_editor.markdown-body .pl-ent {
+  color: #63a35c;
+}
+.xf_editor.markdown-body .pl-k, .xf_editor.markdown-body .pl-s, .xf_editor.markdown-body .pl-st {
+  color: #a71d5d;
+}
+.xf_editor.markdown-body .pl-pds, .xf_editor.markdown-body .pl-s1, .xf_editor.markdown-body .pl-s1 .pl-pse .pl-s2, .xf_editor.markdown-body .pl-sr, .xf_editor.markdown-body .pl-sr .pl-cce, .xf_editor.markdown-body .pl-sr .pl-sra, .xf_editor.markdown-body .pl-sr .pl-sre, .xf_editor.markdown-body .pl-src {
+  color: #df5000;
+}
+.xf_editor.markdown-body .pl-mo, .xf_editor.markdown-body .pl-v {
+  color: #1d3e81;
+}
+.xf_editor.markdown-body .pl-id {
+  color: #b52a1d;
+}
+.xf_editor.markdown-body .pl-ii {
+  background-color: #b52a1d;
+  color: #f8f8f8;
+}
+.xf_editor.markdown-body .pl-sr .pl-cce {
+  color: #63a35c;
+  font-weight: bold;
+}
+.xf_editor.markdown-body .pl-ml {
+  color: #693a17;
+}
+.xf_editor.markdown-body .pl-mh, .xf_editor.markdown-body .pl-mh .pl-en, .xf_editor.markdown-body .pl-ms {
+  color: #1d3e81;
+  font-weight: bold;
+}
+.xf_editor.markdown-body .pl-mq {
+  color: #008080;
+}
+.xf_editor.markdown-body .pl-mi {
+  color: #333;
+  font-style: italic;
+}
+.xf_editor.markdown-body .pl-mb {
+  color: #333;
+  font-weight: bold;
+}
+.xf_editor.markdown-body .pl-md, .xf_editor.markdown-body .pl-mdhf {
+  background-color: #ffecec;
+  color: #bd2c00;
+}
+.xf_editor.markdown-body .pl-mdht, .xf_editor.markdown-body .pl-mi1 {
+  background-color: #eaffea;
+  color: #55a532;
+}
+.xf_editor.markdown-body .pl-mdr {
+  color: #795da3;
+  font-weight: bold;
+}
+.xf_editor.markdown-body kbd {
+  display: inline-block;
+  padding: 3px 5px;
+  font: 11px Consolas, "Liberation Mono", Menlo, Courier, monospace;
+  line-height: 10px;
+  color: #555;
+  vertical-align: middle;
+  background-color: #fcfcfc;
+  border: solid 1px #ccc;
+  border-bottom-color: #bbb;
+  border-radius: 3px;
+  box-shadow: inset 0 -1px 0 #bbb;
+}
+.xf_editor.markdown-body .task-list-item {
+  list-style-type: none;
+}
+.xf_editor.markdown-body .task-list-item + .task-list-item {
+  margin-top: 3px;
+}
+.xf_editor.markdown-body .task-list-item input {
+  float: left;
+  margin: 0.3em 0 0.25em -1.6em;
+  vertical-align: middle;
+}
+.xf_editor.markdown-body :checked + .radio-label {
   z-index: 1;
   position: relative;
   border-color: #4183c4;
@@ -6505,6 +6976,56 @@ a.xf_editor-banner-link::after {
   border: none !important;
 }
 
+.xf_editor-file-list {
+  margin: 10px 0;
+  padding: 8px 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  background: #fafafa;
+}
+
+.xf_editor-file-list a,
+.xf_editor-attachment-link {
+  display: inline-block;
+  margin: 3px 6px 3px 0;
+  padding: 4px 10px;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  background: #fff;
+  color: #333;
+  font-size: 13px;
+  text-decoration: none;
+  -webkit-transition: background-color 150ms ease, border-color 150ms ease;
+  -moz-transition: background-color 150ms ease, border-color 150ms ease;
+  transition: background-color 150ms ease, border-color 150ms ease;
+}
+
+.xf_editor-file-list a:hover,
+.xf_editor-attachment-link:hover {
+  background: #f0f0f0;
+  border-color: #c9c9c9;
+  color: #111;
+}
+
+.xf_editor-footnote-highlight {
+  background: #fef3c7 !important;
+  border-color: #f59e0b !important;
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.3) !important;
+  -webkit-transition: all 0.3s ease;
+  -moz-transition: all 0.3s ease;
+  transition: all 0.3s ease;
+  -webkit-animation: xf_editor-footnote-pulse 0.6s ease-in-out;
+  animation: xf_editor-footnote-pulse 0.6s ease-in-out;
+}
+
+@keyframes xf_editor-footnote-pulse {
+  0%, 100% {
+    box-shadow: 0 0 8px rgba(245, 158, 11, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(245, 158, 11, 0.5);
+  }
+}
 /*! prefixes.scss v0.1.0 | Author: zhaoxianfang | https://github.com/zhaoxianfang/prefixes.scss | MIT license | Copyright (c) 2015 */
 /* Preview dark theme */
 .xf_editor-preview-theme-dark {
@@ -8091,6 +8612,183 @@ a.xf_editor-banner-link::after {
     color: #cbd5e1;
   }
 }
+.xf_editor.markdown-body.xf_editor-preview-container, .xf_editor.markdown-body.xf_editor-html-preview {
+  box-sizing: border-box;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+  text-align: left;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+.xf_editor.markdown-body.xf_editor-preview-container img,
+.xf_editor.markdown-body.xf_editor-preview-container video,
+.xf_editor.markdown-body.xf_editor-preview-container iframe,
+.xf_editor.markdown-body.xf_editor-preview-container svg:not(.xf_editor-copybook-svg), .xf_editor.markdown-body.xf_editor-html-preview img,
+.xf_editor.markdown-body.xf_editor-html-preview video,
+.xf_editor.markdown-body.xf_editor-html-preview iframe,
+.xf_editor.markdown-body.xf_editor-html-preview svg:not(.xf_editor-copybook-svg) {
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  vertical-align: middle;
+  max-width: 100%;
+  height: auto;
+  box-sizing: border-box;
+}
+.xf_editor.markdown-body.xf_editor-preview-container i,
+.xf_editor.markdown-body.xf_editor-preview-container em,
+.xf_editor.markdown-body.xf_editor-preview-container cite,
+.xf_editor.markdown-body.xf_editor-preview-container dfn,
+.xf_editor.markdown-body.xf_editor-preview-container var, .xf_editor.markdown-body.xf_editor-html-preview i,
+.xf_editor.markdown-body.xf_editor-html-preview em,
+.xf_editor.markdown-body.xf_editor-html-preview cite,
+.xf_editor.markdown-body.xf_editor-html-preview dfn,
+.xf_editor.markdown-body.xf_editor-html-preview var {
+  font-style: italic;
+}
+.xf_editor.markdown-body.xf_editor-preview-container h1, .xf_editor.markdown-body.xf_editor-preview-container h2, .xf_editor.markdown-body.xf_editor-preview-container h3, .xf_editor.markdown-body.xf_editor-preview-container h4, .xf_editor.markdown-body.xf_editor-preview-container h5, .xf_editor.markdown-body.xf_editor-preview-container h6, .xf_editor.markdown-body.xf_editor-html-preview h1, .xf_editor.markdown-body.xf_editor-html-preview h2, .xf_editor.markdown-body.xf_editor-html-preview h3, .xf_editor.markdown-body.xf_editor-html-preview h4, .xf_editor.markdown-body.xf_editor-html-preview h5, .xf_editor.markdown-body.xf_editor-html-preview h6 {
+  font-weight: 700;
+  line-height: 1.35;
+  text-align: left;
+}
+.xf_editor.markdown-body.xf_editor-preview-container blockquote, .xf_editor.markdown-body.xf_editor-html-preview blockquote {
+  font-style: normal;
+}
+.xf_editor.markdown-body.xf_editor-preview-container table th,
+.xf_editor.markdown-body.xf_editor-preview-container table td, .xf_editor.markdown-body.xf_editor-html-preview table th,
+.xf_editor.markdown-body.xf_editor-html-preview table td {
+  background-color: transparent;
+}
+
+.xf_editor-page-block {
+  box-sizing: border-box;
+  display: block;
+  position: relative;
+  overflow: hidden;
+  background: #fff;
+  color: #333;
+  border: 1px solid #ddd;
+  border-radius: 2px;
+  margin: 16px auto;
+  padding: 48px 60px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06), 0 8px 24px rgba(15, 23, 42, 0.1);
+  transition: box-shadow 240ms ease, transform 240ms ease;
+}
+.xf_editor-page-block:hover {
+  box-shadow: 0 2px 4px rgba(15, 23, 42, 0.08), 0 12px 32px rgba(15, 23, 42, 0.14);
+}
+
+.xf_editor-page-content {
+  font-size: 14px;
+  line-height: 1.8;
+  color: #333;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+.xf_editor-page-content h1, .xf_editor-page-content h2, .xf_editor-page-content h3, .xf_editor-page-content h4, .xf_editor-page-content h5, .xf_editor-page-content h6 {
+  font-weight: 700;
+  line-height: 1.35;
+  text-align: left;
+}
+.xf_editor-page-content h1 {
+  border-bottom: 1px solid #eaecef;
+  padding-bottom: 0.3em;
+}
+.xf_editor-page-content h2 {
+  border-bottom: 1px solid #eaecef;
+  padding-bottom: 0.25em;
+}
+.xf_editor-page-content p {
+  margin: 0 0 12px;
+}
+.xf_editor-page-content ul,
+.xf_editor-page-content ol {
+  margin: 0 0 12px;
+  padding-left: 2em;
+}
+.xf_editor-page-content li {
+  margin-bottom: 4px;
+}
+.xf_editor-page-content blockquote {
+  font-style: normal;
+  margin: 12px 0;
+}
+.xf_editor-page-content hr {
+  border: 0;
+  border-top: 1px solid #e1e4e8;
+  margin: 20px 0;
+}
+.xf_editor-page-content img,
+.xf_editor-page-content video,
+.xf_editor-page-content iframe,
+.xf_editor-page-content svg:not(.xf_editor-copybook-svg) {
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  vertical-align: middle;
+  max-width: 100%;
+  height: auto;
+}
+
+.xf_editor-page-split {
+  position: relative;
+}
+.xf_editor-page-split::before {
+  display: inline-block;
+  min-width: 18px;
+  padding: 1px 6px;
+  text-align: center;
+  color: #94a3b8;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+@media print {
+  .xf_editor-page-block {
+    border-color: #ccc !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    margin: 0 auto !important;
+    page-break-after: always;
+    break-after: page;
+  }
+}
+[data-theme=dark] .xf_editor-page-block {
+  background: #1e293b;
+  border-color: #2d3a52;
+  color: #cbd5e1;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+[data-theme=dark] .xf_editor-page-block:hover {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.35), 0 12px 32px rgba(0, 0, 0, 0.5);
+}
+
+[data-theme=dark] .xf_editor-page-content {
+  color: #cbd5e1;
+}
+[data-theme=dark] .xf_editor-page-content h1,
+[data-theme=dark] .xf_editor-page-content h2 {
+  border-bottom-color: #2d3a52;
+}
+[data-theme=dark] .xf_editor-page-content hr {
+  border-top-color: #2d3a52;
+}
+[data-theme=dark] .xf_editor-page-content blockquote {
+  border-left-color: #60a5fa;
+}
+
+[data-theme=dark] .xf_editor-page-split::before {
+  color: #64748b;
+  background: #0f172a;
+  border-color: #2d3a52;
+}
+
 /* ===========================================
  * 颜色选择器样式 (Color Picker Styles)
  * =========================================== */
